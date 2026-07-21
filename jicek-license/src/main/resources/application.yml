@@ -1,0 +1,75 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: jicek-license
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:jicek}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+
+# MyBatis-Plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      table-prefix: jicek_
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# 极策k 配置
+jicek:
+  # 加密主密钥（必须通过环境变量注入，禁硬编码）
+  crypto:
+    aes-key: ${JICEK_AES_KEY:}              # AES-256 主密钥 Base64
+    rsa-private-key: ${JICEK_RSA_PRIVATE_KEY:}  # RSA 私钥 PKCS#8 Base64
+    rsa-public-key: ${JICEK_RSA_PUBLIC_KEY:}    # RSA 公钥 X.509 Base64
+    hmac-key: ${JICEK_HMAC_KEY:}            # HMAC-SHA256 主密钥 Base64
+
+  # 支付配置
+  pay:
+    # 订单超时时间（分钟）
+    order-timeout-minutes: 15
+    # 同步跳转地址
+    return-url: https://www.jicek.com/pay/return
+    # 是否启用防重放（时间戳校验）
+    enable-anti-replay: true
+    # 时间戳容差（秒）
+    timestamp-tolerance-seconds: 300
+
+  # 卡密配置
+  card:
+    # 卡密查询频率限制（每分钟）
+    query-rate-limit: 10
+    # 默认字符集（0=大小写+数字, 1=纯数字, 2=自定义）
+    default-charset: 0
+    # 默认长度
+    default-length: 24
+
+  # 异步回调幂等
+  notify:
+    # Redis 锁前缀
+    lock-prefix: "jicek:pay:notify:lock:"
+    # 锁过期时间（秒）
+    lock-timeout: 30
+
+logging:
+  level:
+    com.jicek: debug
+    org.springframework.web: info

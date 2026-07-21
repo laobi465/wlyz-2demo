@@ -1,0 +1,32 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Env (敏感配置，禁入 git)
+.env
+.env.local
+application-local.yml
+application-prod.yml
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
