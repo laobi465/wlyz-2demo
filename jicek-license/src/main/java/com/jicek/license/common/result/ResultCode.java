@@ -57,7 +57,15 @@ public enum ResultCode {
     HEARTBEAT_TIMEOUT(3005, "心跳超时"),
     DEVICE_LIMIT(3006, "设备数超限"),
     RATE_LIMIT(3007, "频率超限"),
-    ANTI_BRUTE_FORCE(3008, "防爆破触发");
+    ANTI_BRUTE_FORCE(3008, "防爆破触发"),
+    DEVICE_FINGERPRINT_INVALID(3009, "设备指纹校验失败"),
+    DEVICE_NOT_FOUND(3010, "设备不存在"),
+    DEVICE_NOT_BOUND(3011, "设备未绑定"),
+    DEVICE_ALREADY_BOUND(3012, "设备已被其他用户绑定"),
+    BIND_CODE_INVALID(3013, "换机码无效或已过期"),
+    BIND_CODE_USED(3014, "换机码已使用"),
+    HEARTBEAT_SIGN_FAIL(3015, "心跳签名校验失败"),
+    HEARTBEAT_NONCE_REPLAY(3016, "心跳 nonce 重复（疑似重放）");
 
     private final Integer code;
     private final String msg;

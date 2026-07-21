@@ -128,16 +128,28 @@ CREATE TABLE jicek_device (
   tenant_id       BIGINT       NOT NULL,
   software_id     BIGINT       NOT NULL,
   user_id         BIGINT       COMMENT '绑定用户',
-  device_fingerprint VARCHAR(128) NOT NULL COMMENT '设备指纹哈希',
-  device_info     TEXT         COMMENT '设备详情JSON',
+  device_fingerprint VARCHAR(128) NOT NULL COMMENT '设备指纹（5维SHA-256融合）',
+  device_info     TEXT         COMMENT '设备详情JSON（AES加密）',
+  device_name     VARCHAR(128) COMMENT '设备名称（客户端自报）',
+  os_type         VARCHAR(32)  COMMENT '操作系统类型：windows/linux/macos/android/ios',
+  os_version      VARCHAR(64)  COMMENT '操作系统版本',
+  client_version  VARCHAR(32)  COMMENT '客户端版本',
+  is_vm           TINYINT      DEFAULT 0 COMMENT '是否虚拟机：0否 1是',
+  vm_extra        VARCHAR(255) COMMENT 'VM/容器补充维度（VM UUID/容器ID）',
+  bind_ip         VARCHAR(45)  COMMENT '首次绑定IP',
+  bind_code       VARCHAR(32)  COMMENT '换机码（绑定时生成）',
   last_heartbeat  DATETIME,
-  online_status   TINYINT      DEFAULT 0,
+  online_status   TINYINT      DEFAULT 0 COMMENT '0离线 1在线',
   status          TINYINT      DEFAULT 0 COMMENT '0正常 1封禁',
+  bind_time       DATETIME     COMMENT '绑定时间',
   create_time     DATETIME     NOT NULL,
   update_time     DATETIME     NOT NULL,
   UNIQUE KEY uk_fp (tenant_id, software_id, device_fingerprint),
-  KEY idx_user (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备';
+  KEY idx_user (user_id),
+  KEY idx_software_status (tenant_id, software_id, status),
+  KEY idx_bind_code (bind_code),
+  KEY idx_heartbeat (online_status, last_heartbeat)
+) ENGINE=InnoDB DEFAULT CHARSET=utf4mb4 COMMENT='设备';
 
 -- ============================================================
 -- 7. 代理表

@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.2.0-SNAPSHOT |
+| 当前版本 | v0.3.0-SNAPSHOT |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板） |
@@ -45,6 +45,7 @@
 | 支付模块 | `pay/` (entity / mapper / dto / adapter / service / controller) | ✅ |
 | 资金事务 | `transaction/PaymentTransactionService` | ✅ |
 | 控制台 | `dashboard/controller/DevDashboardController` | ✅ |
+| 设备模块 | `device/` (entity/mapper/dto/fingerprint/service/controller) | ✅ v0.3.0 |
 
 ### 前端（jicek-ui）
 
@@ -69,8 +70,8 @@
 ### P1（高，v0.3.0 计划）
 - **8 语言客户端 SDK**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
   - 每个 SDK 必须有三件套：签名（HMAC-SHA256）+ 心跳（动态间隔）+ 卡密验证
-- **设备指纹采集与绑定**：CPU + 主板 + 硬盘 + 网卡 + BIOS 哈希融合
-  - 注意防伪造，需考虑虚拟机/容器场景
+  - 每个 SDK 必须实现设备指纹采集（5 维 + VM 检测）
+- **设备指纹采集与绑定**：✅ 已完成 v0.3.0
 - **前端补全**：
   - 软件管理页面、卡类管理页面、用户管理页面、设备管理页面、代理管理页面
   - ECharts 数据统计图表

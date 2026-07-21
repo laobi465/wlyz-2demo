@@ -2,7 +2,7 @@
 
 > 面向开发者的多租户卡密验证 SaaS 平台 · 基于 RuoYi-Vue-Plus 技术栈 · 国产开源可私有部署
 
-[![Version](https://img.shields.io/badge/version-0.2.0--SNAPSHOT-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0--SNAPSHOT-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.6-green)](https://spring.io/projects/spring-boot)
@@ -18,11 +18,20 @@
 - **8 语言 SDK 全覆盖**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
 - **最前沿加密**：AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4）
 
-## 当前版本（v0.2.0）
+## 当前版本（v0.3.0）
 
 ### 已完成 ✅
 
-#### 后端核心模块
+#### 设备指纹与绑定模块（v0.3.0 新增）
+- 5 维 SHA-256 融合指纹（CPU+主板+硬盘+网卡+BIOS）
+- VM/容器补充维度（VM UUID / 容器 ID）
+- RSA 加密传输 + 服务端独立计算（防篡改）+ 常量时间比对（防时序攻击）
+- 设备绑定/换机/封禁/解封（@Transactional 保证原子性）
+- 16 位换机码（SecureRandom，24h 有效）
+- 心跳保活（动态间隔 5-300s，服务端控制）+ nonce Redis 防重放 + HMAC-SHA256 签名
+- 超时设备自动置离线（3×interval 阈值）
+
+#### 后端核心模块（v0.2.0）
 - **加密层**：AES-256-GCM（存储）/ RSA-2048-OAEP（传输）/ HMAC-SHA256（签名）/ MD5（V1 兼容）
 - **卡密模块**：SecureRandom 生成 + AES-256-GCM 加密入库 + SHA-256 哈希索引 + 明文仅展示一次
 - **支付适配层**：彩虹易支付 V1 完整实现（支付/查询/退款/异步回调）
@@ -200,6 +209,13 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 | 支付 | `POST /api/dev/pay/create` | 发起支付 |
 | 支付 | `GET /api/dev/pay/order/page` | 订单分页查询 |
 | 支付 | `POST /api/dev/pay/refund` | 退款 |
+| 设备 | `GET /api/dev/device/page` | 设备分页查询 |
+| 设备 | `GET /api/dev/device/by-fingerprint` | 按指纹查询 |
+| 设备 | `POST /api/dev/device/ban` | 封禁设备 |
+| 设备 | `POST /api/dev/device/unban` | 解封设备 |
+| SDK | `POST /api/sdk/device/bind` | 设备绑定（返回换机码） |
+| SDK | `POST /api/sdk/device/unbind` | 换机（解绑旧+绑新） |
+| SDK | `POST /api/sdk/device/heartbeat` | 心跳（HMAC 签名+nonce） |
 
 ### 公开回调
 

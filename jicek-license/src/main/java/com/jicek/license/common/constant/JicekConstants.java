@@ -63,4 +63,22 @@ public final class JicekConstants {
     public static final String CHARSET_ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     public static final String CHARSET_NUM = "0123456789";
     public static final String CHARSET_UPPER_ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    /* ============ 设备状态 ============ */
+    public static final int DEVICE_STATUS_NORMAL = 0;     // 正常
+    public static final int DEVICE_STATUS_BANNED = 1;     // 封禁
+
+    public static final int DEVICE_OFFLINE = 0;           // 离线
+    public static final int DEVICE_ONLINE = 1;            // 在线
+
+    /* ============ 设备指纹维度 ============ */
+    public static final int FP_DIMENSION_COUNT = 5;       // 5 维：CPU/主板/硬盘/网卡/BIOS
+
+    /* ============ 心跳默认间隔（秒） ============ */
+    public static final int HEARTBEAT_MIN_INTERVAL = 5;
+    public static final int HEARTBEAT_MAX_INTERVAL = 300;
+    public static final int HEARTBEAT_DEFAULT_INTERVAL = 60;
+
+    /* ============ 换机码长度 ============ */
+    public static final int BIND_CODE_LENGTH = 16;
 }

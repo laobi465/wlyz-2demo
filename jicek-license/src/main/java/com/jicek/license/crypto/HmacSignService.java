@@ -57,6 +57,28 @@ public class HmacSignService {
     }
 
     /**
+     * 使用指定密钥计算签名（用于多租户/多软件场景，每软件独立签名密钥）
+     * @param data 待签名数据
+     * @param secretKey 签名密钥（明文，已从加密存储中解密）
+     * @return Base64 签名值
+     */
+    public String signWithSecret(String data, String secretKey) {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalArgumentException("签名密钥不能为空");
+        }
+        try {
+            Mac mac = Mac.getInstance(ALGORITHM);
+            SecretKeySpec spec = new SecretKeySpec(
+                    secretKey.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+            mac.init(spec);
+            byte[] signBytes = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(signBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("HMAC 签名计算失败", e);
+        }
+    }
+
+    /**
      * 验证签名（常量时间比较，防时序攻击）
      * @param data 原始数据
      * @param signatureBase64 待验证的 Base64 签名
@@ -67,6 +89,21 @@ public class HmacSignService {
             return false;
         }
         String expected = sign(data);
+        return constantTimeEquals(expected, signatureBase64);
+    }
+
+    /**
+     * 使用指定密钥验证签名（多租户/多软件场景）
+     * @param data 原始数据
+     * @param signatureBase64 待验证的 Base64 签名
+     * @param secretKey 签名密钥（明文）
+     * @return true 验证通过
+     */
+    public boolean verify(String data, String signatureBase64, String secretKey) {
+        if (signatureBase64 == null || signatureBase64.isBlank()) {
+            return false;
+        }
+        String expected = signWithSecret(data, secretKey);
         return constantTimeEquals(expected, signatureBase64);
     }
 

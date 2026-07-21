@@ -1,5 +1,18 @@
 # 更新日志
 
+## [0.3.0] - 2026-07-21
+
+### [新增] 设备指纹采集与绑定模块
+- Device 实体 + DeviceMapper + 4 个 DTO（Fingerprint/Bind/Unbind/Heartbeat）
+- DeviceFingerprintService：5 维 SHA-256 融合（CPU+主板+硬盘+网卡+BIOS）+ VM/容器补充维度 + RSA 解密独立计算 + 常量时间比对
+- DeviceService：绑定/换机/封禁/解封/分页查询，SecureRandom 生成 16 位换机码，@Transactional 保证绑定+卡密发放原子性
+- DeviceHeartbeatService：动态间隔 5-300s（服务端控制）+ 时间戳±300s 容差 + nonce Redis 防重放 + HMAC-SHA256 签名 + 超时 3×interval 置离线
+- DevDeviceController + SdkDeviceController
+- HmacSignService 扩展 signWithSecret/verify(3 参) 支持多租户每软件独立密钥
+- ResultCode 新增 8 个设备模块错误码（3009-3016）
+- JicekConstants 新增设备状态/指纹维度/心跳间隔/换机码长度常量
+- jicek_device 表补 11 个字段 + 3 个索引
+
 ## [0.2.1] - 2026-07-21
 
 ### [新增] 交接文档
