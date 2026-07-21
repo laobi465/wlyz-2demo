@@ -164,6 +164,7 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 
 - [CHANGELOG.md](CHANGELOG.md) - 更新日志（语义化版本）
 - [TODO.md](TODO.md) - 任务清单（P0/P1/P2/P3 优先级）
+- [PROMPT.md](PROMPT.md) - 下一个 AI 接手指南（阅读顺序/架构要点/常见陷阱/验证清单）
 - [docs/PROJECT.md](docs/PROJECT.md) - 项目文档（架构/模块/数据流/数据库表）
 - [docs/SPEC.md](docs/SPEC.md) - 规范文档（代码/接口/安全规范）
 - [docs/UI-DESIGN.md](docs/UI-DESIGN.md) - UI 设计规范（现代简约风格）

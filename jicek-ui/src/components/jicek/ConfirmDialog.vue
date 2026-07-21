@@ -1,3 +1,11 @@
+<!--
+  极策k 二次确认弹窗组件
+  作者: 极策k  日期: 2026-07-21
+
+  用途：资金操作（退款）/ 卡密操作（封禁/退款）前的二次确认
+  Props: title, message, subMessage, type (warning/danger/success), confirmText
+  安全：禁止点击遮罩关闭、禁止 ESC 关闭，强制用户主动选择
+-->
 <template>
   <el-dialog
     v-model="visible"

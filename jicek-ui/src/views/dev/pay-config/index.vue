@@ -1,3 +1,11 @@
+<!--
+  极策k 支付配置页面
+  作者: 极策k  日期: 2026-07-21
+
+  功能：彩虹易支付网关地址/PID/商户密钥配置，启用通道勾选
+  接口：GET /api/dev/pay/config/{tenantId}, POST /api/dev/pay/config
+  安全：商户密钥为密码型输入，AES 加密存储
+-->
 <template>
   <div class="jicek-page">
     <el-card>

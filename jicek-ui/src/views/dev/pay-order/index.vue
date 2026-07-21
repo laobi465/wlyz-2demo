@@ -1,3 +1,11 @@
+<!--
+  极策k 资金流水页面
+  作者: 极策k  日期: 2026-07-21
+
+  功能：订单分页查询（按状态筛选），退款操作（带二次确认），今日汇总
+  接口：GET /api/dev/pay/order/page, POST /api/dev/pay/refund
+  安全：退款前必须确认，金额展示使用 decimal.js
+-->
 <template>
   <div class="jicek-page">
     <el-card>

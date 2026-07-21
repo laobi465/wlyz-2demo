@@ -1,3 +1,11 @@
+<!--
+  极策k 卡密生成页面
+  作者: 极策k  日期: 2026-07-21
+
+  功能：批量生成卡密（最多 1000 张），明文一次性展示弹窗 + 复制
+  接口：POST /api/dev/card/generate
+  安全：明文仅展示一次，关闭弹窗后不可再查看
+-->
 <template>
   <div class="jicek-page">
     <el-card>

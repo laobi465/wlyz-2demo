@@ -1,3 +1,12 @@
+/**
+ * 极策k网络验证 - Vite 构建配置
+ * 作者: 极策k  日期: 2026-07-21
+ *
+ * 配置项：
+ * 1. Vue + Element Plus 自动按需引入
+ * 2. @ 路径别名指向 src
+ * 3. 开发服务器代理 /api 和 /pay 到后端 8080
+ */
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'

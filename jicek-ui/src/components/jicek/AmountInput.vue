@@ -1,3 +1,10 @@
+<!--
+  极策k 金额输入组件
+  作者: 极策k  日期: 2026-07-21
+
+  用途：资金相关金额输入，使用 decimal.js 保证精度（禁用 number 直接运算）
+  Props: modelValue, precision (默认 2), prefix (默认 ¥), placeholder
+-->
 <template>
   <el-input
     v-model="displayValue"

@@ -1,3 +1,11 @@
+<!--
+  极策k 状态标签组件
+  作者: 极策k  日期: 2026-07-21
+
+  用途：订单状态 / 卡密状态的统一标签展示
+  Props: status (number), type ('order' | 'card')
+  样式：jicek-tag-pending / success / danger / warning
+-->
 <template>
   <span class="jicek-tag" :class="tagClass">{{ text }}</span>
 </template>

@@ -1,5 +1,20 @@
 # 更新日志
 
+## [0.2.1] - 2026-07-21
+
+### [新增] 交接文档
+- PROMPT.md：下一个 AI 接手指南（阅读顺序/项目快照/已完成模块/待办/编码铁律/架构要点/API/常见陷阱/验证清单）
+- README.md 补充 API 概览表、数据库表、角色权限、部署说明
+
+### [新增] 文件顶部注释补全
+- 后端：CardKeyMapper / CardTypeMapper 补 Javadoc
+- 前端：main.ts / vite.config.ts / DevLayout / StatusTag / AmountInput / ConfirmDialog / dashboard / card-key-gen / card-key-list / pay-config / pay-order 共 11 个文件补顶部注释（HTML 注释格式，含作者/日期/用途/接口/安全说明）
+
+### [修改] 文档联动
+- PROJECT.md：模块结构同步
+- SPEC.md：补充交接文档规范
+- TODO.md：标记交接文档已完成
+
 ## [0.1.0] - 2026-07-21
 
 ### [新增] 项目立项

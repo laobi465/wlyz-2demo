@@ -1,3 +1,11 @@
+<!--
+  极策k 卡密查询页面
+  作者: 极策k  日期: 2026-07-21
+
+  功能：按卡号查询卡密详情，封禁/退款操作（带二次确认）
+  接口：GET /api/dev/card/query, POST /api/dev/card/ban, POST /api/dev/card/refund
+  安全：查询结果中卡密明文已脱敏
+-->
 <template>
   <div class="jicek-page">
     <el-card>

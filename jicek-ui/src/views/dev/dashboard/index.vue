@@ -1,3 +1,11 @@
+<!--
+  极策k 开发者控制台页面
+  作者: 极策k  日期: 2026-07-21
+
+  展示：今日收入/订单/退款/净收入/卡密状态分布
+  数据源：GET /api/dev/dashboard/summary
+  金额展示使用 decimal.js 保证精度
+-->
 <template>
   <div class="jicek-page">
     <!-- 汇总卡片 -->

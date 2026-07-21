@@ -290,8 +290,11 @@ services:
 ### 9.1 文件位置
 - CHANGELOG.md → 根目录
 - TODO.md → 根目录
+- README.md → 根目录（GitHub 介绍）
+- PROMPT.md → 根目录（下一个 AI 接手指南）
 - PROJECT.md → docs/
 - SPEC.md → docs/
+- UI-DESIGN.md → docs/
 - 接口文档 → docs/api/
 - 部署文档 → docs/deploy/
 
@@ -300,6 +303,7 @@ services:
 - 功能变更必须同步更新 PROJECT.md
 - 规范变更必须同步更新 SPEC.md
 - 任务完成必须勾选 TODO.md
+- 交接时必须生成/更新 README.md + PROMPT.md
 
 ### 9.3 版本规范
 - 遵循 SemVer：MAJOR.MINOR.PATCH
