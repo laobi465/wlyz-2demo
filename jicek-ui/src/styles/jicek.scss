@@ -1,0 +1,242 @@
+/**
+ * 极策k网络验证 - 全局样式
+ * 严格遵循 docs/UI-DESIGN.md 规范
+ * 作者: 极策k  日期: 2026-07-21
+ */
+
+:root {
+  /* 主色 */
+  --jicek-bg-primary: #FFFFFF;
+  --jicek-bg-secondary: #F7F8FA;
+  --jicek-primary: #1A4D8F;
+  --jicek-primary-hover: #164080;
+  --jicek-primary-light: #F0F4FA;
+  --jicek-success: #2E7D5B;
+  --jicek-warning: #B8860B;
+  --jicek-danger: #B23A3A;
+  --jicek-info: #3B7EA1;
+
+  /* 文字 */
+  --jicek-text-primary: #1F2937;
+  --jicek-text-secondary: #6B7280;
+  --jicek-text-placeholder: #9CA3AF;
+  --jicek-text-inverse: #FFFFFF;
+
+  /* 边框 */
+  --jicek-border: #E5E7EB;
+  --jicek-border-hover: #D1D5DB;
+  --jicek-bg-disabled: #F3F4F6;
+
+  /* 圆角 */
+  --jicek-radius-sm: 4px;
+  --jicek-radius-md: 6px;
+  --jicek-radius-lg: 8px;
+
+  /* 阴影 */
+  --jicek-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --jicek-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --jicek-shadow-focus: 0 0 0 3px rgba(26, 77, 143, 0.1);
+
+  /* 过渡 */
+  --jicek-transition: all 0.2s ease;
+
+  /* 字体 */
+  --jicek-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --jicek-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas',
+    'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--jicek-font-family);
+  color: var(--jicek-text-primary);
+  background: var(--jicek-bg-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ============ Element Plus 主题覆盖 ============ */
+.el-button--primary {
+  --el-button-bg-color: var(--jicek-primary);
+  --el-button-border-color: var(--jicek-primary);
+  --el-button-hover-bg-color: var(--jicek-primary-hover);
+  --el-button-hover-border-color: var(--jicek-primary-hover);
+  --el-button-active-bg-color: var(--jicek-primary-hover);
+  --el-button-active-border-color: var(--jicek-primary-hover);
+  border-radius: var(--jicek-radius-md);
+}
+
+.el-button--danger {
+  --el-button-bg-color: var(--jicek-danger);
+  --el-button-border-color: var(--jicek-danger);
+  border-radius: var(--jicek-radius-md);
+}
+
+.el-button {
+  border-radius: var(--jicek-radius-md);
+}
+
+.el-card {
+  border-radius: var(--jicek-radius-lg);
+  border: 1px solid var(--jicek-border);
+  box-shadow: var(--jicek-shadow-sm);
+}
+
+.el-input__wrapper {
+  border-radius: var(--jicek-radius-md);
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 3px rgba(26, 77, 143, 0.1) !important;
+  border-color: var(--jicek-primary) !important;
+}
+
+.el-table {
+  --el-table-header-bg-color: var(--jicek-bg-secondary);
+  --el-table-row-hover-bg-color: var(--jicek-primary-light);
+  border-radius: var(--jicek-radius-md);
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  background: var(--jicek-bg-secondary);
+}
+
+.el-menu {
+  border-right: none;
+}
+
+.el-menu-item.is-active {
+  background: var(--jicek-primary-light);
+  color: var(--jicek-primary);
+  font-weight: 600;
+  border-left: 3px solid var(--jicek-primary);
+}
+
+/* ============ 极策k 通用样式 ============ */
+.jicek-page {
+  padding: 24px;
+  background: var(--jicek-bg-secondary);
+  min-height: calc(100vh - 60px);
+}
+
+.jicek-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--jicek-text-primary);
+  margin-bottom: 16px;
+}
+
+.jicek-stat-card {
+  background: var(--jicek-bg-primary);
+  border: 1px solid var(--jicek-border);
+  border-radius: var(--jicek-radius-lg);
+  padding: 20px;
+  box-shadow: var(--jicek-shadow-sm);
+}
+
+.jicek-stat-label {
+  font-size: 13px;
+  color: var(--jicek-text-secondary);
+  margin-bottom: 8px;
+}
+
+.jicek-stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--jicek-text-primary);
+}
+
+.jicek-stat-value.success {
+  color: var(--jicek-success);
+}
+
+.jicek-stat-value.danger {
+  color: var(--jicek-danger);
+}
+
+.jicek-stat-value.warning {
+  color: var(--jicek-warning);
+}
+
+/* ============ 状态标签 ============ */
+.jicek-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: var(--jicek-radius-sm);
+  line-height: 18px;
+}
+
+.jicek-tag-pending {
+  background: var(--jicek-bg-secondary);
+  color: var(--jicek-text-secondary);
+  border: 1px solid var(--jicek-border);
+}
+
+.jicek-tag-success {
+  background: rgba(46, 125, 91, 0.1);
+  color: var(--jicek-success);
+  border: 1px solid rgba(46, 125, 91, 0.2);
+}
+
+.jicek-tag-danger {
+  background: rgba(178, 58, 58, 0.1);
+  color: var(--jicek-danger);
+  border: 1px solid rgba(178, 58, 58, 0.2);
+}
+
+.jicek-tag-warning {
+  background: rgba(184, 134, 11, 0.1);
+  color: var(--jicek-warning);
+  border: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+/* ============ 布局 ============ */
+.jicek-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.jicek-sidebar {
+  width: 220px;
+  background: var(--jicek-bg-primary);
+  border-right: 1px solid var(--jicek-border);
+  flex-shrink: 0;
+}
+
+.jicek-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.jicek-header {
+  height: 60px;
+  background: var(--jicek-bg-primary);
+  border-bottom: 1px solid var(--jicek-border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  justify-content: space-between;
+}
+
+.jicek-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--jicek-bg-secondary);
+}

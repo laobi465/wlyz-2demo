@@ -41,30 +41,49 @@
 ├── ruoyi-modules
 │   ├── system          # 系统管理（RuoYi 自带）
 │   ├── workflow        # 工作流（RuoYi 自带）
-│   └── jicek-license   # ★ 卡密验证核心模块（新增）
-│       ├── domain      # 实体
-│       ├── mapper      # 数据访问
-│       ├── service     # 业务
-│       ├── controller  # 接口
-│       │   ├── admin   # 管理员
-│       │   ├── dev     # 开发者
-│       │   ├── agent   # 代理
-│       │   ├── user    # 终端用户
-│       │   └── sdk     # 客户端 SDK 接口
-│       ├── pay         # ★ 支付适配层
-│       │   ├── adapter # V1 适配器
-│       │   ├── notify  # 异步回调
-│       │   └── order   # 订单状态机
-│       ├── crypto      # ★ 加密层
-│       │   ├── rsa     # RSA-2048
-│       │   ├── aes     # AES-256-GCM
-│       │   ├── sm      # 国密 SM2/SM4
-│       │   └── sign    # 签名校验
-│       ├── device      # 设备指纹
-│       ├── heartbeat   # 心跳保活
-│       └── sdk-gen     # SDK 代码生成器
-└── ruoyi-ui            # 前端
-    └── src/views/jicek  # ★ 极策k前端页面
+│   └── jicek-license   # ★ 卡密验证核心模块（新增，v0.2.0 已实现）
+│       ├── common      # 通用：R/ResultCode/ServiceException/常量
+│       ├── config      # 配置：JicekProperties/MybatisPlusConfig/CorsConfig
+│       ├── crypto      # ★ 加密层（已实现）
+│       │   ├── AesCryptoService     # AES-256-GCM
+│       │   ├── RsaCryptoService     # RSA-2048-OAEP
+│       │   ├── HmacSignService      # HMAC-SHA256
+│       │   ├── Md5SignService       # MD5（V1 兼容）+ SHA-256
+│       │   └── CryptoConfiguration  # Bean 配置
+│       ├── card        # 卡密模块（已实现）
+│       │   ├── entity  # CardType / CardKey
+│       │   ├── mapper  # CardTypeMapper / CardKeyMapper
+│       │   ├── dto     # 生成请求/响应 DTO
+│       │   ├── generator # CardKeyGenerator (SecureRandom)
+│       │   ├── service # CardKeyService
+│       │   └── controller # DevCardKeyController / DevCardTypeController
+│       ├── pay         # ★ 支付适配层（已实现）
+│       │   ├── entity  # PayConfig / PayOrder
+│       │   ├── mapper  # PayConfigMapper / PayOrderMapper
+│       │   ├── dto     # 请求/响应/回调 DTO
+│       │   ├── adapter # PayAdapter 接口 + PayAdapterV1Impl
+│       │   ├── service # PayConfigService / PayOrderStateMachineService
+│       │   │           # PayNotifyService / PayOrderService
+│       │   └── controller # PayNotifyController / DevPayController
+│       ├── transaction # ★ 资金一致性事务（已实现）
+│       │   └── PaymentTransactionService
+│       ├── dashboard   # 控制台（已实现）
+│       │   └── controller # DevDashboardController
+│       ├── device      # 设备指纹（待实现 v0.3.0）
+│       ├── heartbeat   # 心跳保活（待实现 v0.3.0）
+│       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架）
+    ├── src/api         # API 客户端 + 接口定义
+    ├── src/components/jicek # 公共组件（StatusTag/AmountInput/ConfirmDialog）
+    ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
+    ├── src/router      # 路由配置
+    ├── src/styles      # jicek.scss (CSS 变量系统)
+    └── src/views/dev   # 开发者页面
+        ├── dashboard   # 控制台
+        ├── card-key-gen # 卡密生成
+        ├── card-key-list # 卡密查询
+        ├── pay-config  # 支付配置
+        └── pay-order   # 资金流水
 ```
 
 ### 2.3 数据流

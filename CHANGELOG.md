@@ -36,9 +36,46 @@
 - 完整流程：备份 → git pull → 依赖 → DB迁移 → 清缓存 → 健康检查 → 重启
 - 失败自动回滚 + 审计日志
 
+## [0.2.0] - 2026-07-21
+
+### [新增] 后端核心模块完整实现
+- 加密层：AES-256-GCM / RSA-2048-OAEP / HMAC-SHA256 / MD5（V1 兼容）
+- 支付适配层：彩虹易支付 V1 完整实现（支付/查询/退款）
+- 订单状态机：5 状态不可逆流转 + 金额一致性校验
+- 异步回调：Redisson 分布式锁 + MD5 验签 + 幂等 + 返回 success
+- 卡密服务：SecureRandom 生成 + AES-256-GCM 加密入库 + 明文仅展示一次
+- 资金一致性事务：@Transactional 保证「订单流转 + 卡密发放」原子性
+
+### [新增] 后端 Controller
+- DevDashboardController：控制台汇总数据
+- DevCardKeyController：卡密生成/查询/封禁/退款
+- DevCardTypeController：卡类 CRUD
+- DevPayController：支付配置/发起/订单查询/退款
+- PayNotifyController：异步回调（GET/POST 双兼容）
+
+### [新增] 前端 Vue3 完整骨架
+- Vite + TypeScript + Element Plus 2.9.8
+- 全局样式：极策蓝 #1A4D8F 主色 + CSS 变量系统
+- 路由：5 个核心页面
+- API 客户端：axios 拦截器 + 统一响应处理
+- 公共组件：StatusTag/AmountInput/ConfirmDialog
+- Layout：220px 左侧导航 + 60px 顶栏 + 主内容区
+
+### [新增] 前端核心页面
+- 控制台：今日收入/订单/退款/净收入/卡密状态分布
+- 卡密生成：批量生成 + 明文一次性展示弹窗
+- 卡密查询：按卡号查询 + 封禁/退款操作
+- 支付配置：网关/商户/通道选择 + 加密选项
+- 资金流水：分页表格 + 退款确认弹窗
+
+### [新增] 配置类
+- MybatisPlusConfig：分页插件（最大 500 条）
+- CorsConfig：开发环境跨域
+- JicekProperties：所有敏感字段环境变量注入
+
 ## 待发布版本（开发中）
 
-### [未发布] v0.2.0
-- 支付适配层完整代码实现
-- 卡密生成与加密存储
-- 客户端 SDK（Java/C#/Python/Go/Node/C++/易语言/Lua/Shell）
+### [未发布] v0.3.0
+- 8 语言客户端 SDK（Java/C#/Python/Go/Node/C++/易语言/Lua/Shell）
+- 设备指纹采集与绑定
+- 数据统计图表（ECharts）
