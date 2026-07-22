@@ -123,4 +123,12 @@ public class DevAgentController {
         return R.ok(commissionService.pageCommissions(
                 tenantId, agentId, sourceAgentId, type, status, page, size));
     }
+
+    /**
+     * 重新生成代理邀请码
+     */
+    @PostMapping("/{tenantId}/{agentId}/regenerate-invite-code")
+    public R<String> regenerateInviteCode(@PathVariable Long tenantId, @PathVariable Long agentId) {
+        return R.ok(agentService.regenerateInviteCode(tenantId, agentId));
+    }
 }

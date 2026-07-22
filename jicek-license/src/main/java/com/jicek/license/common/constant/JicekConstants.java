@@ -337,4 +337,32 @@ public final class JicekConstants {
     public static final long UPDATE_MAX_FILE_SIZE = 500L * 1024 * 1024;
     /** 支持的文件类型 */
     public static final String[] UPDATE_FILE_TYPES = {"exe", "sh", "win", "lua", "zip", "7z"};
+
+    /* ============ H5 终端用户（v0.13.0） ============ */
+    /** H5 会话令牌有效期（小时） */
+    public static final int H5_TOKEN_EXPIRE_HOURS = 24;
+    /** H5 会话令牌长度 */
+    public static final int H5_TOKEN_LENGTH = 32;
+    /** H5 请求头 */
+    public static final String H5_AUTH_HEADER = "X-H5-Token";
+    /** H5 Redis 会话前缀 */
+    public static final String REDIS_KEY_H5_SESSION = "jicek:h5:session:";
+
+    /* ============ 代理邀请码（v0.13.0） ============ */
+    /** 邀请码长度 */
+    public static final int INVITE_CODE_LENGTH = 8;
+    /** 邀请码字符集 */
+    public static final String INVITE_CODE_CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    /* ============ 内嵌卡网（v0.13.0） ============ */
+    /** 店铺状态：关闭 */
+    public static final int SHOP_STATUS_CLOSED = 0;
+    /** 店铺状态：开启 */
+    public static final int SHOP_STATUS_OPEN = 1;
+    /** 商品状态：下架 */
+    public static final int SHOP_PRODUCT_OFF_SHELF = 0;
+    /** 商品状态：上架 */
+    public static final int SHOP_PRODUCT_ON_SHELF = 1;
+    /** 单笔订单最大购买数量 */
+    public static final int SHOP_ORDER_MAX_QUANTITY = 99;
 }

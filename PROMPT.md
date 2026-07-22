@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.6.0 |
+| 当前版本 | v0.13.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
@@ -58,6 +58,9 @@
 | SDK 模块 | `sdk/` (auth/dto/service/controller) | ✅ v0.9.0（SdkAuthFilter 签名鉴权 + 卡密登录） |
 | 公告模块 | `announcement/` (entity/mapper/dto/service/controller) | ✅ v0.10.0（CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配） |
 | 更新包模块 | `update/` (entity/mapper/dto/service/controller) | ✅ v0.11.0（文件上传 + CRUD + 发布/下线 + SDK 检查更新 + 多格式 exe/sh/win/lua/zip/7z） |
+| h5/ | `h5/` (entity/mapper/dto/auth/service/controller) | ✅ v0.13.0（H5 终端用户验证界面，X-H5-Token 鉴权 + Redisson 会话） |
+| shop/ | `shop/` (entity/mapper/dto/service/controller) | ✅ v0.13.0（内嵌卡网：店铺 + 商品 + H5 下单） |
+| agent/ 扩展 | `agent/` (util/InviteCodeGenerator + dto/AgentRegisterDTO) | ✅ v0.13.0（invite_code/invited_by 字段 + H5 公开注册接口 + 邀请码生成器） |
 
 ### 前端（jicek-ui）
 
@@ -91,6 +94,8 @@
 | 更新包管理页 | `src/views/dev/update-package/` | ✅ v0.11.0（文件上传进度 + CRUD + 发布/下线 + SHA-256 展示 + 强制更新开关） |
 | SDK 代码生成弹窗 | `src/views/dev/software/SdkCodeGenDialog.vue` | ✅ v0.12.0（9 语言一键生成 + 自动填入 appKey/RSA公钥 + 复制） |
 | 对接文档页 | `src/views/dev/integration-doc/` | ✅ v0.12.0（接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引） |
+| H5 终端用户页（7 个） | `src/views/h5/*` | ✅ v0.13.0（H5Layout + login + my-card + announcement + agent/register + shop + shop/order） |
+| 内嵌卡网管理页 | `src/views/dev/shop/` | ✅ v0.13.0（店铺 CRUD + 商品双层弹窗 + 状态开关） |
 
 ## 3. 待办任务（按优先级）
 
@@ -370,6 +375,22 @@ SDK 请求头规范（所有 `/api/sdk/**` 必填）：
 |---|---|---|
 | GET / POST | `/pay/notify/{tenantId}` | 纯字符串 `success` |
 
+### 7.4 H5 API（`/api/h5/**`，X-H5-Token 鉴权独立于 JWT，v0.13.0）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/h5/auth/login` | 卡密登录（公开，appKey + cardKey），返回 X-H5-Token |
+| GET | `/api/h5/auth/my-card` | 我的卡密（需 X-H5-Token，按 cardType 渲染） |
+| POST | `/api/h5/auth/logout` | 退出登录（需 X-H5-Token，清 Redis+DB） |
+| GET | `/api/h5/announcement` | H5 公告列表（需 X-H5-Token） |
+| POST | `/api/h5/agent/register` | 代理邀请码注册（公开，appKey + inviteCode） |
+| GET | `/api/h5/shop/info?path=xxx` | H5 店铺信息（公开，路径模式查询） |
+| POST | `/api/h5/shop/order` | H5 下单（需 X-H5-Token，写 jicek_pay_order status=0） |
+
+### 7.5 Dev Shop API（`/api/dev/shop/**`，@AuthRequired JWT，v0.13.0）
+
+11 接口：店铺 CRUD（save/page/get/update/delete）+ 店铺开关（toggle-status）+ 商品 CRUD（product-save/product-page/product-get/product-update/product-delete）+ 重新生成邀请码（POST `/api/dev/agent/{tenantId}/{agentId}/regenerate-invite-code`）。
+
 ## 8. 数据库表（核心）
 
 | 表名 | 关键字段 | 说明 |
@@ -380,7 +401,7 @@ SDK 请求头规范（所有 `/api/sdk/**` 必填）：
 | `jicek_card_key` | `card_cipher`（AES） + `card_hash`（SHA-256） | 卡密（加密存储） |
 | `jicek_software` | `app_key` + `sign_secret`（AES） | 软件 |
 | `jicek_device` | `device_fingerprint` | 设备（指纹哈希） |
-| `jicek_agent` | `parent_id` + `level` + `balance` + `frozen_balance` + `commission_rate` | 代理（多级树形 + 余额） |
+| `jicek_agent` | `parent_id` + `level` + `balance` + `frozen_balance` + `commission_rate` + `invite_code`(v0.13.0) + `invited_by`(v0.13.0) | 代理（多级树形 + 余额 + 邀请码） |
 | `jicek_agent_package` | `agent_id` + `card_type_id` + `agent_price` | 代理可售卡类 + 代理价 |
 | `jicek_commission` | `agent_id` + `order_id` + `commission_rate`(快照) + `type`(1/2) + `status`(0/1) | 分润流水（不可变） |
 | `jicek_withdraw` | `amount` + `fee` + `actual_amount` + `status`(0-4) | 提现申请（5 状态机） |
@@ -389,6 +410,9 @@ SDK 请求头规范（所有 `/api/sdk/**` 必填）：
 | `jicek_deploy_log` | `trigger_source`(webhook/manual) + `status`(0-3) + `commit_hash` + `duration_ms` | 部署审计日志（仅 INSERT + SELECT + 受控更新 status，禁 UPDATE/DELETE） |
 | `jicek_ticket` | `ticket_no` + `category`(1-4) + `target`(1开发者2管理员) + `status`(0-3) + `creator_type`(1用户2开发者) | 工单主表（受控 UPDATE status/handlerId/closeTime） |
 | `jicek_ticket_reply` | `replier_type`(1用户2开发者3管理员) + `content` | 工单回复审计表（仅 INSERT + SELECT，禁 UPDATE/DELETE） |
+| `jicek_h5_session` | `h5_token`(UUID) + `cardKeyId` + `tenantId` + `softwareId` + `expireTime` | H5 会话（v0.13.0，Redis 缓存加速 + DB 持久化） |
+| `jicek_shop` | `tenantId` + `softwareId` + `name` + `path`(uk_tenant_path 唯一) + `status` | 内嵌卡网店铺（v0.13.0） |
+| `jicek_shop_product` | `shopId` + `cardTypeId`(唯一) + `price`(覆盖卡类售价) + `sortOrder` + `status` | 卡网商品（v0.13.0） |
 
 完整 DDL 见 `jicek_init.sql`。
 
@@ -522,6 +546,9 @@ const status = await deployApi.status()
 55. **卡密禁明文查库**（v0.9.0）：SDK 卡密登录通过 `cardHash = SHA-256(卡密明文)` 查 `jicek_card_key.card_hash` 索引，禁用 `WHERE card_no = ?` 明文查询（防 SQL 注入泄露卡密）。卡密明文仅在 RSA 解密后内存中短暂存在，永不日志输出。
 56. **SDK 每软件独立密钥验签**（v0.9.0）：`SdkAuthFilter` 从 `software.sign_secret`（AES 解密后）获取该软件独立的签名密钥，传入 `HmacSignService.verify(data, signature, secretKey)` 验签。不用全局 HmacSignService 单例（其用全局 hmacKey），而是用按软件的 signSecret。
 57. **过渡期：SdkDeviceController 旧接口**（v0.9.0）：现有 `/api/sdk/device/heartbeat` 仍从 `@RequestHeader("X-Sign-Secret")` 取明文 signSecret 做二次校验（旧代码遗留）。SdkAuthFilter 已用 software.signSecret 完成验签，X-Sign-Secret 头冗余且不安全。后续版本统一改为从 SoftwareContext 获取，移除明文密钥头。
+58. **H5 鉴权独立于 JWT**（v0.13.0）：`/api/h5/**` 走 `X-H5-Token` 头（UUID，24h，DB+Redis 双写），H5AuthInterceptor 拦截，公开接口（login/agent-register/shop-info）需在 `WebMvcConfig.excludePathPatterns` 显式放行。`H5AuthContext` ThreadLocal 必须在 `afterCompletion` 清理，与 AuthContext/SoftwareContext 同理防串号。
+59. **H5 卡密校验复用 SDK 同源算法**（v0.13.0）：`H5AuthService.login()` 用 `Md5SignService.sha256Hex(cardKey)` 计算哈希后查 `jicek_card_key.card_hash` 索引，与 `SdkAuthService` 同源。但 H5 用明文卡密传输（依赖 HTTPS），SDK 用 RSA-2048-OAEP 加密传输。
+60. **代理邀请码注册继承规则**（v0.13.0）：新代理 `parentId=inviter.id` / `level=inviter.level+1` / `maxSubLevel=inviter.maxSubLevel-1` / `commissionRate=inviter.commissionRate`（继承）。邀请码 8 位 SecureRandom，字符集 `INVITE_CODE_CHARSET` 去易混淆字符 I/O/0/1。注册接口 `POST /api/h5/agent/register` 公开，无需 JWT 也无需 X-H5-Token。
 
 ## 12. 验证清单
 

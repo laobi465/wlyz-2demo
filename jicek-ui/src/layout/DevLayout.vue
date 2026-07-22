@@ -49,6 +49,7 @@
           </template>
           <el-menu-item index="/pay-config">支付配置</el-menu-item>
           <el-menu-item index="/pay-order">资金流水</el-menu-item>
+          <el-menu-item index="/shop">内嵌卡网</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="agent">
           <template #title>

@@ -19,6 +19,50 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '登录', public: true }
   },
   {
+    path: '/h5',
+    name: 'H5Root',
+    component: () => import('@/views/h5/H5Layout.vue'),
+    meta: { title: 'H5 终端用户', public: true },
+    children: [
+      {
+        path: 'login',
+        name: 'H5Login',
+        component: () => import('@/views/h5/login/index.vue'),
+        meta: { title: '卡密登录', public: true }
+      },
+      {
+        path: 'my-card',
+        name: 'H5MyCard',
+        component: () => import('@/views/h5/my-card/index.vue'),
+        meta: { title: '我的卡密', public: true, h5Auth: true }
+      },
+      {
+        path: 'announcement',
+        name: 'H5Announcement',
+        component: () => import('@/views/h5/announcement/index.vue'),
+        meta: { title: '系统公告', public: true, h5Auth: true }
+      },
+      {
+        path: 'agent/register',
+        name: 'H5AgentRegister',
+        component: () => import('@/views/h5/agent/register.vue'),
+        meta: { title: '代理注册', public: true }
+      },
+      {
+        path: 'shop',
+        name: 'H5ShopHome',
+        component: () => import('@/views/h5/shop/index.vue'),
+        meta: { title: '购卡店铺', public: true }
+      },
+      {
+        path: 'shop/order',
+        name: 'H5ShopOrder',
+        component: () => import('@/views/h5/shop/order.vue'),
+        meta: { title: '确认订单', public: true, h5Auth: true }
+      }
+    ]
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -124,6 +168,12 @@ const routes: RouteRecordRaw[] = [
         name: 'IntegrationDoc',
         component: () => import('@/views/dev/integration-doc/index.vue'),
         meta: { title: '对接文档', icon: 'Document' }
+      },
+      {
+        path: 'shop',
+        name: 'Shop',
+        component: () => import('@/views/dev/shop/index.vue'),
+        meta: { title: '内嵌卡网', icon: 'Shop' }
       }
     ]
   }

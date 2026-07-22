@@ -37,4 +37,10 @@ public class PayRequestDTO {
 
     /** 业务扩展参数（原样回传） */
     private String param;
+
+    /** 订单金额（后端计算后回填，便于支付适配器读取） */
+    private BigDecimal amount;
+
+    /** 商户订单号（后端生成后回填，便于支付适配器读取） */
+    private String outTradeNo;
 }

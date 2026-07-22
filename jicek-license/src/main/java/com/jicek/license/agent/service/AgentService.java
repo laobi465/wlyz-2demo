@@ -2,13 +2,17 @@ package com.jicek.license.agent.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.jicek.license.agent.dto.AgentRegisterDTO;
 import com.jicek.license.agent.dto.AgentSaveDTO;
 import com.jicek.license.agent.dto.AgentTreeNode;
 import com.jicek.license.agent.entity.Agent;
 import com.jicek.license.agent.mapper.AgentMapper;
+import com.jicek.license.agent.util.InviteCodeGenerator;
 import com.jicek.license.common.constant.JicekConstants;
 import com.jicek.license.common.exception.ServiceException;
 import com.jicek.license.common.result.ResultCode;
+import com.jicek.license.software.entity.Software;
+import com.jicek.license.software.mapper.SoftwareMapper;
 import cn.hutool.crypto.digest.BCrypt;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,9 +46,11 @@ import java.util.stream.Collectors;
 public class AgentService {
 
     private final AgentMapper agentMapper;
+    private final SoftwareMapper softwareMapper;
 
-    public AgentService(AgentMapper agentMapper) {
+    public AgentService(AgentMapper agentMapper, SoftwareMapper softwareMapper) {
         this.agentMapper = agentMapper;
+        this.softwareMapper = softwareMapper;
     }
 
     /**
@@ -108,8 +114,91 @@ public class AgentService {
         agentMapper.insert(agent);
 
         log.info("代理创建成功: tenantId={}, agentId={}, username={}, parentId={}, level={}",
-                dto.getTenantId(), agent.getId(), agent.getUsername(), agent.getParentId(), level);
+                dto.getTenantId(), agent.getId(), dto.getUsername(), agent.getParentId(), level);
         return agent.getId();
+    }
+
+    /**
+     * 代理注册（邀请码注册，公开接口）
+     * 作者: 极策k  日期: 2026-07-22
+     *
+     * 流程：
+     * 1. 通过 appKey 查软件 → 获取 tenantId
+     * 2. 校验邀请码（存在 + 邀请人未封禁）
+     * 3. 校验用户名唯一
+     * 4. 创建代理（继承邀请人分润比例，层级 +1，maxSubLevel -1）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Long register(AgentRegisterDTO dto) {
+        // 1. 通过 appKey 查软件 → 获取 tenantId
+        Software software = softwareMapper.selectOne(
+            new LambdaQueryWrapper<Software>().eq(Software::getAppKey, dto.getAppKey()));
+        if (software == null) {
+            throw new ServiceException(ResultCode.SOFTWARE_NOT_FOUND);
+        }
+        Long tenantId = software.getTenantId();
+
+        // 2. 校验邀请码
+        Agent inviter = agentMapper.selectOne(
+            new LambdaQueryWrapper<Agent>()
+                .eq(Agent::getTenantId, tenantId)
+                .eq(Agent::getInviteCode, dto.getInviteCode()));
+        if (inviter == null) {
+            throw new ServiceException(ResultCode.AGENT_INVITE_CODE_INVALID);
+        }
+        if (inviter.getStatus() == JicekConstants.AGENT_STATUS_BANNED) {
+            throw new ServiceException(ResultCode.AGENT_INVITE_CODE_DISABLED);
+        }
+
+        // 3. 校验用户名唯一
+        Long existCount = agentMapper.selectCount(
+            new LambdaQueryWrapper<Agent>()
+                .eq(Agent::getTenantId, tenantId)
+                .eq(Agent::getUsername, dto.getUsername()));
+        if (existCount != null && existCount > 0) {
+            throw new ServiceException(ResultCode.AGENT_USERNAME_EXISTS);
+        }
+
+        // 4. 创建代理（继承邀请人分润比例，层级 +1，maxSubLevel -1）
+        Agent agent = new Agent();
+        agent.setTenantId(tenantId);
+        agent.setParentId(inviter.getId());
+        agent.setUsername(dto.getUsername());
+        agent.setPasswordHash(BCrypt.hashpw(dto.getPassword()));
+        agent.setRealName(dto.getRealName());
+        agent.setContact(dto.getContact());
+        agent.setBalance(BigDecimal.ZERO);
+        agent.setFrozenBalance(BigDecimal.ZERO);
+        agent.setTotalEarnings(BigDecimal.ZERO);
+        agent.setTotalWithdraw(BigDecimal.ZERO);
+        agent.setCommissionRate(inviter.getCommissionRate());
+        agent.setMaxSubLevel(Math.max(0, inviter.getMaxSubLevel() - 1));
+        agent.setStatus(JicekConstants.AGENT_STATUS_NORMAL);
+        agent.setLevel(inviter.getLevel() + 1);
+        agent.setInviteCode(InviteCodeGenerator.generate());
+        agent.setInvitedBy(inviter.getId());
+        agent.setCreateTime(LocalDateTime.now());
+        agent.setUpdateTime(LocalDateTime.now());
+        agentMapper.insert(agent);
+
+        log.info("代理注册成功（邀请码）: tenantId={}, agentId={}, username={}, inviterId={}, level={}",
+                tenantId, agent.getId(), agent.getUsername(), inviter.getId(), agent.getLevel());
+        return agent.getId();
+    }
+
+    /**
+     * 生成/重新生成代理邀请码
+     * 作者: 极策k  日期: 2026-07-22
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public String regenerateInviteCode(Long tenantId, Long agentId) {
+        Agent agent = getAgentById(tenantId, agentId);
+        String newCode = InviteCodeGenerator.generate();
+        agent.setInviteCode(newCode);
+        agent.setUpdateTime(LocalDateTime.now());
+        agentMapper.updateById(agent);
+        log.info("代理邀请码重新生成: tenantId={}, agentId={}", tenantId, agentId);
+        return newCode;
     }
 
     /**

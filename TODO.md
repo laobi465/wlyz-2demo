@@ -94,17 +94,17 @@
   - [x] 前端代理管理页 + 提现审核页 + API/路由/菜单集成
 - 备注：未引入 WarmFlow，采用简单状态机模式（对标 PayOrderStateMachineService）；待接入 PaymentTransactionService 在支付成功回调触发 grantCommission
 
-### [进行中] 前端补全
+### [基本完成] 前端补全
 - 优先级：P1
-- 预计版本：v0.5.0（v0.4.1 已完成卡类/设备/Dashboard 图表）
+- 状态：仅「用户管理页」待后端 DevUserController 实现后补全
 - 子项：
-  - [x] 软件管理页面 ✅ v0.8.0（CRUD + 密钥展示弹窗 + 轮换二次确认 + 关联校验）
-  - [x] 卡类管理页面 ✅ v0.4.1（CRUD + 4 种卡类型联动表单 + Decimal.js 金额格式化）
+  - [x] 软件管理页面 ✅ v0.8.0（CRUD + 密钥轮换 + 关联校验）
+  - [x] 卡类管理页面 ✅ v0.4.1（CRUD + 4 种类型联动表单）
   - [ ] 用户管理页面（待后端 DevUserController 实现）
-  - [x] 设备管理页面 ✅ v0.4.1（分页 + 详情弹窗 + 封禁/解封 + 指纹脱敏 + 状态组合）
-  - [x] 代理管理页面（v0.4.0 已完成：代理列表 + 提现审核）
-  - [x] 数据统计图表（ECharts） ✅ v0.4.1 Dashboard 卡密状态饼图 + 今日收支柱状图；✅ v0.4.3 数据统计页 4 Tab（验证量趋势/设备热力图/收入统计/防破解事件）
-  - [ ] H5 终端用户页面（待后端 H5 Controller 实现）
+  - [x] 设备管理页面 ✅ v0.4.1（分页 + 详情 + 封禁/解封 + 指纹脱敏）
+  - [x] 代理管理页面 ✅ v0.4.0（代理列表 + 提现审核）
+  - [x] 数据统计图表 ✅ v0.4.1 + v0.4.3（Dashboard 饼图/柱状图 + 数据统计页 4 Tab）
+  - [x] H5 终端用户页面 ✅ v0.13.0（7 页：登录/我的卡密/公告/代理注册/H5 购卡/订单）
 
 ### [已完成] 前端补全 - 第一批 ✅
 - 优先级：P1
@@ -116,7 +116,7 @@
   - [x] StatusTag.vue 扩展：新增 device 类型，支持 4 种状态语义
   - [x] deviceApi 新增（page/get/ban/unban），含 current→page 参数映射
   - [x] 路由新增 /card-type + /device；侧边栏新增卡类管理 + 用户管理子菜单
-- 技术约束：依据铁律 06（防幻觉），仅实现后端 Controller 已存在的页面，软件/用户/H5 未实现
+- 技术约束：依据铁律 06（防幻觉），仅实现后端 Controller 已存在的页面；H5 已于 v0.13.0 实现，仅用户管理页待后端
 
 ## P2（中）
 
@@ -242,7 +242,16 @@
   - 渐进式鉴权设计：现有接口未加 @AuthRequired 仍可访问，新接口从 AuthContext 取身份
   - 后续可扩展：管理员端 Controller（处理开发者工单 + 租户管理）、@AuthRequired(role=2) 限制管理员接口、代理/用户角色
 
+### [已完成] v0.13.0 新增功能 ✅
+- 优先级：P1
+- 完成版本：v0.13.0
+- 完成项：
+  - [x] H5 验证界面：`h5/` 后端模块（H5Session + UUID token 24h + DB/Redis 双写 + H5AuthInterceptor）+ `views/h5/` 7 页前端
+  - [x] 代理邀请码注册：Agent 表加 invite_code/invited_by 字段 + 8 位 SecureRandom 邀请码 + 公开注册接口继承邀请人配置
+  - [x] 内嵌卡网系统：`shop/` 后端模块（店铺 + 商品，可覆盖卡类售价）+ DevShopController 11 接口 + H5 公开查询 + H5 需 token 下单
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.13.0 条目；5 份核心文档已同步
+
 ### [待开始] 多语言国际化
 - 优先级：P3
-- 预计版本：v0.8.0
+- 预计版本：v0.14.0+
 - 备注：先支持中文，后续扩展英文

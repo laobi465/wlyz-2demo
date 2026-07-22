@@ -174,9 +174,12 @@ CREATE TABLE jicek_agent (
   last_login_time DATETIME,
   last_login_ip   VARCHAR(45),
   remark          VARCHAR(255),
+  invite_code     VARCHAR(16)  COMMENT '邀请码（代理自己的邀请码，注册时自动生成）',
+  invited_by      BIGINT       DEFAULT 0 COMMENT '邀请人代理ID，0表示无邀请人',
   create_time     DATETIME     NOT NULL,
   update_time     DATETIME     NOT NULL,
   UNIQUE KEY uk_tenant_username (tenant_id, username),
+  UNIQUE KEY uk_invite (tenant_id, invite_code),
   KEY idx_parent (tenant_id, parent_id),
   KEY idx_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='代理';
@@ -513,6 +516,64 @@ VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
 -- BCrypt('dev@123', 10) = $2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu.
 INSERT INTO jicek_dev_user (tenant_id, username, password_hash, nickname, status, create_time, update_time)
 VALUES (1, 'dev', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu.', '默认开发者', 1, NOW(), NOW());
+
+-- ============================================================
+-- 11. H5 终端用户会话表（v0.13.0）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_h5_session;
+CREATE TABLE jicek_h5_session (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '所属开发者租户',
+  software_id     BIGINT       NOT NULL COMMENT '所属软件',
+  card_key_id     BIGINT       NOT NULL COMMENT '关联卡密ID',
+  card_no_masked  VARCHAR(32)  COMMENT '卡号脱敏（展示用）',
+  h5_token        VARCHAR(128) NOT NULL COMMENT 'H5 会话令牌（UUID）',
+  device_info     VARCHAR(255) COMMENT '设备信息（User-Agent 等）',
+  client_ip       VARCHAR(45)  COMMENT '客户端 IP',
+  expire_time     DATETIME     NOT NULL COMMENT '过期时间',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_token (h5_token),
+  KEY idx_card (tenant_id, card_key_id),
+  KEY idx_expire (expire_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='H5 终端用户会话';
+
+-- ============================================================
+-- 12. 内嵌卡网 - 店铺表（v0.13.0）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_shop;
+CREATE TABLE jicek_shop (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '所属租户',
+  software_id     BIGINT       NOT NULL COMMENT '关联软件',
+  name            VARCHAR(64)  NOT NULL COMMENT '店铺名称',
+  path            VARCHAR(64)  NOT NULL COMMENT '店铺访问路径（唯一，例如 myshop）',
+  description     VARCHAR(255) COMMENT '店铺描述',
+  contact         VARCHAR(128) COMMENT '联系方式',
+  status          TINYINT      DEFAULT 1 COMMENT '0关闭 1开启',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_tenant_path (tenant_id, path),
+  KEY idx_software (tenant_id, software_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='内嵌卡网-店铺';
+
+-- ============================================================
+-- 13. 内嵌卡网 - 店铺商品表（v0.13.0）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_shop_product;
+CREATE TABLE jicek_shop_product (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '所属租户',
+  shop_id         BIGINT       NOT NULL COMMENT '所属店铺',
+  card_type_id    BIGINT       NOT NULL COMMENT '关联卡类',
+  price           DECIMAL(10,2) NOT NULL COMMENT '店铺售价（可覆盖卡类售价）',
+  sort_order      INT          DEFAULT 0 COMMENT '排序值，越大越靠前',
+  status          TINYINT      DEFAULT 1 COMMENT '0下架 1上架',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_shop_card (shop_id, card_type_id),
+  KEY idx_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='内嵌卡网-店铺商品';
 
 -- ============================================================
 -- 完成

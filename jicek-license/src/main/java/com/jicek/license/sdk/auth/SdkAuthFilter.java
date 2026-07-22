@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /**
  * SDK 鉴权 Filter
@@ -49,7 +50,7 @@ import java.time.Duration;
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
-public class SdkAuthFilter extends jakarta.servlet.http.OncePerRequestFilter {
+public class SdkAuthFilter extends org.springframework.web.filter.OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(SdkAuthFilter.class);
 
@@ -161,7 +162,7 @@ public class SdkAuthFilter extends jakarta.servlet.http.OncePerRequestFilter {
         String nonceKey = JicekConstants.REDIS_KEY_NONCE + nonce;
         RBucket<String> nonceBucket = redissonClient.getBucket(nonceKey);
         // trySet = setIfAbsent（原子），返回 true 表示设置成功（nonce 未重复）
-        boolean isNew = nonceBucket.trySet("1", NONCE_TTL);
+        boolean isNew = nonceBucket.trySet("1", NONCE_TTL.toMillis(), TimeUnit.MILLISECONDS);
         if (!isNew) {
             writeError(response, ResultCode.SDK_NONCE_REPLAY);
             return null;

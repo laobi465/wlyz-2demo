@@ -1,0 +1,670 @@
+<!--
+  极策k网络验证 - 开发者后台 内嵌卡网管理
+  作者: 极策k  日期: 2026-07-22
+
+  v0.13.0 功能3 后台部分：
+   - 店铺 CRUD + 开启/关闭切换
+   - 商品管理（添加 / 编辑 / 删除商品，绑定卡类）
+   - JWT 鉴权（router 守卫已有）
+   - 删除前 ElMessageBox.confirm 二次确认
+   - 遵循 docs/UI-DESIGN.md（无渐变、无 emoji）
+
+  接口：
+    GET    /api/dev/shop/page                       分页查询
+    GET    /api/dev/shop/{id}                       详情
+    POST   /api/dev/shop                            创建
+    PUT    /api/dev/shop                            更新
+    DELETE /api/dev/shop/{id}                       删除
+    POST   /api/dev/shop/{id}/open                  开启
+    POST   /api/dev/shop/{id}/close                 关闭
+    GET    /api/dev/shop/{shopId}/products          商品列表
+    POST   /api/dev/shop/product                    添加商品
+    PUT    /api/dev/shop/product                    编辑商品
+    DELETE /api/dev/shop/product/{shopId}/{productId} 删除商品
+-->
+<template>
+  <div class="jicek-page">
+    <el-card>
+      <template #header>
+        <span class="jicek-card-title">内嵌卡网</span>
+        <el-button type="primary" style="float: right" @click="handleCreate">新增店铺</el-button>
+      </template>
+
+      <!-- 筛选 -->
+      <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
+        <el-form-item label="软件">
+          <el-select
+            v-model="filter.softwareId"
+            placeholder="全部软件"
+            clearable
+            style="width: 180px"
+            @change="loadData"
+          >
+            <el-option
+              v-for="sw in softwareList"
+              :key="sw.id"
+              :label="sw.name"
+              :value="sw.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="名称">
+          <el-input
+            v-model="filter.name"
+            placeholder="店铺名称"
+            clearable
+            style="width: 200px"
+            @keyup.enter="loadData"
+          />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select
+            v-model="filter.status"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+            @change="loadData"
+          >
+            <el-option label="开启" :value="1" />
+            <el-option label="关闭" :value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="loadData">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <!-- 表格 -->
+      <el-table v-loading="loading" :data="tableData" border stripe style="width: 100%">
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="name" label="店铺名称" min-width="140" />
+        <el-table-column prop="path" label="路径" min-width="140">
+          <template #default="{ row }">
+            <el-text type="primary" class="mono-text">{{ row.path }}</el-text>
+          </template>
+        </el-table-column>
+        <el-table-column prop="softwareName" label="软件名" min-width="120" />
+        <el-table-column prop="contact" label="联系方式" min-width="140">
+          <template #default="{ row }">
+            <span v-if="row.contact">{{ row.contact }}</span>
+            <span v-else style="color: var(--jicek-text-secondary)">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+              {{ row.status === 1 ? '开启' : '关闭' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" min-width="160" />
+        <el-table-column label="操作" width="320" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button
+              v-if="row.status === 1"
+              link
+              type="warning"
+              size="small"
+              @click="handleToggle(row, 'close')"
+            >
+              关闭
+            </el-button>
+            <el-button
+              v-else
+              link
+              type="success"
+              size="small"
+              @click="handleToggle(row, 'open')"
+            >
+              开启
+            </el-button>
+            <el-button link type="info" size="small" @click="handleManageProducts(row)">
+              商品管理
+            </el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        v-model:current-page="filter.current"
+        v-model:page-size="filter.size"
+        :total="total"
+        :page-sizes="[20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        style="margin-top: 16px; justify-content: flex-end"
+        @size-change="loadData"
+        @current-change="loadData"
+      />
+    </el-card>
+
+    <!-- 店铺新建/编辑弹窗 -->
+    <el-dialog
+      v-model="formDialogVisible"
+      :title="formMode === 'create' ? '新增店铺' : '编辑店铺'"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="店铺名称" prop="name">
+          <el-input v-model="form.name" placeholder="如：极策k官方店" maxlength="64" show-word-limit />
+        </el-form-item>
+        <el-form-item label="所属软件" prop="softwareId">
+          <el-select v-model="form.softwareId" placeholder="选择软件" style="width: 100%">
+            <el-option
+              v-for="sw in softwareList"
+              :key="sw.id"
+              :label="sw.name"
+              :value="sw.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="店铺路径" prop="path">
+          <el-input
+            v-model="form.path"
+            placeholder="如：jicek-shop，用于 H5 访问"
+            maxlength="64"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="店铺描述" prop="description">
+          <el-input
+            v-model="form.description"
+            type="textarea"
+            :rows="3"
+            placeholder="选填，店铺简介"
+            maxlength="256"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="联系方式" prop="contact">
+          <el-input v-model="form.contact" placeholder="选填，如 QQ/微信/Telegram" maxlength="128" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-switch
+            v-model="form.status"
+            :active-value="1"
+            :inactive-value="0"
+            active-text="开启"
+            inactive-text="关闭"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="formDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="submitForm">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 商品管理弹窗 -->
+    <el-dialog
+      v-model="productDialogVisible"
+      :title="`商品管理 - ${currentShop?.name || ''}`"
+      width="820px"
+      :close-on-click-modal="false"
+    >
+      <div style="margin-bottom: 12px; text-align: right">
+        <el-button type="primary" size="small" @click="handleAddProduct">添加商品</el-button>
+      </div>
+      <el-table v-loading="productLoading" :data="productList" border stripe style="width: 100%">
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="cardTypeName" label="卡类" min-width="140" />
+        <el-table-column prop="cardType" label="卡类类型" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="cardTypeTagType(row.cardType)">
+              {{ cardTypeText(row.cardType) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="price" label="价格" width="110">
+          <template #default="{ row }">¥{{ formatPrice(row.price) }}</template>
+        </el-table-column>
+        <el-table-column prop="sortOrder" label="排序" width="80" />
+        <el-table-column prop="status" label="状态" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+              {{ row.status === 1 ? '上架' : '下架' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="160" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleEditProduct(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDeleteProduct(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <!-- 商品新建/编辑弹窗 -->
+    <el-dialog
+      v-model="productFormDialogVisible"
+      :title="productFormMode === 'create' ? '添加商品' : '编辑商品'"
+      width="520px"
+      :close-on-click-modal="false"
+      append-to-body
+    >
+      <el-form ref="productFormRef" :model="productForm" :rules="productRules" label-width="100px">
+        <el-form-item label="卡类" prop="cardTypeId">
+          <el-select v-model="productForm.cardTypeId" placeholder="选择卡类" style="width: 100%" filterable>
+            <el-option
+              v-for="ct in cardTypeList"
+              :key="ct.id"
+              :label="ct.name"
+              :value="ct.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="价格" prop="price">
+          <el-input-number v-model="productForm.price" :min="0" :precision="2" :step="1" />
+          <span style="margin-left: 8px; color: var(--jicek-text-secondary)">元</span>
+        </el-form-item>
+        <el-form-item label="排序值" prop="sortOrder">
+          <el-input-number v-model="productForm.sortOrder" :min="0" :max="9999" />
+          <span style="margin-left: 8px; color: var(--jicek-text-secondary)">越小越靠前</span>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-switch
+            v-model="productForm.status"
+            :active-value="1"
+            :inactive-value="0"
+            active-text="上架"
+            inactive-text="下架"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="productFormDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="productSubmitLoading" @click="submitProductForm">
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { shopApi, softwareApi, cardTypeApi } from '@/api'
+
+interface ShopRow {
+  id: number
+  tenantId: number
+  softwareId: number
+  name: string
+  path: string
+  description?: string
+  contact?: string
+  status: number
+  createTime: string
+  softwareName: string
+}
+
+interface ShopProduct {
+  id: number
+  shopId: number
+  cardTypeId: number
+  price: number
+  sortOrder: number
+  status: number
+  cardTypeName: string
+  cardType: number
+  duration?: string
+  count?: number
+  features?: string
+}
+
+interface SoftwareOption {
+  id: number
+  name: string
+}
+
+interface CardTypeOption {
+  id: number
+  name: string
+}
+
+const loading = ref(false)
+const tableData = ref<ShopRow[]>([])
+const total = ref(0)
+const softwareList = ref<SoftwareOption[]>([])
+const cardTypeList = ref<CardTypeOption[]>([])
+
+const filter = reactive({
+  current: 1,
+  size: 20,
+  softwareId: undefined as number | undefined,
+  name: '',
+  status: undefined as number | undefined
+})
+
+async function loadSoftwareList() {
+  try {
+    const res: any = await softwareApi.page({ current: 1, size: 100 })
+    softwareList.value = (res.records || []).map((s: any) => ({ id: s.id, name: s.name }))
+  } catch {
+    // 拦截器已提示
+  }
+}
+
+async function loadCardTypeList() {
+  try {
+    const res: any = await cardTypeApi.page({ current: 1, size: 200 })
+    cardTypeList.value = (res.records || []).map((c: any) => ({ id: c.id, name: c.name }))
+  } catch {
+    // 拦截器已提示
+  }
+}
+
+async function loadData() {
+  loading.value = true
+  try {
+    const res: any = await shopApi.page({
+      current: filter.current,
+      size: filter.size,
+      softwareId: filter.softwareId,
+      name: filter.name || undefined,
+      status: filter.status
+    })
+    tableData.value = res.records || []
+    total.value = res.total || 0
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleReset() {
+  filter.softwareId = undefined
+  filter.name = ''
+  filter.status = undefined
+  filter.current = 1
+  loadData()
+}
+
+onMounted(() => {
+  loadSoftwareList()
+  loadCardTypeList()
+  loadData()
+})
+
+/* ============ 辅助 ============ */
+function formatPrice(price: number): string {
+  if (price === null || price === undefined) return '0.00'
+  return Number(price).toFixed(2)
+}
+
+function cardTypeText(t: number): string {
+  const map: Record<number, string> = { 1: '时长卡', 2: '次数卡', 3: '功能卡', 4: '永久卡' }
+  return map[t] || '未知'
+}
+
+function cardTypeTagType(t: number): '' | 'success' | 'warning' | 'info' | 'danger' {
+  const map: Record<number, '' | 'success' | 'warning' | 'info' | 'danger'> = {
+    1: 'info',
+    2: 'success',
+    3: 'warning',
+    4: 'info'
+  }
+  return map[t] || ''
+}
+
+/* ============ 店铺新建/编辑 ============ */
+const formDialogVisible = ref(false)
+const formMode = ref<'create' | 'edit'>('create')
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+
+const form = reactive({
+  id: undefined as number | undefined,
+  name: '',
+  softwareId: undefined as number | undefined,
+  path: '',
+  description: '',
+  contact: '',
+  status: 1
+})
+
+const rules: FormRules = {
+  name: [
+    { required: true, message: '请输入店铺名称', trigger: 'blur' },
+    { max: 64, message: '名称最长 64 字符', trigger: 'blur' }
+  ],
+  softwareId: [{ required: true, message: '请选择软件', trigger: 'change' }],
+  path: [
+    { required: true, message: '请输入店铺路径', trigger: 'blur' },
+    {
+      pattern: /^[a-zA-Z0-9_-]{1,64}$/,
+      message: '路径仅支持字母、数字、下划线、横线，1-64 字符',
+      trigger: 'blur'
+    }
+  ],
+  contact: [{ max: 128, message: '联系方式最长 128 字符', trigger: 'blur' }]
+}
+
+function handleCreate() {
+  formMode.value = 'create'
+  form.id = undefined
+  form.name = ''
+  form.softwareId = undefined
+  form.path = ''
+  form.description = ''
+  form.contact = ''
+  form.status = 1
+  formDialogVisible.value = true
+}
+
+function handleEdit(row: ShopRow) {
+  formMode.value = 'edit'
+  form.id = row.id
+  form.name = row.name
+  form.softwareId = row.softwareId
+  form.path = row.path
+  form.description = row.description || ''
+  form.contact = row.contact || ''
+  form.status = row.status
+  formDialogVisible.value = true
+}
+
+async function submitForm() {
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    submitLoading.value = true
+    try {
+      const payload = {
+        name: form.name,
+        softwareId: form.softwareId!,
+        path: form.path,
+        description: form.description || undefined,
+        contact: form.contact || undefined,
+        status: form.status
+      }
+      if (formMode.value === 'create') {
+        await shopApi.create(payload)
+        ElMessage.success('店铺创建成功')
+      } else {
+        await shopApi.update({ id: form.id!, ...payload })
+        ElMessage.success('更新成功')
+      }
+      formDialogVisible.value = false
+      loadData()
+    } finally {
+      submitLoading.value = false
+    }
+  })
+}
+
+/* ============ 开启/关闭切换 ============ */
+async function handleToggle(row: ShopRow, action: 'open' | 'close') {
+  const text = action === 'open' ? '开启' : '关闭'
+  try {
+    await ElMessageBox.confirm(
+      `确定要${text}店铺「${row.name}」吗？`,
+      `${text}确认`,
+      { confirmButtonText: text, cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    if (action === 'open') {
+      await shopApi.open(row.id)
+    } else {
+      await shopApi.close(row.id)
+    }
+    ElMessage.success(`${text}成功`)
+    loadData()
+  } catch {
+    // 拦截器已提示
+  }
+}
+
+/* ============ 删除店铺 ============ */
+async function handleDelete(row: ShopRow) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除店铺「${row.name}」吗？删除后不可恢复，关联商品将一并清理。`,
+      '删除确认',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await shopApi.delete(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch {
+    // 拦截器已提示
+  }
+}
+
+/* ============ 商品管理 ============ */
+const productDialogVisible = ref(false)
+const productLoading = ref(false)
+const productList = ref<ShopProduct[]>([])
+const currentShop = ref<ShopRow | null>(null)
+
+async function handleManageProducts(row: ShopRow) {
+  currentShop.value = row
+  productDialogVisible.value = true
+  await loadProducts(row.id)
+}
+
+async function loadProducts(shopId: number) {
+  productLoading.value = true
+  try {
+    const res: any = await shopApi.listProducts(shopId)
+    productList.value = Array.isArray(res) ? res : []
+  } finally {
+    productLoading.value = false
+  }
+}
+
+/* ============ 商品新建/编辑 ============ */
+const productFormDialogVisible = ref(false)
+const productFormMode = ref<'create' | 'edit'>('create')
+const productSubmitLoading = ref(false)
+const productFormRef = ref<FormInstance>()
+
+const productForm = reactive({
+  id: undefined as number | undefined,
+  shopId: undefined as number | undefined,
+  cardTypeId: undefined as number | undefined,
+  price: 0,
+  sortOrder: 0,
+  status: 1
+})
+
+const productRules: FormRules = {
+  cardTypeId: [{ required: true, message: '请选择卡类', trigger: 'change' }],
+  price: [
+    { required: true, message: '请输入价格', trigger: 'blur' },
+    { type: 'number', min: 0, message: '价格不能为负', trigger: 'blur' }
+  ]
+}
+
+function handleAddProduct() {
+  if (!currentShop.value) return
+  productFormMode.value = 'create'
+  productForm.id = undefined
+  productForm.shopId = currentShop.value.id
+  productForm.cardTypeId = undefined
+  productForm.price = 0
+  productForm.sortOrder = 0
+  productForm.status = 1
+  productFormDialogVisible.value = true
+}
+
+function handleEditProduct(row: ShopProduct) {
+  productFormMode.value = 'edit'
+  productForm.id = row.id
+  productForm.shopId = row.shopId
+  productForm.cardTypeId = row.cardTypeId
+  productForm.price = row.price
+  productForm.sortOrder = row.sortOrder
+  productForm.status = row.status
+  productFormDialogVisible.value = true
+}
+
+async function submitProductForm() {
+  if (!productFormRef.value) return
+  await productFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    productSubmitLoading.value = true
+    try {
+      const payload = {
+        shopId: productForm.shopId!,
+        cardTypeId: productForm.cardTypeId!,
+        price: productForm.price,
+        sortOrder: productForm.sortOrder,
+        status: productForm.status
+      }
+      if (productFormMode.value === 'create') {
+        await shopApi.addProduct(payload)
+        ElMessage.success('商品添加成功')
+      } else {
+        await shopApi.updateProduct({ id: productForm.id!, ...payload })
+        ElMessage.success('商品更新成功')
+      }
+      productFormDialogVisible.value = false
+      if (currentShop.value) {
+        loadProducts(currentShop.value.id)
+      }
+    } finally {
+      productSubmitLoading.value = false
+    }
+  })
+}
+
+async function handleDeleteProduct(row: ShopProduct) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除商品「${row.cardTypeName}」吗？`,
+      '删除确认',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await shopApi.removeProduct(row.shopId, row.id)
+    ElMessage.success('商品删除成功')
+    if (currentShop.value) {
+      loadProducts(currentShop.value.id)
+    }
+  } catch {
+    // 拦截器已提示
+  }
+}
+</script>
+
+<style scoped lang="scss">
+.mono-text {
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 13px;
+}
+</style>
