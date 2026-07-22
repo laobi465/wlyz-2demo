@@ -174,4 +174,43 @@ public final class JicekConstants {
     public static final int STATS_HEATMAP_DAYS = 7;
     /** 热力图小时维度（24 小时） */
     public static final int STATS_HOURS_PER_DAY = 24;
-}
+
+    /* ============ 部署模块 ============ */
+    /** 部署触发来源：Webhook 自动 */
+    public static final String DEPLOY_SOURCE_WEBHOOK = "webhook";
+    /** 部署触发来源：手动 */
+    public static final String DEPLOY_SOURCE_MANUAL = "manual";
+
+    /** 部署状态：进行中 */
+    public static final int DEPLOY_STATUS_RUNNING = 0;
+    /** 部署状态：成功 */
+    public static final int DEPLOY_STATUS_SUCCESS = 1;
+    /** 部署状态：失败 */
+    public static final int DEPLOY_STATUS_FAILED = 2;
+    /** 部署状态：已回滚 */
+    public static final int DEPLOY_STATUS_ROLLED_BACK = 3;
+
+    /** 默认分支 */
+    public static final String DEPLOY_DEFAULT_BRANCH = "main";
+    /** 部署分布式锁 key（Redisson，防并发触发） */
+    public static final String REDIS_KEY_DEPLOY_LOCK = "jicek:deploy:lock";
+    /** 部署锁过期时间（秒，5 分钟，防止死锁） */
+    public static final int DEPLOY_LOCK_TIMEOUT_SECONDS = 300;
+    /** 健康检查超时（秒） */
+    public static final int DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS = 60;
+    /** 健康检查间隔（秒） */
+    public static final int DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS = 3;
+    /** 健康检查路径 */
+    public static final String DEPLOY_HEALTH_CHECK_PATH = "/actuator/health";
+    /** 错误信息截断长度（4KB） */
+    public static final int DEPLOY_ERROR_MSG_MAX_BYTES = 4 * 1024;
+    /** 备份保留数量 */
+    public static final int DEPLOY_BACKUP_KEEP_COUNT = 3;
+    /** Webhook 签名头（GitHub 标准） */
+    public static final String DEPLOY_WEBHOOK_SIGNATURE_HEADER = "X-Hub-Signature-256";
+    /** Webhook 事件类型头 */
+    public static final String DEPLOY_WEBHOOK_EVENT_HEADER = "X-GitHub-Event";
+    /** Webhook push 事件 */
+    public static final String DEPLOY_WEBHOOK_EVENT_PUSH = "push";
+    /** Webhook 签名前缀 */
+    public static final String DEPLOY_WEBHOOK_SIGNATURE_PREFIX = "sha256=";

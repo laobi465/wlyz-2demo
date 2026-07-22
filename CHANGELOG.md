@@ -1,5 +1,81 @@
 # 更新日志
 
+## [0.5.0] - 2026-07-22
+
+### [新增] GitHub 自动更新部署模块
+
+依据 docs/PROJECT.md 第 7 节自动更新系统设计 + docs/SPEC.md 第 7 节部署规范 + docs/UI-DESIGN.md 6.2 节「系统设置 > 部署管理」+ 铁律三件套（04 禁硬编码 / 06 防幻觉 / 13 严格遵循项目文档规范），完整实现自动部署全层（DDL + entity + mapper + 3 DTO + Service + Controller + 前端页面 + 路由/菜单 + 5 份文档同步）。Webhook 自动触发 + 手动触发双入口，备份→拉代码→构建→重启→健康检查→失败回滚完整编排。
+
+#### 数据库
+- `jicek_deploy_log` 表（11 字段）：id / tenant_id / trigger_source(webhook/manual) / commit_hash / branch / status(0-3) / duration_ms / operator_ip / error_message / create_time + 2 索引（status / source）
+- 审计铁律：仅 INSERT + SELECT（受控更新 status 0→1/2/3），禁 UPDATE/DELETE
+
+#### 后端 - 实体/Mapper/DTO
+- `DeployLog` 实体：@TableName("jicek_deploy_log")，字段对应表结构
+- `DeployLogMapper`：extends BaseMapper<DeployLog>，注释明确「审计表，禁 UPDATE/DELETE，仅 INSERT + SELECT」
+- `WebhookResultDTO`：含 `accepted(deployLogId, message)` / `ignored(message)` 静态工厂方法
+- `ManualDeployDTO`：tenantId @NotNull + branch（可选）
+- `DeployStatusDTO`：deploying / lastDeploy / enabled 三字段
+
+#### 后端 - DeployService（核心编排）
+- `handleWebhook(request)`：读取 body → HMAC-SHA256 验签 → 校验 push 事件 → 解析 commitHash/branch → 异步触发部署
+- `manualDeploy(tenantId, branch, ip)`：手动触发入口
+- `triggerDeploy(source, commitHash, branch, ip)`：Redisson 分布式锁 `jicek:deploy:lock`（5 分钟自动释放防死锁）→ 创建审计日志(status=0) → daemon 线程 `jicek-deploy-{logId}` 异步执行
+- `executeDeployFlow(branch)`：备份 → gitPull → buildBackend → buildFrontend → restart → healthCheck，任一失败均触发 rollback
+- `backupArtifacts(rootDir)`：备份 jar + dist 到 `.jicek-backup/{timestamp}/`，清理旧备份保留 3 个
+- `gitPull(rootDir, branch)`：`git fetch origin {branch}` + `git reset --hard origin/{branch}`（确保本地与服务端一致）
+- `buildBackend(rootDir)`：`mvn clean package -DskipTests -q`
+- `buildFrontend(rootDir)`：`npm ci --silent` + `npm run build --silent`
+- `restart()`：按 restartMode 分发（docker → `docker restart` / btpanel → 宝塔 API HTTP 调用 / none → 跳过）
+- `healthCheck()`：轮询 `/actuator/health`，超时 60s，间隔 3s
+- `rollback()`：还原最近备份 → restart → 标记 status=3
+- `verifySignature(body, signature)`：HMAC-SHA256 + `MessageDigest.isEqual` 常量时间比较（防时序攻击）
+- `execCommand(workDir, command...)`：ProcessBuilder 执行外部命令（禁 `Runtime.exec` 防注入）
+
+#### 后端 - DevDeployController
+- 路由前缀：`/api/dev/deploy`
+- 4 接口：POST /webhook（GitHub 调用，立即返回 accepted） / POST /manual（手动触发） / GET /status（当前状态 + 最近部署） / GET /log/page（部署审计日志分页）
+- `getClientIp()`：穿透 X-Forwarded-For/X-Real-IP 代理头
+- Webhook 立即返回，部署在 daemon 线程中异步执行，避免 GitHub Webhook 超时
+
+#### 后端 - 常量/错误码
+- `JicekConstants` 新增 18 个常量：DEPLOY_SOURCE_WEBHOOK/MANUAL + DEPLOY_STATUS_RUNNING/SUCCESS/FAILED/ROLLED_BACK + DEPLOY_DEFAULT_BRANCH + REDIS_KEY_DEPLOY_LOCK + DEPLOY_LOCK_TIMEOUT_SECONDS(300) + DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS(60) + DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS(3) + DEPLOY_HEALTH_CHECK_PATH + DEPLOY_ERROR_MSG_MAX_BYTES(4KB) + DEPLOY_BACKUP_KEEP_COUNT(3) + DEPLOY_WEBHOOK_SIGNATURE_HEADER/EVENT_HEADER/EVENT_PUSH/SIGNATURE_PREFIX
+- `ResultCode` 新增 10 个错误码（7001-7010）：DEPLOY_LOCK_FAIL / DEPLOY_WEBHOOK_SIGN_FAIL / DEPLOY_WEBHOOK_EVENT_INVALID / DEPLOY_SECRET_NOT_CONFIGURED / DEPLOY_GIT_PULL_FAIL / DEPLOY_BUILD_FAIL / DEPLOY_RESTART_FAIL / DEPLOY_HEALTH_CHECK_FAIL / DEPLOY_ROLLBACK_FAIL / DEPLOY_PARAM_INVALID
+
+#### 后端 - 配置
+- `JicekProperties` 新增 `Deploy` 内部类：webhookSecret / projectRoot / restartMode(docker/btpanel/none) / dockerContainer / btpanelApiUrl / btpanelApiKey / healthCheckBaseUrl / enabled(默认 false)
+- `application.yml` 新增 `jicek.deploy` 配置段，全部走环境变量注入：
+  - `GITHUB_WEBHOOK_SECRET`（Webhook 签名密钥）
+  - `JICEK_DEPLOY_ENABLED`（默认 false，显式开启）
+  - `JICEK_DEPLOY_PROJECT_ROOT`（项目根目录）
+  - `JICEK_DEPLOY_RESTART_MODE`（重启模式：docker/btpanel/none）
+  - `JICEK_DEPLOY_DOCKER_CONTAINER`（Docker 容器名）
+  - `BTPANEL_API_URL` / `BTPANEL_API_KEY`（宝塔 API）
+  - `JICEK_DEPLOY_HEALTH_URL`（健康检查 URL）
+
+#### 前端
+- **部署管理页**（`views/dev/deploy/index.vue`）：
+  - 3 状态卡片：部署功能启用态 / 当前状态（部署中 or 空闲） / 最近部署结果
+  - 手动触发部署按钮：ConfirmDialog 二次确认（提示服务可能短暂不可用）
+  - 部署审计日志表格：ID / 来源（Webhook or 手动）/ 状态 / 分支 / Commit（前 7 位等宽字体）/ 耗时 / 操作 IP / 时间 / 错误信息
+  - 筛选：status（0-3）/ triggerSource（webhook/manual）
+  - 状态码映射：0进行中(warning) / 1成功(success) / 2失败(danger) / 3已回滚(info)，使用 `el-tag` + `deployTagType()` / `deployStatusText()` 函数（不扩展 StatusTag 组件，保持其纯净性）
+  - 轮询机制：部署进行中时每 5s 刷新 status，完成后停止轮询并刷新日志（onBeforeUnmount 清理定时器）
+- API 定义：新增 `deployApi`（3 方法）：status / manual / logPage
+- 路由：新增 `/deploy`（name: Deploy, icon: Refresh）
+- 侧边栏：新增「系统设置」子菜单（icon: Setting）+ 「部署管理」项
+
+#### 技术决策
+- **部署功能默认关闭**：`jicek.deploy.enabled=false`，需显式开启，防止开发环境误触发
+- **Webhook 异步执行**：Webhook 立即返回 accepted，部署在 daemon 线程中异步执行，避免 GitHub Webhook 超时（GitHub 默认 10s 超时）
+- **HMAC-SHA256 + 常量时间比较**：`MessageDigest.isEqual` 防时序攻击，对标 HmacSignService 既有模式
+- **Redisson 分布式锁**：`jicek:deploy:lock` 防并发触发，5 分钟自动释放防死锁
+- **ProcessBuilder 替代 Runtime.exec**：参数化执行外部命令，防 shell 注入
+- **不扩展 StatusTag 支持 deploy 类型**：保持组件纯净（仅 order/card/withdraw/device 四类业务状态），部署状态用 el-tag 直接渲染
+- **审计表与业务表分离**：复用既有 jicek_update_log 设计思路，但新建独立 jicek_deploy_log 表（避免与原 update_log 字段含义冲突），仅 INSERT + SELECT + 受控更新 status
+- **备份保留策略**：DEPLOY_BACKUP_KEEP_COUNT(3) 常量控制，清理旧备份防磁盘膨胀
+- **错误信息截断**：errorMessage 截断至 DEPLOY_ERROR_MSG_MAX_BYTES(4KB)，防数据库字段溢出
+
 ## [0.4.3] - 2026-07-22
 
 ### [新增] 数据统计与可视化模块

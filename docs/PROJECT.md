@@ -82,12 +82,18 @@
 │       │   ├── dto     # VerifyTrendDTO / DeviceHeatmapDTO / IncomeStatsDTO / AntiCrackStatsDTO
 │       │   ├── service # StatsService（内存分桶聚合，基于现有业务表）
 │       │   └── controller # DevStatsController
+│       ├── deploy     # ★ 部署模块（v0.5.0 新增，GitHub Webhook 自动更新）
+│       │   ├── entity  # DeployLog
+│       │   ├── mapper  # DeployLogMapper（审计表禁 UPDATE/DELETE）
+│       │   ├── dto     # WebhookResultDTO / ManualDeployDTO / DeployStatusDTO
+│       │   ├── service # DeployService（备份→拉代码→构建→重启→健康检查→失败回滚，HMAC-SHA256 验签 + Redisson 锁 + 异步 daemon 线程）
+│       │   └── controller # DevDeployController
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计）
-    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理）
+    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置（10 个页面路由）
+    ├── src/router      # 路由配置（11 个页面路由）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     └── src/views/dev   # 开发者页面
         ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
@@ -100,7 +106,8 @@
         ├── agent       # 代理管理（v0.4.0）
         ├── withdraw    # 提现审核（v0.4.0）
         ├── cloud-func  # ★ 云函数管理（v0.4.2 新增，双 Tab：函数列表 + 执行日志）
-        └── stats       # ★ 数据统计（v0.4.3 新增，4 Tab：验证趋势/设备热力图/收入统计/防破解事件）
+        ├── stats       # ★ 数据统计（v0.4.3 新增，4 Tab：验证趋势/设备热力图/收入统计/防破解事件）
+        └── deploy      # ★ 部署管理（v0.5.0 新增，3 状态卡片 + 手动触发 + 审计日志 + 状态轮询）
 ```
 
 ### 2.3 数据流
@@ -473,6 +480,24 @@ CREATE TABLE jicek_cloud_function_log (
 ) COMMENT='云函数执行日志（审计，禁 UPDATE/DELETE）';
 ```
 
+### 5.13 部署审计日志表（v0.5.0 新增，审计表，仅 INSERT + SELECT + 受控更新 status，禁 UPDATE 其他字段 / DELETE）
+```sql
+CREATE TABLE jicek_deploy_log (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID',
+  trigger_source  VARCHAR(10)  NOT NULL COMMENT 'webhook / manual',
+  commit_hash     VARCHAR(64)  COMMENT '触发部署的 commit hash',
+  branch          VARCHAR(64)  NOT NULL DEFAULT 'main' COMMENT '部署分支',
+  status          TINYINT      NOT NULL DEFAULT 0 COMMENT '0进行中 1成功 2失败 3已回滚',
+  duration_ms     BIGINT       COMMENT '部署耗时毫秒',
+  operator_ip     VARCHAR(64)  COMMENT '触发者 IP（webhook 为 GitHub IP，manual 为操作者 IP）',
+  error_message   VARCHAR(4096) COMMENT '错误信息（截断至 4KB）',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_status (status, create_time),
+  KEY idx_source (trigger_source, create_time)
+) COMMENT='部署审计日志（审计，禁 UPDATE/DELETE）';
+```
+
 ## 6. 使用指南（待实现后补全）
 
 ### 6.1 部署要求
@@ -485,28 +510,48 @@ CREATE TABLE jicek_cloud_function_log (
 ### 6.2 快速启动
 （待代码完成后补全）
 
-## 7. 自动更新系统
+## 7. 自动更新系统（v0.5.0 已实现 ✅）
 
 ### 7.1 触发方式
-- GitHub Webhook 自动触发（push 到 main 分支）
-- 管理员后台手动触发
+- GitHub Webhook 自动触发（push 到 main 分支，HMAC-SHA256 验签）
+- 管理员后台手动触发（ConfirmDialog 二次确认）
 
 ### 7.2 更新流程
 ```
-备份 → git pull → 依赖安装 → DB迁移 → 清缓存 → 健康检查 → 重启 → 健康检查 → 完成
-                                                          ↓ 失败
-                                                       自动回滚
+备份(jar+dist → .jicek-backup/{ts}/) → git pull → mvn build → npm build → 重启 → 健康检查 → 标记成功
+                                                                        ↓ 失败
+                                                                    还原备份 → 重启 → 标记已回滚
 ```
 
-### 7.3 重启策略
-- Docker 模式：docker-compose restart 或 docker restart
-- 宝塔模式：通过宝塔 API 重启容器
+### 7.3 重启策略（restart-mode 配置）
+- `docker` 模式：`docker restart {container}`
+- `btpanel` 模式：HTTP 调用宝塔 API 重启容器
+- `none` 模式：跳过重启（仅构建）
 
 ### 7.4 安全
-- Webhook 签名验证（HMAC-SHA256 + Secret）
-- 更新分布式锁（防并发）
-- 完整审计日志
-- 失败自动回滚
+- Webhook 签名验证（HMAC-SHA256 + `MessageDigest.isEqual` 常量时间比较防时序攻击）
+- Redisson 分布式锁 `jicek:deploy:lock`（防并发，5 分钟自动释放防死锁）
+- 完整审计日志（`jicek_deploy_log` 表，仅 INSERT + SELECT + 受控更新 status）
+- 失败自动回滚（备份保留 3 个，`DEPLOY_BACKUP_KEEP_COUNT`）
+- 外部命令执行用 `ProcessBuilder` 参数化（禁 `Runtime.exec` 防 shell 注入）
+- Webhook 异步执行（daemon 线程 `jicek-deploy-{logId}`，立即返回 accepted 避免 GitHub 超时）
+
+### 7.5 健康检查
+- 轮询 `{health-check-base-url}/actuator/health`
+- 超时 60s（`DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS`），间隔 3s（`DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS`）
+- 超时未恢复触发回滚
+
+### 7.6 配置（application.yml + 环境变量）
+| 配置项 | 环境变量 | 默认值 | 说明 |
+|---|---|---|---|
+| `jicek.deploy.enabled` | `JICEK_DEPLOY_ENABLED` | false | 部署功能开关（默认关闭，防开发环境误触发） |
+| `jicek.deploy.webhook-secret` | `GITHUB_WEBHOOK_SECRET` | (空) | Webhook 签名密钥 |
+| `jicek.deploy.project-root` | `JICEK_DEPLOY_PROJECT_ROOT` | /workspace | 项目根目录 |
+| `jicek.deploy.restart-mode` | `JICEK_DEPLOY_RESTART_MODE` | none | 重启模式：docker/btpanel/none |
+| `jicek.deploy.docker-container` | `JICEK_DEPLOY_DOCKER_CONTAINER` | jicek-app | Docker 容器名 |
+| `jicek.deploy.btpanel-api-url` | `BTPANEL_API_URL` | (空) | 宝塔 API URL |
+| `jicek.deploy.btpanel-api-key` | `BTPANEL_API_KEY` | (空) | 宝塔 API Key |
+| `jicek.deploy.health-check-base-url` | `JICEK_DEPLOY_HEALTH_URL` | http://127.0.0.1:8080 | 健康检查 URL |
 
 ## 8. 目录结构
 （见 2.2 节）

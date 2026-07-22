@@ -69,6 +69,25 @@ jicek:
     # 锁过期时间（秒）
     lock-timeout: 30
 
+  # 部署配置（v0.6.0 GitHub 自动更新）
+  deploy:
+    # 是否启用部署功能（默认 false，需显式开启）
+    enabled: ${JICEK_DEPLOY_ENABLED:false}
+    # GitHub Webhook Secret（环境变量注入，禁硬编码，铁律 04）
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+    # 项目根目录（git 仓库根，用于 git pull / mvn build）
+    project-root: ${JICEK_DEPLOY_PROJECT_ROOT:/workspace}
+    # 重启模式：docker / btpanel / none
+    restart-mode: ${JICEK_DEPLOY_RESTART_MODE:none}
+    # Docker 容器名（restart-mode=docker 时用）
+    docker-container: ${JICEK_DEPLOY_DOCKER_CONTAINER:jicek-app}
+    # 宝塔 API URL（restart-mode=btpanel 时用）
+    btpanel-api-url: ${BTPANEL_API_URL:}
+    # 宝塔 API Key（restart-mode=btpanel 时用）
+    btpanel-api-key: ${BTPANEL_API_KEY:}
+    # 健康检查基础 URL
+    health-check-base-url: ${JICEK_DEPLOY_HEALTH_URL:http://127.0.0.1:8080}
+
 logging:
   level:
     com.jicek: debug

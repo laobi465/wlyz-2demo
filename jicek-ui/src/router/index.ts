@@ -77,6 +77,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Stats',
         component: () => import('@/views/dev/stats/index.vue'),
         meta: { title: '数据统计', icon: 'TrendCharts' }
+      },
+      {
+        path: 'deploy',
+        name: 'Deploy',
+        component: () => import('@/views/dev/deploy/index.vue'),
+        meta: { title: '部署管理', icon: 'Refresh' }
       }
     ]
   }

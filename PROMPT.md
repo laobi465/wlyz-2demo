@@ -24,10 +24,10 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.4.3 |
+| 当前版本 | v0.5.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
-| 部署 | Docker（普通 / 宝塔面板） |
+| 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
 | 支付 | 彩虹易支付 V1（独立部署，仅 V1，无 V2） |
 | 加密 | AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4） |
 | SDK | 8 语言（Java/Python/Node.js/Go/C#/C++/Lua/Shell + 易语言），统一契约见 sdk/README.md |
@@ -51,6 +51,7 @@
 | 代理模块 | `agent/` (entity/mapper/dto/service/controller) | ✅ v0.4.0 |
 | 云函数模块 | `cloudfunc/` (entity/mapper/dto/sandbox/service/controller) | ✅ v0.4.2 |
 | 数据统计模块 | `stats/` (dto/service/controller) | ✅ v0.4.3 |
+| 部署模块 | `deploy/` (entity/mapper/dto/service/controller) | ✅ v0.5.0 |
 
 ### 前端（jicek-ui）
 
@@ -73,6 +74,7 @@
 | 提现审核页 | `src/views/dev/withdraw/` | ✅ v0.4.0 |
 | 云函数管理页 | `src/views/dev/cloud-func/` | ✅ v0.4.2 |
 | 数据统计页 | `src/views/dev/stats/` | ✅ v0.4.3 |
+| 部署管理页 | `src/views/dev/deploy/` | ✅ v0.5.0 |
 
 ## 3. 待办任务（按优先级）
 
@@ -129,10 +131,14 @@
 
 ### P2（中，待开始）
 
-### P3（低）
-- GitHub 自动更新部署（Webhook + 自动重启 + 管理员弹窗）
-- 工单系统
-- 多语言国际化
+### P3（低，v0.5.0 已完成 ✅）
+- **GitHub 自动更新部署**：
+  - Webhook 自动触发（HMAC-SHA256 验签 + 常量时间比较）+ 管理员后台手动触发
+  - 部署编排：备份 → git pull → mvn build → npm build → 重启 → 健康检查 → 失败回滚
+  - Redisson 分布式锁 + daemon 线程异步执行 + 审计日志（仅 INSERT + SELECT）
+  - 重启模式分发：docker / btpanel / none
+  - 前端部署管理页（3 状态卡片 + 手动触发 + 日志表格 + 状态轮询）+ 路由 /deploy + 侧边栏「系统设置」子菜单
+- 待开始：工单系统 / 多语言国际化
 
 ## 4. 编码铁律（HARD，违反即重写）
 
@@ -292,6 +298,10 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 数据统计 | GET | `/api/dev/stats/device-heatmap` | 设备在线热力图（参数：tenantId/softwareId/days，默认 7） |
 | 数据统计 | GET | `/api/dev/stats/income` | 收入统计（参数：tenantId/softwareId/dimension=channel\|cardType\|agent/days） |
 | 数据统计 | GET | `/api/dev/stats/anti-crack` | 防破解事件（参数：tenantId/softwareId/days） |
+| 部署 | POST | `/api/dev/deploy/webhook` | GitHub Webhook 入口（HMAC-SHA256 验签，立即返回 accepted，异步执行） |
+| 部署 | POST | `/api/dev/deploy/manual` | 手动触发部署（body: tenantId/branch） |
+| 部署 | GET | `/api/dev/deploy/status` | 当前状态（enabled/deploying/lastDeploy） |
+| 部署 | GET | `/api/dev/deploy/log/page` | 部署审计日志分页（参数：tenantId/status/triggerSource/current/size） |
 
 ### 7.2 公开回调
 
@@ -315,6 +325,7 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | `jicek_withdraw` | `amount` + `fee` + `actual_amount` + `status`(0-4) | 提现申请（5 状态机） |
 | `jicek_cloud_function` | `code`(MEDIUMTEXT) + `timeout_ms` + `enabled` + `version` + `invoke_count` | 云函数（UNIQUE: tenant_id+software_id+name） |
 | `jicek_cloud_function_log` | `status`(0-6) + `invoke_source` + `caller_ip` + `duration_ms` | 云函数执行审计日志（仅 INSERT + SELECT） |
+| `jicek_deploy_log` | `trigger_source`(webhook/manual) + `status`(0-3) + `commit_hash` + `duration_ms` | 部署审计日志（仅 INSERT + SELECT + 受控更新 status，禁 UPDATE/DELETE） |
 
 完整 DDL 见 `jicek_init.sql`。
 
@@ -342,7 +353,7 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 ```typescript
 import {
   dashboardApi, cardKeyApi, cardTypeApi, payApi,
-  agentApi, withdrawApi, deviceApi, cloudFuncApi, statsApi
+  agentApi, withdrawApi, deviceApi, cloudFuncApi, statsApi, deployApi
 } from '@/api'
 
 // 统一响应：{ code, msg, data }
@@ -351,6 +362,9 @@ const data = await dashboardApi.summary(tenantId)
 
 // 分页参数映射：前端 current/size → 后端 page/size（device 接口用 page/size，card-type/cloud-func 用 current/size，差异在 API 层屏蔽）
 const deviceList = await deviceApi.page({ tenantId: 1, current: 1, size: 20 })
+
+// 部署状态轮询：deploying=true 时每 5s 刷新，完成后停止
+const status = await deployApi.status()
 ```
 
 ## 10. 开发流程
@@ -413,6 +427,16 @@ const deviceList = await deviceApi.page({ tenantId: 1, current: 1, size: 20 })
 23. **统计范围上限**：`STATS_MAX_RANGE_DAYS`(90) 天硬上限，超限抛 `STATS_RANGE_EXCEED`(6003)，防止全表扫描。热力图固定 `STATS_HEATMAP_DAYS`(7) 天避免维度爆炸。
 24. **统计代理维度预留**：PayOrder 当前无 `agent_id` 字段，`groupByAgent()` 返回空列表 + 前端 alert 提示「待扩展」，禁虚构字段（铁律 06）。待 PayOrder 扩展 agent_id 后再实现。
 25. **ECharts 生命周期**：多 Tab 页面每个 Tab 独立 chart 实例，`onBeforeUnmount` 必须 dispose 全部图表，Tab 切换后 `setTimeout(resize, 50)` 避免尺寸未初始化。`watch` 全局筛选（如 softwareId）触发 `reloadAll` 并行加载。
+26. **Webhook 验签常量时间比较**（v0.5.0）：`MessageDigest.isEqual` 比较期望签名与接收签名，禁用 `String.equals`（时序攻击风险）。签名格式 `sha256=<hex>`，前缀 `DEPLOY_WEBHOOK_SIGNATURE_PREFIX` 校验后再截取。
+27. **部署功能默认关闭**（v0.5.0）：`jicek.deploy.enabled=false` 是默认值，开发环境禁触发真实部署。生产开启需显式设置 `JICEK_DEPLOY_ENABLED=true`，否则 manual 接口返回 403/参数错误，webhook 接口直接忽略。
+28. **部署异步执行**（v0.5.0）：Webhook 立即返回 `accepted(deployLogId, message)`，部署在 daemon 线程 `jicek-deploy-{logId}` 中异步执行。GitHub Webhook 默认 10s 超时，同步执行会超时重试导致重复触发。前端通过 `deployApi.status()` 轮询（5s 间隔），完成后停止。
+29. **部署 Redisson 锁防并发**（v0.5.0）：`jicek:deploy:lock` Redisson 分布式锁，5 分钟自动释放防死锁。Webhook 与 manual 共用同一锁，获取失败抛 `DEPLOY_LOCK_FAIL`(7001)。
+30. **部署审计不可篡改**（v0.5.0）：`jicek_deploy_log` 表仅允许 INSERT + SELECT + 受控更新 status（0→1/2/3），禁 UPDATE 其他字段 / DELETE 任意记录。审计失败不阻断主流程，但记录 ERROR 日志。
+31. **部署外部命令执行**（v0.5.0）：禁用 `Runtime.exec`（参数拼接易 shell 注入），统一用 `ProcessBuilder` 参数化执行 git/mvn/npm/docker 命令。`redirectErrorStream(true)` 合并 stderr 到 stdout 便于日志收集。
+32. **部署重启模式分发**（v0.5.0）：`restart-mode` 三选一 — `docker`（`docker restart {container}`）/ `btpanel`（HTTP 调用宝塔 API）/ `none`（跳过重启，仅构建）。模式错误或容器名缺失抛 `DEPLOY_RESTART_FAIL`(7007)。
+33. **部署回滚机制**（v0.5.0）：备份 jar + dist 到 `.jicek-backup/{timestamp}/`，保留最近 3 个（`DEPLOY_BACKUP_KEEP_COUNT`）。任一步骤失败（git pull / build / restart / healthCheck）触发 `rollback()`：还原最近备份 → restart → 标记 status=3(ROLLED_BACK)。
+34. **部署健康检查**（v0.5.0）：轮询 `{health-check-base-url}/actuator/health`，超时 60s（`DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS`），间隔 3s（`DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS`）。超时未恢复抛 `DEPLOY_HEALTH_CHECK_FAIL`(7008) 并触发回滚。
+35. **部署 StatusTag 不扩展**（v0.5.0）：StatusTag 组件仅支持 order/card/withdraw/device 四类业务状态，部署状态（0-3）用 `el-tag` + `deployTagType()` / `deployStatusText()` 函数直接渲染，保持组件纯净性，避免为单一场景污染公共组件。
 
 ## 12. 验证清单
 

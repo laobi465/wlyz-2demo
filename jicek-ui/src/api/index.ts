@@ -173,3 +173,17 @@ export const statsApi = {
       days: params.days
     })
 }
+
+/* ============ 部署管理 ============ */
+export const deployApi = {
+  status: () => api.get('/api/dev/deploy/status'),
+  manual: (data: any) => api.post('/api/dev/deploy/manual', data),
+  logPage: (params: any) =>
+    api.get('/api/dev/deploy/log/page', {
+      tenantId: params.tenantId,
+      status: params.status,
+      triggerSource: params.triggerSource,
+      current: params.current || 1,
+      size: params.size || 20
+    })
+}

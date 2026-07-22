@@ -58,6 +58,7 @@ controller → service → mapper → db
 | 4001-4999 | 极策k 代理/分润/提现模块 |
 | 5001-5999 | 极策k 云函数模块 |
 | 6001-6999 | 极策k 数据统计模块 |
+| 7001-7999 | 极策k 部署模块 |
 
 #### 极策k 错误码明细
 
@@ -124,6 +125,20 @@ controller → service → mapper → db
 | 6002 | 统计维度非法（仅支持 channel/cardType/agent） |
 | 6003 | 统计时间范围超过最大限制（90 天） |
 | 6004 | 统计参数非法 |
+
+**部署模块 (7001-7999)**
+| 错误码 | 含义 |
+|---|---|
+| 7001 | 部署锁获取失败（已有部署进行中） |
+| 7002 | Webhook 签名验证失败 |
+| 7003 | Webhook 事件类型非法（仅 push） |
+| 7004 | Webhook Secret 未配置 |
+| 7005 | git pull 失败 |
+| 7006 | 构建（mvn/npm）失败 |
+| 7007 | 重启失败（容器名缺失 / 宝塔 API 错误） |
+| 7008 | 健康检查失败（超时未恢复） |
+| 7009 | 回滚失败 |
+| 7010 | 部署参数非法（功能未启用 / tenantId 缺失等） |
 
 ### 3.3 SDK 接口签名（HMAC-SHA256 + RSA 混合）
 ```
@@ -275,6 +290,45 @@ docs: 更新PROJECT.md数据库表设计
 | 输入超限 | CF_INPUT_TOO_LARGE(5006) | 5 |
 | 输出超限 | CF_OUTPUT_TOO_LARGE(5007) | 6 |
 
+### 6.9 部署安全（重点，v0.5.0）
+
+GitHub Webhook 自动更新是高风险操作（执行 git pull / 构建 / 重启），安全设计必须严格：
+
+**第一层：Webhook 签名验证**
+- GitHub 发送 `X-Hub-Signature-256: sha256=<hex>` 头
+- 服务端用 `GITHUB_WEBHOOK_SECRET` 对 body 做 HMAC-SHA256，hex 编码后与 header 比较
+- 比较必须用 `MessageDigest.isEqual`（常量时间），禁用 `String.equals`（时序攻击风险）
+- 签名前缀 `sha256=` 校验通过后再截取 hex 部分（`DEPLOY_WEBHOOK_SIGNATURE_PREFIX`）
+- Secret 未配置直接抛 `DEPLOY_SECRET_NOT_CONFIGURED`(7004)，禁空 Secret 通过
+
+**第二层：分布式锁防并发**
+- Redisson 锁 `jicek:deploy:lock`，5 分钟自动释放防死锁（`DEPLOY_LOCK_TIMEOUT_SECONDS`）
+- Webhook 与 manual 共用同一锁，获取失败抛 `DEPLOY_LOCK_FAIL`(7001)
+- 锁防止 GitHub 重试（10s 超时）+ 手动触发并发执行
+
+**第三层：异步执行 + 审计**
+- Webhook 立即返回 `accepted(deployLogId, message)`，部署在 daemon 线程 `jicek-deploy-{logId}` 异步执行
+- daemon 线程防 JVM 退出受阻
+- `jicek_deploy_log` 表仅 INSERT + SELECT + 受控更新 status（0→1/2/3），禁 UPDATE 其他字段 / DELETE 任意记录
+- 审计失败不阻断主流程，但记录 ERROR 日志
+
+**第四层：备份 + 回滚**
+- 部署前备份 jar + dist 到 `.jicek-backup/{timestamp}/`
+- 保留最近 `DEPLOY_BACKUP_KEEP_COUNT`(3) 个备份，清理旧备份防磁盘膨胀
+- 任一步骤失败（git pull / build / restart / healthCheck）触发 `rollback()`：还原最近备份 → restart → 标记 status=3(ROLLED_BACK)
+
+**第五层：外部命令安全执行**
+- 禁用 `Runtime.exec`（参数拼接易 shell 注入）
+- 统一用 `ProcessBuilder` 参数化执行 git / mvn / npm / docker 命令
+- `redirectErrorStream(true)` 合并 stderr 到 stdout 便于日志收集
+- 工作目录显式设置（`directory(rootDir)`）
+
+**配置铁律**
+- `jicek.deploy.enabled` 默认 false（防开发环境误触发），生产开启需显式 `JICEK_DEPLOY_ENABLED=true`
+- 所有敏感配置（Webhook Secret / 宝塔 API Key）必须走环境变量注入（铁律 04）
+- 错误信息截断至 `DEPLOY_ERROR_MSG_MAX_BYTES`(4KB)，防数据库字段溢出
+- 健康检查 URL + 项目根目录 + 重启模式 + 容器名全部可配置，禁硬编码
+
 ## 7. 部署规范
 
 ### 7.1 环境变量（不入 git）
@@ -302,6 +356,13 @@ GITHUB_WEBHOOK_SECRET=
 # 宝塔面板（可选）
 BTPANEL_API_URL=
 BTPANEL_API_KEY=
+
+# 部署配置（v0.5.0 新增）
+JICEK_DEPLOY_ENABLED=false         # 部署功能开关（默认 false，生产开启）
+JICEK_DEPLOY_PROJECT_ROOT=/workspace  # 项目根目录
+JICEK_DEPLOY_RESTART_MODE=none     # 重启模式：docker/btpanel/none
+JICEK_DEPLOY_DOCKER_CONTAINER=jicek-app  # Docker 容器名
+JICEK_DEPLOY_HEALTH_URL=http://127.0.0.1:8080  # 健康检查 URL
 ```
 
 ### 7.2 Docker 部署

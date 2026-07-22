@@ -338,6 +338,25 @@ CREATE TABLE jicek_cloud_function_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云函数执行日志';
 
 -- ============================================================
+-- 10. 部署审计日志表（v0.6.0 新增，审计表，仅 INSERT + SELECT，禁 UPDATE/DELETE）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_deploy_log;
+CREATE TABLE jicek_deploy_log (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  trigger_source  VARCHAR(10)  NOT NULL COMMENT 'webhook(自动) / manual(手动)',
+  commit_hash     VARCHAR(40)  COMMENT 'Git commit SHA',
+  branch          VARCHAR(50)  DEFAULT 'main',
+  status          TINYINT      NOT NULL COMMENT '0进行中 1成功 2失败 3已回滚',
+  duration_ms     INT          COMMENT '总耗时毫秒',
+  operator_ip     VARCHAR(64),
+  error_message   VARCHAR(4096) COMMENT '错误信息（截断至 4KB）',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_status (tenant_id, status, create_time),
+  KEY idx_source (tenant_id, trigger_source, create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='部署审计日志（禁 UPDATE/DELETE）';
+
+-- ============================================================
 -- 完成
 -- ============================================================
 SELECT 'jicek database initialized successfully' AS message;

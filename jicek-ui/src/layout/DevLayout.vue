@@ -64,6 +64,13 @@
           </template>
           <el-menu-item index="/stats">数据统计</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu index="system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统设置</span>
+          </template>
+          <el-menu-item index="/deploy">部署管理</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </aside>
 

@@ -152,10 +152,25 @@
 
 ## P3（低）
 
-### [待开始] GitHub 自动更新部署
+### [已完成] GitHub 自动更新部署 ✅
 - 优先级：P3
-- 当前版本：v0.1.0
-- 状态：方案已设计，待实现
+- 完成版本：v0.5.0
+- 完成项：
+  - [x] GitHub Webhook 自动触发（HMAC-SHA256 签名验证 + 常量时间比较防时序攻击）
+  - [x] 管理员后台手动触发（二次确认 + ConfirmDialog）
+  - [x] 部署编排：备份 → git pull → mvn build → npm build → 重启 → 健康检查 → 失败自动回滚
+  - [x] Redisson 分布式锁防并发（jicek:deploy:lock，5 分钟自动释放）
+  - [x] 重启模式分发：docker（docker restart）/ btpanel（宝塔 API HTTP 调用）/ none（跳过）
+  - [x] 健康检查轮询（/actuator/health，超时 60s，间隔 3s）
+  - [x] 部署审计日志（jicek_deploy_log 表，仅 INSERT + SELECT + 受控更新 status，禁 UPDATE/DELETE）
+  - [x] Webhook 异步执行（daemon 线程 jicek-deploy-{logId}，避免 GitHub 超时）
+  - [x] 前端部署管理页（3 状态卡片 + 手动触发 + 日志表格 + 状态轮询）+ 路由 /deploy + 侧边栏「系统设置」子菜单
+  - [x] 5 份核心文档同步（CHANGELOG/TODO/PROMPT/PROJECT/SPEC）
+- 备注：
+  - 部署功能默认关闭（jicek.deploy.enabled=false），需显式开启
+  - Webhook Secret / 项目根目录 / 重启模式等全部走环境变量注入（铁律 04）
+  - 错误码范围 7001-7010，新增 18 个部署常量
+  - 后续可扩展：DB 迁移步骤（当前仅代码构建）、Slack/钉钉通知、灰度发布
 
 ### [待开始] 工单系统
 - 优先级：P3
