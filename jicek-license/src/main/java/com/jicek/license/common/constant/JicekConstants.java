@@ -251,4 +251,90 @@ public final class JicekConstants {
     public static final int TICKET_TITLE_MAX_LENGTH = 128;
     /** 工单内容最大长度 */
     public static final int TICKET_CONTENT_MAX_LENGTH = 4096;
+
+    /* ============ 鉴权模块（v0.7.0） ============ */
+    /** 角色：开发者（租户） */
+    public static final int ROLE_DEV = 1;
+    /** 角色：管理员 */
+    public static final int ROLE_ADMIN = 2;
+
+    /** 用户状态：封禁 */
+    public static final int USER_STATUS_BANNED = 0;
+    /** 用户状态：正常 */
+    public static final int USER_STATUS_NORMAL = 1;
+
+    /** 管理员角色：超级管理员 */
+    public static final int ADMIN_ROLE_SUPER = 1;
+    /** 管理员角色：运营 */
+    public static final int ADMIN_ROLE_OPS = 2;
+
+    /** JWT claims key：用户类型（dev/admin） */
+    public static final String JWT_CLAIM_ROLE = "role";
+    /** JWT claims key：租户ID（仅开发者有） */
+    public static final String JWT_CLAIM_TENANT_ID = "tenantId";
+    /** JWT claims key：用户ID */
+    public static final String JWT_CLAIM_USER_ID = "uid";
+    /** JWT claims key：用户名 */
+    public static final String JWT_CLAIM_USERNAME = "username";
+
+    /** JWT 默认有效期（小时），可通过配置覆盖 */
+    public static final int JWT_DEFAULT_EXPIRE_HOURS = 24;
+    /** BCrypt cost */
+    public static final int BCRYPT_COST = 10;
+    /** JWT Authorization 头前缀 */
+    public static final String JWT_HEADER_PREFIX = "Bearer ";
+    /** Authorization 头名 */
+    public static final String AUTH_HEADER = "Authorization";
+
+    /* ============ 软件模块（v0.8.0） ============ */
+    /** appKey 长度（32 字符，大写字母+数字） */
+    public static final int SOFTWARE_APP_KEY_LENGTH = 32;
+    /** signSecret 长度（32 字节，Base64 编码后 44 字符） */
+    public static final int SOFTWARE_SIGN_SECRET_BYTES = 32;
+    /** RSA 密钥长度（2048 位） */
+    public static final int SOFTWARE_RSA_KEY_SIZE = 2048;
+    /** 软件状态：禁用 */
+    public static final int SOFTWARE_DISABLED = 0;
+    /** 软件状态：启用 */
+    public static final int SOFTWARE_ENABLED = 1;
+    /** 心跳间隔下限（秒） */
+    public static final int SOFTWARE_HEARTBEAT_MIN = 5;
+    /** 心跳间隔上限（秒） */
+    public static final int SOFTWARE_HEARTBEAT_MAX = 300;
+    /** 最大并发会话下限 */
+    public static final int SOFTWARE_MAX_CONCURRENT_MIN = 1;
+    /** signSecret 脱敏展示前缀长度 */
+    public static final int SOFTWARE_SECRET_MASK_PREFIX = 4;
+
+    /* ============ 公告模块（v0.10.0） ============ */
+    /** 公告类型：通知条 */
+    public static final int ANNOUNCEMENT_TYPE_NOTICE = 1;
+    /** 公告类型：弹窗 */
+    public static final int ANNOUNCEMENT_TYPE_POPUP = 2;
+    /** 公告类型：置顶横幅 */
+    public static final int ANNOUNCEMENT_TYPE_BANNER = 3;
+    /** 公告状态：草稿 */
+    public static final int ANNOUNCEMENT_STATUS_DRAFT = 0;
+    /** 公告状态：已发布 */
+    public static final int ANNOUNCEMENT_STATUS_PUBLISHED = 1;
+    /** 公告状态：已下线 */
+    public static final int ANNOUNCEMENT_STATUS_OFFLINE = 2;
+    /** SDK 单次拉取公告最大条数 */
+    public static final int ANNOUNCEMENT_SDK_FETCH_LIMIT = 20;
+
+    /* ============ 更新包模块（v0.11.0） ============ */
+    /** 更新包通道：稳定版 */
+    public static final int UPDATE_CHANNEL_STABLE = 1;
+    /** 更新包通道：内测版 */
+    public static final int UPDATE_CHANNEL_BETA = 2;
+    /** 更新包状态：草稿 */
+    public static final int UPDATE_STATUS_DRAFT = 0;
+    /** 更新包状态：已发布 */
+    public static final int UPDATE_STATUS_PUBLISHED = 1;
+    /** 更新包状态：已下线 */
+    public static final int UPDATE_STATUS_OFFLINE = 2;
+    /** 更新包最大文件大小（500MB） */
+    public static final long UPDATE_MAX_FILE_SIZE = 500L * 1024 * 1024;
+    /** 支持的文件类型 */
+    public static final String[] UPDATE_FILE_TYPES = {"exe", "sh", "win", "lua", "zip", "7z"};
 }

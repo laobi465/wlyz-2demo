@@ -98,7 +98,7 @@
 - 优先级：P1
 - 预计版本：v0.5.0（v0.4.1 已完成卡类/设备/Dashboard 图表）
 - 子项：
-  - [ ] 软件管理页面（待后端 DevSoftwareController 实现）
+  - [x] 软件管理页面 ✅ v0.8.0（CRUD + 密钥展示弹窗 + 轮换二次确认 + 关联校验）
   - [x] 卡类管理页面 ✅ v0.4.1（CRUD + 4 种卡类型联动表单 + Decimal.js 金额格式化）
   - [ ] 用户管理页面（待后端 DevUserController 实现）
   - [x] 设备管理页面 ✅ v0.4.1（分页 + 详情弹窗 + 封禁/解封 + 指纹脱敏 + 状态组合）
@@ -131,6 +131,44 @@
   - [x] 云函数 CRUD + 测试执行 + 执行日志查询（后端 DevCloudFunctionController + 前端双 Tab 页面）
   - [x] 前端路由 /cloud-func + 侧边栏「云端数据」子菜单集成
 - 备注：抗破解终极方案；SDK 调用走 SdkCloudFunctionController 待后续版本实现（复用同一 Service）；资源配额仅内存/IO，CPU 配额未实现（LuaJ 纯 Java 难以精确限制 CPU）
+
+### [已完成] 远程公告 ✅
+- 优先级：P1
+- 完成版本：v0.10.0
+- 完成项：
+  - [x] 公告表 jicek_announcement（15 字段 + 2 索引）
+  - [x] 开发者后台 CRUD + 发布/下线状态机（草稿→已发布→已下线，不可逆）
+  - [x] SDK 拉取已发布公告（GET /api/sdk/announcement，SdkAuthFilter 鉴权）
+  - [x] 客户端版本范围匹配（minVersion/maxVersion，语义化版本比较）
+  - [x] 排序：pinned DESC + sortOrder DESC + publishTime DESC
+  - [x] viewCount 拉取次数累加
+  - [x] 前端公告管理页 + 路由 + 菜单
+
+### [已完成] 自动更新模块 ✅
+- 优先级：P1
+- 完成版本：v0.11.0
+- 完成项：
+  - [x] 更新包表 jicek_update_package（19 字段 + 2 索引）
+  - [x] 文件上传（multipart + SHA-256 + 路径穿越防御 + UUID 文件名）
+  - [x] 开发者后台 CRUD + 发布/下线状态机（草稿→已发布→已下线，不可逆）
+  - [x] 多格式支持（exe/sh/win/lua/zip/7z）
+  - [x] 双通道（1稳定版 2内测版，SDK 按通道拉取）
+  - [x] 强制更新（forceUpdate=1 旧版拒绝运行）
+  - [x] 客户端版本范围匹配（minClientVersion/maxClientVersion）
+  - [x] SDK 检查更新（GET /api/sdk/update/check，返回 hasUpdate/forceUpdate/downloadUrl/sha256）
+  - [x] Storage 配置类（storage.root / downloadBaseUrl / updateSubDir，环境变量注入）
+  - [x] 前端更新包管理页（上传进度条 + CRUD + 发布/下线 + 查看 + 删除）+ 路由 + 菜单
+
+### [已完成] SDK 代码生成器 + 对接文档 ✅
+- 优先级：P2
+- 完成版本：v0.12.0
+- 完成项：
+  - [x] 9 语言代码模板生成器（Python/C#/C++/Go/Java/Node.js/Lua/Shell/易语言）
+  - [x] 代码生成弹窗（语言 Tab + 复制 + 自动填入 appKey/RSA公钥）
+  - [x] 软件管理页新增「接入代码」按钮
+  - [x] 对接文档页（接入流程 + 凭证 + 请求头 + 签名算法 + RSA + API + 错误码 + SDK 索引）
+  - [x] 路由 /integration-doc + 系统设置子菜单
+- 备注：signSecret 脱敏无法自动填入，模板留占位符；覆盖 card/login + heartbeat + announcement + update/check 四接口
 
 ### [已完成] UI 设计规范 ✅
 - 优先级：P2
@@ -187,7 +225,24 @@
   - 管理员端 Controller（处理开发者提交的工单，replierType=3）待管理员后台框架就绪后补全
   - 后续可扩展：附件上传（需 MinIO）、优先级、SLA 超时提醒
 
+### [已完成] 鉴权框架 ✅
+- 优先级：P1
+- 完成版本：v0.7.0
+- 完成项：
+  - [x] JWT 鉴权（JJWT 0.12.6 替代原 SPEC.md 描述的 Sa-Token，HMAC-SHA256 签名）
+  - [x] 双角色体系：开发者 ROLE_DEV=1（带 tenantId）+ 管理员 ROLE_ADMIN=2（无 tenantId）
+  - [x] BCrypt 密码哈希（cost=10）+ 登录失败统一返回防枚举
+  - [x] @AuthRequired 注解 + JwtAuthInterceptor 渐进式鉴权（未标注放行，兼容现有裸传参数接口）
+  - [x] AuthContext ThreadLocal 持有当前用户身份，afterCompletion 强制清理防串号
+  - [x] 4 接口：dev/login + admin/login + me + change-password
+  - [x] 前端登录页 + router 守卫 + 拦截器自动注入 token + DevLayout 退出/改密
+  - [x] 11 个鉴权错误码 9001-9011 + 5 份核心文档同步
+- 备注：
+  - 密钥通过环境变量 JICEK_JWT_SECRET 注入（至少 32 字节），未配置时 warn 但不阻止启动
+  - 渐进式鉴权设计：现有接口未加 @AuthRequired 仍可访问，新接口从 AuthContext 取身份
+  - 后续可扩展：管理员端 Controller（处理开发者工单 + 租户管理）、@AuthRequired(role=2) 限制管理员接口、代理/用户角色
+
 ### [待开始] 多语言国际化
 - 优先级：P3
-- 预计版本：v0.7.0
+- 预计版本：v0.8.0
 - 备注：先支持中文，后续扩展英文

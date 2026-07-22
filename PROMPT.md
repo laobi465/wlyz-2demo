@@ -53,6 +53,11 @@
 | 数据统计模块 | `stats/` (dto/service/controller) | ✅ v0.4.3 |
 | 部署模块 | `deploy/` (entity/mapper/dto/service/controller) | ✅ v0.5.0 |
 | 工单模块 | `ticket/` (entity/mapper/dto/service/controller) | ✅ v0.6.1（单向：开发者→管理员） |
+| 鉴权模块 | `auth/` (entity/mapper/dto/service/interceptor/controller) | ✅ v0.7.0（JWT + @AuthRequired 渐进式） |
+| 软件模块 | `software/` (entity/mapper/dto/service/controller) | ✅ v0.8.0（CRUD + 密钥生成/轮换 + 关联校验 + @AuthRequired） |
+| SDK 模块 | `sdk/` (auth/dto/service/controller) | ✅ v0.9.0（SdkAuthFilter 签名鉴权 + 卡密登录） |
+| 公告模块 | `announcement/` (entity/mapper/dto/service/controller) | ✅ v0.10.0（CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配） |
+| 更新包模块 | `update/` (entity/mapper/dto/service/controller) | ✅ v0.11.0（文件上传 + CRUD + 发布/下线 + SDK 检查更新 + 多格式 exe/sh/win/lua/zip/7z） |
 
 ### 前端（jicek-ui）
 
@@ -77,6 +82,15 @@
 | 数据统计页 | `src/views/dev/stats/` | ✅ v0.4.3 |
 | 部署管理页 | `src/views/dev/deploy/` | ✅ v0.5.0 |
 | 工单管理页 | `src/views/dev/ticket/` | ✅ v0.6.0 |
+| 登录页 | `src/views/dev/login/` | ✅ v0.7.0（租户ID+用户名+密码 + 表单校验） |
+| 路由守卫 | `src/router/index.ts` beforeEach | ✅ v0.7.0（无 token 跳 /login） |
+| 拦截器鉴权 | `src/api/request.ts` | ✅ v0.7.0（自动注入 Bearer + 401/9001/9002/9003 跳登录） |
+| 布局鉴权 | `src/layout/DevLayout.vue` | ✅ v0.7.0（用户昵称头像 + 退出 + 修改密码弹窗） |
+| 软件管理页 | `src/views/dev/software/` | ✅ v0.8.0（CRUD + 密钥展示弹窗 + 轮换二次确认） |
+| 公告管理页 | `src/views/dev/announcement/` | ✅ v0.10.0（CRUD + 发布/下线状态机 + 软件下拉筛选 + 只读查看） |
+| 更新包管理页 | `src/views/dev/update-package/` | ✅ v0.11.0（文件上传进度 + CRUD + 发布/下线 + SHA-256 展示 + 强制更新开关） |
+| SDK 代码生成弹窗 | `src/views/dev/software/SdkCodeGenDialog.vue` | ✅ v0.12.0（9 语言一键生成 + 自动填入 appKey/RSA公钥 + 复制） |
+| 对接文档页 | `src/views/dev/integration-doc/` | ✅ v0.12.0（接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引） |
 
 ## 3. 待办任务（按优先级）
 
@@ -311,7 +325,46 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 工单 | GET | `/api/dev/ticket/submit/{tenantId}/{ticketId}` | Dev 工单详情（含回复列表） |
 | 工单 | POST | `/api/dev/ticket/submit/reply` | Dev 补充回复（replierType=2，状态→处理中） |
 
-### 7.2 公开回调
+### 7.2 鉴权 API（`/api/auth/*`，全部免鉴权除了 /me 与 /change-password）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/auth/dev/login` | 开发者登录（body: tenantId/username/password，返回 token/userId/role/tenantId/username/nickname） |
+| POST | `/api/auth/admin/login` | 管理员登录（body: username/password，无 tenantId） |
+| GET | `/api/auth/me` | 获取当前登录用户信息（@AuthRequired） |
+| POST | `/api/auth/change-password` | 修改密码（@AuthRequired，body: oldPassword/newPassword，新密码 ≥ 8 位） |
+
+### 7.2.1 软件 API（`/api/dev/software/*`，全部 @AuthRequired(role=ROLE_DEV)，tenantId 从 AuthContext 获取）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/dev/software` | 创建软件（自动生成 appKey/signSecret/RSA，返回明文仅此一次） |
+| PUT | `/api/dev/software` | 更新软件（仅非敏感字段：name/version/minVersion/heartbeatInterval/maxConcurrent/enabled） |
+| GET | `/api/dev/software/page` | 分页查询（params: current/size/name/enabled） |
+| GET | `/api/dev/software/{id}` | 详情（signSecret 脱敏，无 rsaPrivateKey） |
+| DELETE | `/api/dev/software/{id}` | 删除（关联卡类/设备/云函数时拒绝） |
+| POST | `/api/dev/software/{id}/regenerate-sign-secret` | 轮换签名密钥（返回新明文仅此一次） |
+| POST | `/api/dev/software/{id}/regenerate-rsa-key` | 轮换 RSA 密钥对（返回新公钥+私钥明文仅此一次） |
+
+### 7.2.2 SDK API（`/api/sdk/**`，全部由 SdkAuthFilter 签名鉴权，无公开接口）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/sdk/card/login` | 卡密登录（X-Card-Cipher 头传 RSA 加密卡密，返回卡类信息+软件配置） |
+| GET | `/api/sdk/announcement` | 拉取已发布公告（params: clientVersion 可选，返回最多 20 条） |
+| GET | `/api/sdk/update/check` | 检查更新（params: clientVersion 必填 + channel 可选，返回 hasUpdate/forceUpdate/downloadUrl/sha256） |
+| POST | `/api/sdk/device/bind` | 设备绑定（旧接口，过渡期仍需 X-Sign-Secret 头） |
+| POST | `/api/sdk/device/unbind` | 设备换机（旧接口） |
+| POST | `/api/sdk/device/heartbeat` | 设备心跳（旧接口，过渡期仍需 X-Sign-Secret 头） |
+
+SDK 请求头规范（所有 `/api/sdk/**` 必填）：
+- `X-App-Key`：软件 AppKey（开发者后台创建软件时生成）
+- `X-Timestamp`：13 位毫秒时间戳（±300s 容差）
+- `X-Nonce`：UUID v4（5 分钟内不可重复，Redis 原子防重放）
+- `X-Signature`：HMAC-SHA256 签名 Base64（签名原文 = METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256）
+- `X-Card-Cipher`：RSA-2048-OAEP 加密的卡密密文（仅卡密接口）
+
+### 7.3 公开回调
 
 | 方法 | 路径 | 返回 |
 |---|---|---|
@@ -450,6 +503,25 @@ const status = await deployApi.status()
 36. **工单类型字段由 Controller 设定**（v0.6.1 单向）：creatorType / target / replierType 三个字段由 Controller 固定设定，前端不传这些字段（防越权提单）。Dev 端固定 target=2管理员 + creatorType=2开发者 + replierType=2开发者。
 37. **工单状态机受控流转**（v0.6.1 单向）：0待处理→1处理中→2已回复→3已关闭。开发者补充回复→状态变「处理中」（提醒管理员有新信息），管理员回复→状态变「已回复」（待管理员 Controller 实现）。任意状态可关闭，已关闭禁回复（抛 TICKET_ALREADY_CLOSED 8003）。
 38. **工单回复表审计不可变**（v0.6.1）：`jicek_ticket_reply` 仅 INSERT + SELECT，禁 UPDATE/DELETE。工单主表 `jicek_ticket` 仅受控 UPDATE（status/handlerId/handlerTime/closeTime/updateTime），其余字段不可变。
+39. **JWT 密钥环境变量注入**（v0.7.0）：`JICEK_JWT_SECRET` 至少 32 字节，通过 `JicekProperties.Auth.jwtSecret` 注入。`JwtService.init()` 检测到密钥 < 32 字节时 warn 但**不抛异常**（允许应用启动），运行期调用鉴权接口才抛 `AUTH_TOKEN_INVALID`(9002)。HMAC-SHA256 签名，禁用弱算法 HS256+短密钥组合。
+40. **ThreadLocal 必须清理**（v0.7.0）：`JwtAuthInterceptor.afterCompletion` **必须**调用 `AuthContext.clear()`，否则线程池复用导致用户身份串号（A 用户请求残留 B 用户身份）。无论业务是否抛异常都需执行，故用 afterCompletion 而非 postHandle。
+41. **渐进式鉴权**（v0.7.0）：未标注 `@AuthRequired` 的接口**放行**（兼容现有裸传 tenantId 参数的接口），新接口可从 `AuthContext.current()` 获取身份。注解查找规则：方法级优先，类级兜底。`@AuthRequired(role=2)` 限制仅管理员可访问（role 默认 0 = 任意已登录用户）。
+42. **登录失败防枚举**（v0.7.0）：用户不存在和密码错误统一返回 `AUTH_PASSWORD_ERROR`(9005)，不区分「用户不存在」与「密码错误」，避免攻击者通过差异响应枚举有效用户名。
+43. **JWT claims 不可信**（v0.7.0）：JWT 仅证明「未被篡改」不证明「用户仍有效」。`/api/auth/me` 与所有 @AuthRequired 接口如需保证用户当前状态，应从数据库查询 `jicek_dev_user`/`jicek_admin_user` 校验 status=1（AuthService.currentUser 已实现，新接口从 AuthContext 取身份后视需要二次查库）。
+44. **密钥未配置的容错**（v0.7.0）：生产环境必须配置 `JICEK_JWT_SECRET`；开发环境若未配置，应用可启动但所有鉴权接口返回 9002，便于本地开发快速发现问题而不阻塞启动。
+45. **前端 token 失效跳转防重复**（v0.7.0）：`clearAuthAndRedirect()` 检查 `window.location.pathname` 是否已为 `/login`，避免在登录页因 401 响应触发死循环跳转。localStorage key：`jicek_token`（token）+ `jicek_user`（JSON 序列化的用户信息）。
+46. **软件密钥明文仅此一次**（v0.8.0）：`SoftwareCreateResultDTO` 含 signSecret + rsaPrivateKey 明文，**仅在创建/轮换接口返回**。查询接口（`get`/`page`）返回 `SoftwareDetailDTO`，signSecret 脱敏（前 4 字符 + ****），rsaPrivateKey 永不返回。前端密钥展示弹窗 `show-close=false` + `close-on-click-modal=false`，强制用户点击「我已保存」。
+47. **软件 tenantId 从 AuthContext 获取**（v0.8.0）：`SoftwareService.requireCurrentTenantId()` 从 ThreadLocal 取租户身份，前端禁传 tenantId（防越权）。`requireOwnedSoftware(id, tenantId)` 校验 `software.tenantId == AuthContext.currentTenantId()`，不匹配抛 `SOFTWARE_PERMISSION_DENIED`(1019)。
+48. **软件密钥入库必须 AES 加密**（v0.8.0）：`signSecret` 和 `rsaPrivateKey` 入库前必须 `aesCryptoService.encrypt()`，查询时 `decrypt()` 后脱敏展示。明文禁入库（铁律 04 禁硬编码扩展：禁明文存储敏感密钥）。`appKey` 和 `rsaPublicKey` 可明文存储（客户端可见）。
+49. **软件删除关联校验**（v0.8.0）：`SoftwareService.delete()` 删除前必须校验关联卡类/设备/云函数，存在则抛 `SOFTWARE_HAS_CARD_TYPE`(1014) / `SOFTWARE_HAS_DEVICE`(1015) / `SOFTWARE_HAS_CLOUD_FUNC`(1016)。防止删除软件后子实体成为孤儿数据。
+50. **appKey 全局唯一查重**（v0.8.0）：`generateUniqueAppKey()` 生成后查 `jicek_software.app_key` 是否冲突，最多重试 5 次。虽 32 字符随机冲突概率极低（36^32 ≈ 2^165），但铁律要求健壮性。冲突超限抛 `FAIL`。
+51. **密钥轮换影响范围**（v0.8.0）：轮换 signSecret 后所有客户端 SDK 需更新配置（HMAC-SHA256 签名失效）；轮换 RSA 密钥对后所有客户端加密的卡密将无法解密（需重新发放或更新客户端）。前端轮换操作必须二次确认 + 警告提示。
+52. **SDK 鉴权用 Filter 不用 Interceptor**（v0.9.0）：`SdkAuthFilter` 需在 Filter 阶段读取 body 计算 SHA-256 用于签名校验，HandlerInterceptor 的 preHandle 阶段 body 尚未解析。用 `CachedBodyHttpServletRequest` 包装请求体使其可重复读，解决 Filter 读取后 `@RequestBody` 无法再读的问题。仅 `/api/sdk/**` 路径包装，不影响其他请求。
+53. **SoftwareContext ThreadLocal 必须清理**（v0.9.0）：`SdkAuthFilter.doFilterInternal` 的 `finally` 块**必须** `SoftwareContext.clear()`，否则 Tomcat 线程池复用导致软件身份串号。与 AuthContext（后台用户）同理，但 SoftwareContext 持有的是 Software 实体而非用户身份。
+54. **nonce 防重放用 Redis 原子操作**（v0.9.0）：`redissonClient.getBucket(key).trySet("1", Duration.ofMinutes(5))` 是原子的 setIfAbsent + TTL，禁用「先查再写」两步操作（并发场景下两请求同时查到不存在，同时写入）。trySet 返回 false 表示 nonce 已存在（重放攻击）。
+55. **卡密禁明文查库**（v0.9.0）：SDK 卡密登录通过 `cardHash = SHA-256(卡密明文)` 查 `jicek_card_key.card_hash` 索引，禁用 `WHERE card_no = ?` 明文查询（防 SQL 注入泄露卡密）。卡密明文仅在 RSA 解密后内存中短暂存在，永不日志输出。
+56. **SDK 每软件独立密钥验签**（v0.9.0）：`SdkAuthFilter` 从 `software.sign_secret`（AES 解密后）获取该软件独立的签名密钥，传入 `HmacSignService.verify(data, signature, secretKey)` 验签。不用全局 HmacSignService 单例（其用全局 hmacKey），而是用按软件的 signSecret。
+57. **过渡期：SdkDeviceController 旧接口**（v0.9.0）：现有 `/api/sdk/device/heartbeat` 仍从 `@RequestHeader("X-Sign-Secret")` 取明文 signSecret 做二次校验（旧代码遗留）。SdkAuthFilter 已用 software.signSecret 完成验签，X-Sign-Secret 头冗余且不安全。后续版本统一改为从 SoftwareContext 获取，移除明文密钥头。
 
 ## 12. 验证清单
 

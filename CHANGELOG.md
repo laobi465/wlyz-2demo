@@ -1,5 +1,146 @@
 # 更新日志
 
+## [0.12.0] - 2026-07-22
+
+### [新增] SDK 代码生成器 + 对接文档（一键接入开发者软件）
+
+开发者在软件管理页点「接入代码」，一键生成 9 种语言的快速接入代码（已填入 appKey + RSA 公钥），复制即用。
+
+- **SDK 代码生成器**（纯前端，无后端接口）：
+  - `src/utils/sdk-code-templates.ts`：9 语言模板生成器（Python / C# / C++ / Go / Java / Node.js / Lua / Shell / 易语言）
+  - 输入 appKey + rsaPublicKey + serverUrl + softwareName，输出各语言「单文件快速接入」代码
+  - 每语言含：初始化配置 + 签名工具 + HTTP 调用 + 卡密登录 + 心跳 + 公告拉取 + 更新检查
+  - signSecret 为脱敏字段，模板中留占位符由开发者手动填入
+- **代码生成弹窗** `src/views/dev/software/SdkCodeGenDialog.vue`：
+  - 9 语言 Tab 切换 + 代码展示（深色主题）+ 复制按钮
+  - 自动拉取软件 detail 获取 appKey / rsaPublicKey，支持 serverUrl 编辑
+- **对接文档页** `src/views/dev/integration-doc/index.vue`：
+  - 接入流程 + 凭证说明 + 请求头规范 + 签名算法 + RSA 加密 + API 列表 + 错误码表 + SDK 索引
+- **软件管理页**新增「接入代码」按钮（操作列，绿色 link）
+- **路由** `/integration-doc` + DevLayout「系统设置」子菜单新增「对接文档」入口
+- **覆盖接口**：POST /api/sdk/card/login、POST /api/sdk/device/heartbeat、GET /api/sdk/announcement、GET /api/sdk/update/check
+- **签名规范**：METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256，HMAC-SHA256 → Base64
+
+## [0.11.0] - 2026-07-22
+
+### [新增] 自动更新模块（多格式 exe/sh/win/lua/zip/7z，SDK 检查更新）
+
+开发者上传更新包文件 → 创建草稿 → 发布 → 终端用户客户端通过 SDK 检查更新并下载。
+
+- **后端**（`update/` 模块）：
+  - `UpdatePackage` entity + `UpdatePackageMapper`
+  - 4 DTO：`UpdatePackageSaveDTO` / `UpdatePackageDetailDTO` / `SdkUpdateCheckResultDTO` / `UploadResultDTO`
+  - `UpdatePackageService`：文件上传（multipart + SHA-256 + 路径穿越防御）+ CRUD + 发布/下线状态机 + SDK 检查更新
+  - `DevUpdatePackageController`：8 接口（upload + CRUD + publish + offline），类级 `@AuthRequired(role=ROLE_DEV)`
+  - `SdkUpdateController`：`GET /api/sdk/update/check`，SdkAuthFilter 鉴权
+  - 新增 `Storage` 配置类（storage.root / downloadBaseUrl / updateSubDir），环境变量注入
+- **状态机**：草稿(0) → 已发布(1) → 已下线(2)，不可逆
+  - 仅草稿可编辑（仅改 releaseNotes/版本范围/强制更新，文件不可改）
+- **多格式支持**：exe/sh/win/lua/zip/7z，客户端按 file_type 处理
+- **双通道**：1稳定版 2内测版，SDK 可按通道拉取
+- **强制更新**：forceUpdate=1 时旧版客户端拒绝运行
+- **版本范围匹配**：minClientVersion/maxClientVersion，语义化版本比较
+- **SHA-256 完整性校验**：上传时计算入库，客户端下载后校验
+- **安全铁律**：
+  - file_path 存相对路径（相对 storage.root），禁存绝对路径
+  - 文件名 UUID 化存储（防路径穿越），原始文件名单独存 file_name 字段
+  - 防路径穿越：`fullPath.startsWith(rootPath)` 校验
+  - 文件类型白名单 + 大小校验（≤500MB）
+  - 删除时同步删物理文件
+- **错误码**：1031-1042 共 12 个
+- **前端**：
+  - `updatePackageApi` 8 方法（含上传进度回调）
+  - `views/dev/update-package/index.vue` 更新包管理页（列表 + 上传进度条 + 创建/编辑弹窗 + 发布/下线二次确认 + 只读查看 + 删除）
+  - 路由 `/update-package` + DevLayout「云端数据」子菜单
+
+## [0.10.0] - 2026-07-22
+
+### [新增] 远程公告模块（开发者按软件/版本下发，SDK 拉取展示）
+
+终端用户客户端通过 SDK 拉取已发布公告，开发者后台管理全生命周期。
+
+- **后端**（`announcement/` 模块）：
+  - `Announcement` entity + `AnnouncementMapper`
+  - 3 DTO：`AnnouncementSaveDTO`（JSR-303 校验）/ `AnnouncementDetailDTO`（管理视图）/ `SdkAnnouncementDTO`（SDK 视图，无管理字段）
+  - `AnnouncementService`：CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配
+  - `DevAnnouncementController`：7 接口（CRUD + publish + offline），类级 `@AuthRequired(role=ROLE_DEV)`
+  - `SdkAnnouncementController`：`GET /api/sdk/announcement`，由 SdkAuthFilter 鉴权，softwareId 从 SoftwareContext 获取
+- **状态机**：草稿(0) → 已发布(1) → 已下线(2)，不可逆
+  - 仅草稿可编辑（已发布/已下线不可改，避免影响线上展示）
+  - 已发布可下线，已下线只能删除
+- **版本范围匹配**：minVersion/maxVersion 可选，SDK 拉取传入 clientVersion 做语义化版本比较（按数字段而非字符串，1.2.3 < 1.10.0）
+- **排序规则**：pinned DESC + sortOrder DESC + publishTime DESC
+- **viewCount 累加**：SDK 每次拉取累加 view_count（try-catch 容错，失败不阻断主流程）
+- **错误码**：1021-1029 共 9 个
+- **前端**：
+  - `announcementApi` 7 方法
+  - `views/dev/announcement/index.vue` 公告管理页（列表 + 创建/编辑弹窗 + 发布/下线二次确认 + 只读查看 + 软件下拉筛选）
+  - 路由 `/announcement` + DevLayout「云端数据」子菜单新增「远程公告」入口
+
+## [0.9.0] - 2026-07-22
+
+### [新增] SDK 鉴权框架 + 卡密登录（终端用户在开发者软件内用卡密登录）
+
+终端用户不通过 H5 页面，而是在开发者自己的软件内通过 SDK 接入极策k 验证服务。本版本补全 SDK 鉴权框架 + 卡密登录接口，为后续公告/更新/云函数SDK/云变量奠定基础。
+
+- **SDK 鉴权 Filter**（`SdkAuthFilter`，拦截 `/api/sdk/**`）：
+  - `CachedBodyHttpServletRequest` 包装请求体（body 可重复读，解决 Filter 读取 body 后 @RequestBody 无法再读的问题）
+  - 完整签名校验：X-App-Key → 查 software 表 → X-Timestamp ±300s → X-Nonce Redis 原子防重放（5min TTL）→ X-Signature HMAC-SHA256（含 body SHA-256，常量时间比较）
+  - `SoftwareContext` ThreadLocal 注入当前 Software，finally 强制清理防串号
+  - 每软件独立 signSecret 验签（AES 解密后传入 HmacSignService.verify）
+- **卡密登录**（`POST /api/sdk/card/login`）：
+  - 客户端用软件 RSA 公钥加密卡密 → X-Card-Cipher 头传输
+  - 服务端用软件独立 RSA 私钥解密 → cardHash = SHA-256(明文) 查库（禁明文查库）
+  - 校验：软件归属 + 状态（封禁/退款/过期拒绝）+ 到期时间
+  - 首次使用：设置 firstUseTime + 计算 expireTime（时长卡 now+duration）+ 状态改已使用
+  - 返回：卡类信息 + 到期时间 + 功能列表 + 软件配置（心跳间隔/最大并发/版本/最低版本/服务器时间）
+- **错误码**：3100-3110 共 11 个（SDK_APP_KEY_MISSING/INVALID/SOFTWARE_DISABLED/TIMESTAMP_MISSING/EXPIRED/NONCE_MISSING/REPLAY/SIGNATURE_MISSING/INVALID/CARD_CIPHER_MISSING/CARD_NOT_BELONG_TO_SOFTWARE）
+- **安全铁律**：
+  - 卡密明文永不日志输出
+  - nonce 防重放用 Redisson RBucket.trySet 原子操作，禁内存缓存
+  - SoftwareContext.clear() 必须在 finally 执行
+  - 过渡期：现有 SdkDeviceController 的 heartbeat 接口仍从 X-Sign-Secret 头取明文密钥（旧代码），后续版本统一改为从 SoftwareContext 获取
+
+## [0.8.0] - 2026-07-22
+
+### [新增] 软件管理模块（卡密/设备/云函数的父实体，接入鉴权框架）
+
+软件表 `jicek_software` 早已存在但后端无模块，本次补全垂直切片。所有接口 `@AuthRequired(role=ROLE_DEV)`，tenantId 从 AuthContext 获取，前端禁传（防越权）。
+
+- **后端**：`software/` 模块（entity/mapper/dto/service/controller）
+  - `Software` entity + `SoftwareMapper`
+  - 3 DTO：`SoftwareSaveDTO`（JSR-303 校验）/ `SoftwareDetailDTO`（signSecret 脱敏，无 rsaPrivateKey）/ `SoftwareCreateResultDTO`（明文一次性返回）
+  - `SoftwareService`：create/update/page/get/delete/regenerateSignSecret/regenerateRsaKey
+  - `DevSoftwareController`：7 接口，类级 `@AuthRequired(role=ROLE_DEV)`
+- **密钥自动生成**：
+  - appKey：SecureRandom 32 字符（大写字母+数字），全局唯一查重（最多 5 次重试）
+  - signSecret：SecureRandom 32 字节 → Base64，AES-256-GCM 加密存储
+  - RSA-2048 密钥对：公钥明文 + 私钥 AES-256-GCM 加密存储
+- **密钥轮换**：`POST /{id}/regenerate-sign-secret` + `POST /{id}/regenerate-rsa-key`，返回新明文（仅此一次）
+- **删除关联校验**：关联卡类/设备/云函数时拒绝删除（错误码 1014/1015/1016）
+- **安全铁律**：signSecret 查询返回脱敏（前 4 字符 + ****）；rsaPrivateKey 永不返回；所有操作校验 `software.tenantId == AuthContext.currentTenantId()`
+- **错误码**：1012-1019 共 8 个（SOFTWARE_NOT_FOUND/NAME_EXISTS/HAS_CARD_TYPE/HAS_DEVICE/HAS_CLOUD_FUNC/DISABLED/PARAM_INVALID/PERMISSION_DENIED）
+- **前端**：
+  - `softwareApi` 7 方法
+  - `views/dev/software/index.vue` 软件管理页（列表 + 创建/编辑弹窗 + 密钥展示弹窗 + 轮换二次确认 + 复制按钮）
+  - 密钥展示弹窗：`show-close=false` + `close-on-click-modal=false` + 警告「仅此一次展示」
+  - 路由 `/software` + DevLayout 菜单「软件管理」入口
+
+## [0.7.0] - 2026-07-22
+
+### [新增] 鉴权框架（JWT + BCrypt + @AuthRequired 渐进式鉴权）
+
+替代 SPEC.md 2.1 节原描述的 Sa-Token（实际未引入依赖），改用 JJWT 0.12.6 轻量标准库；双角色（开发者 ROLE_DEV=1 / 管理员 ROLE_ADMIN=2）+ ThreadLocal 上下文 + 注解式鉴权，兼容现有裸传参数接口。
+
+- **数据库**：`jicek_dev_user`（15 字段 + uk_tenant_username）+ `jicek_admin_user`（11 字段 + uk_username，含 role 字段：1超管 2运营）
+- **默认账号**：admin/admin@123（超管）、dev/dev@123（tenantId=1）
+- **后端**：2 Entity + 2 Mapper + 4 DTO（Login/LoginResult/ChangePassword/UserInfo）+ JwtService（HMAC-SHA256，密钥环境变量 JICEK_JWT_SECRET 至少 32 字节）+ AuthContext（ThreadLocal，afterCompletion 强制清理防串号）+ @AuthRequired 注解（方法级优先，类级兜底；未标注放行，渐进式兼容）+ JwtAuthInterceptor + WebMvcConfig + AuthService + AuthController
+- **接口**：POST /api/auth/dev/login、POST /api/auth/admin/login、GET /api/auth/me、POST /api/auth/change-password
+- **安全**：BCrypt 密码哈希（cost=10）；登录失败统一返回 AUTH_PASSWORD_ERROR（防用户枚举）；JWT claims 含 uid/role/tenantId/username；密钥未配置时 warn 但不阻止启动
+- **错误码**：9001-9011 共 11 个（AUTH_TOKEN_MISSING/AUTH_TOKEN_INVALID/AUTH_TOKEN_WRONG_ROLE/AUTH_USER_NOT_FOUND/AUTH_PASSWORD_ERROR/AUTH_USER_BANNED/AUTH_USER_ALREADY_EXISTS/AUTH_OLD_PASSWORD_ERROR/AUTH_PASSWORD_TOO_SHORT/AUTH_ROLE_INVALID/AUTH_NO_PERMISSION）
+- **前端**：request.ts 拦截器自动注入 `Authorization: Bearer {token}` + 401/9001/9002/9003 自动清 token 跳 /login；新增登录页（租户ID+用户名+密码表单）；router beforeEach 守卫（无 token 跳 /login，已登录访问 /login 跳 /dashboard）；DevLayout 顶栏接入用户昵称头像 + 修改密码弹窗 + 退出登录二次确认
+- **拦截路径**：/api/dev/** + /api/admin/** 走鉴权；排除 /api/auth/** + /api/sdk/** + /api/h5/** + /api/pay/notify/** + /api/deploy/webhook + /actuator/**
+
 ## [0.6.1] - 2026-07-22
 
 ### [调整] 工单系统简化为单向（开发者→管理员）

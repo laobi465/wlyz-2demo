@@ -403,6 +403,118 @@ CREATE TABLE jicek_ticket_reply (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单回复（审计，禁 UPDATE/DELETE）';
 
 -- ============================================================
+-- 15. 开发者用户表（v0.7.0 鉴权框架，租户账号）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_dev_user;
+CREATE TABLE jicek_dev_user (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID（开发者隔离）',
+  username        VARCHAR(64)  NOT NULL COMMENT '登录用户名',
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 密码哈希',
+  nickname        VARCHAR(64)  COMMENT '昵称',
+  email           VARCHAR(128) COMMENT '邮箱',
+  status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
+  last_login_time DATETIME     COMMENT '最后登录时间',
+  last_login_ip   VARCHAR(45)  COMMENT '最后登录 IP',
+  remark          VARCHAR(255),
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_tenant_username (tenant_id, username),
+  KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='开发者用户（租户账号）';
+
+-- ============================================================
+-- 16. 管理员用户表（v0.7.0 鉴权框架，超管账号）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_admin_user;
+CREATE TABLE jicek_admin_user (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  username        VARCHAR(64)  NOT NULL COMMENT '登录用户名',
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 密码哈希',
+  nickname        VARCHAR(64),
+  role            TINYINT      DEFAULT 1 COMMENT '1超级管理员 2运营',
+  status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
+  last_login_time DATETIME,
+  last_login_ip   VARCHAR(45),
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_username (username),
+  KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员用户';
+
+-- ============================================================
+-- 17. 远程公告表（v0.10.0，开发者按软件/版本下发，SDK 拉取展示）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_announcement;
+CREATE TABLE jicek_announcement (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID（开发者隔离）',
+  software_id     BIGINT       NOT NULL COMMENT '所属软件',
+  title           VARCHAR(128) NOT NULL COMMENT '公告标题',
+  content         TEXT         NOT NULL COMMENT '公告内容（Markdown，客户端渲染）',
+  type            TINYINT      NOT NULL DEFAULT 1 COMMENT '1通知条 2弹窗 3置顶横幅',
+  status          TINYINT      NOT NULL DEFAULT 0 COMMENT '0草稿 1已发布 2已下线',
+  min_version     VARCHAR(20)  COMMENT '最低适用客户端版本（含），null 表示不限',
+  max_version     VARCHAR(20)  COMMENT '最高适用客户端版本（含），null 表示不限',
+  sort_order      INT          DEFAULT 0 COMMENT '排序值，越大越靠前',
+  pinned          TINYINT      DEFAULT 0 COMMENT '0普通 1置顶',
+  view_count      BIGINT       DEFAULT 0 COMMENT 'SDK 拉取次数（统计用）',
+  publish_time    DATETIME     COMMENT '发布时间（status 改为 1 时写入）',
+  offline_time    DATETIME     COMMENT '下线时间（status 改为 2 时写入）',
+  creator_id      BIGINT       NOT NULL COMMENT '创建者（开发者用户ID）',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  KEY idx_software_status (tenant_id, software_id, status, sort_order),
+  KEY idx_publish_time (tenant_id, software_id, status, publish_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='远程公告（开发者按软件/版本下发）';
+
+-- ============================================================
+-- 18. 更新包表（v0.11.0，多格式 exe/sh/win/lua，SDK 检查更新）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_update_package;
+CREATE TABLE jicek_update_package (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID（开发者隔离）',
+  software_id     BIGINT       NOT NULL COMMENT '所属软件',
+  version         VARCHAR(20)  NOT NULL COMMENT '版本号（语义化 X.Y.Z）',
+  channel         TINYINT      NOT NULL DEFAULT 1 COMMENT '1稳定版 2内测版（SDK 可按通道拉取）',
+  file_type       VARCHAR(16)  NOT NULL COMMENT 'exe/sh/win/lua/zip/7z（客户端按类型处理）',
+  file_name       VARCHAR(128) NOT NULL COMMENT '原始文件名',
+  file_path       VARCHAR(512) NOT NULL COMMENT '存储相对路径（相对 storage.root，禁存绝对路径）',
+  file_size       BIGINT       NOT NULL COMMENT '文件大小（字节）',
+  file_sha256     CHAR(64)     NOT NULL COMMENT '文件 SHA-256（客户端校验完整性）',
+  signature       VARCHAR(512) COMMENT '可选 RSA 签名 Base64（高安全场景）',
+  release_notes   TEXT         COMMENT '更新说明（Markdown，客户端展示）',
+  min_client_version VARCHAR(20) COMMENT '最低适用客户端版本（含），null=不限',
+  max_client_version VARCHAR(20) COMMENT '最高适用客户端版本（含），null=不限',
+  status          TINYINT      NOT NULL DEFAULT 0 COMMENT '0草稿 1已发布 2已下线',
+  force_update    TINYINT      DEFAULT 0 COMMENT '0普通 1强制更新（旧版拒绝运行）',
+  download_count  BIGINT       DEFAULT 0 COMMENT '下载次数（统计用）',
+  publish_time    DATETIME     COMMENT '发布时间',
+  offline_time    DATETIME     COMMENT '下线时间',
+  creator_id      BIGINT       NOT NULL COMMENT '创建者（开发者用户ID）',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_software_version (tenant_id, software_id, version, channel),
+  KEY idx_software_status_channel (tenant_id, software_id, status, channel, publish_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='更新包（多格式 exe/sh/win/lua，SDK 检查更新）';
+
+-- ============================================================
+-- 初始化超管账号（v0.7.0）
+-- 默认账号：admin / admin@123  （BCrypt cost=10）
+-- 首次登录后必须修改密码（铁律 04，生产环境强制环境变量覆盖）
+-- BCrypt('admin@123', 10) = $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- ============================================================
+INSERT INTO jicek_admin_user (username, password_hash, nickname, role, status, create_time, update_time)
+VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '超级管理员', 1, 1, NOW(), NOW());
+
+-- 初始化默认开发者账号（租户ID=1）
+-- 默认账号：dev / dev@123  （BCrypt cost=10）
+-- BCrypt('dev@123', 10) = $2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu.
+INSERT INTO jicek_dev_user (tenant_id, username, password_hash, nickname, status, create_time, update_time)
+VALUES (1, 'dev', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu.', '默认开发者', 1, NOW(), NOW());
+
+-- ============================================================
 -- 完成
 -- ============================================================
 SELECT 'jicek database initialized successfully' AS message;

@@ -30,6 +30,12 @@ public class JicekProperties {
     /** 部署配置 */
     private Deploy deploy = new Deploy();
 
+    /** 鉴权配置（v0.7.0） */
+    private Auth auth = new Auth();
+
+    /** 存储配置（v0.11.0，更新包等文件存储） */
+    private Storage storage = new Storage();
+
     @Data
     public static class Crypto {
         /** AES-256 主密钥 Base64 */
@@ -90,5 +96,25 @@ public class JicekProperties {
         private String healthCheckBaseUrl;
         /** 是否启用部署功能（默认 false，需显式开启） */
         private boolean enabled = false;
+    }
+
+    @Data
+    public static class Auth {
+        /** JWT 签名密钥（环境变量注入，禁硬编码，铁律 04），HMAC-SHA256 最小 32 字节 */
+        private String jwtSecret;
+        /** JWT 有效期（小时），默认 24 */
+        private int jwtExpireHours = 24;
+        /** JWT 签发者 */
+        private String jwtIssuer = "jicek-license";
+    }
+
+    @Data
+    public static class Storage {
+        /** 文件存储根目录（环境变量注入，禁硬编码，铁律 04），如 /data/jicek/storage */
+        private String root;
+        /** 下载基础 URL（SDK 下载用，如 https://cdn.example.com/files），末尾不带斜杠 */
+        private String downloadBaseUrl;
+        /** 更新包子目录（相对 root），默认 updates */
+        private String updateSubDir = "updates";
     }
 }

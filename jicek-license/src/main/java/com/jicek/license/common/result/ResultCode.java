@@ -18,6 +18,7 @@ import lombok.Getter;
  *  6001-6999  数据统计模块
  *  7001-7999  部署模块
  *  8001-8999  工单模块
+ *  9001-9999  鉴权模块
  */
 @Getter
 @AllArgsConstructor
@@ -40,6 +41,41 @@ public enum ResultCode {
     CARD_TYPE_NOT_FOUND(1009, "卡类不存在"),
     CARD_GEN_FAIL(1010, "卡密生成失败"),
     CARD_QUERY_RATE_LIMIT(1011, "卡密查询频率超限"),
+
+    /* ============ 软件模块 1012-1020 ============ */
+    SOFTWARE_NOT_FOUND(1012, "软件不存在"),
+    SOFTWARE_NAME_EXISTS(1013, "同租户下软件名称已存在"),
+    SOFTWARE_HAS_CARD_TYPE(1014, "软件下存在卡类，无法删除"),
+    SOFTWARE_HAS_DEVICE(1015, "软件下存在设备，无法删除"),
+    SOFTWARE_HAS_CLOUD_FUNC(1016, "软件下存在云函数，无法删除"),
+    SOFTWARE_DISABLED(1017, "软件已禁用"),
+    SOFTWARE_PARAM_INVALID(1018, "软件参数非法"),
+    SOFTWARE_PERMISSION_DENIED(1019, "无权操作该软件"),
+
+    /* ============ 公告模块 1021-1030 ============ */
+    ANNOUNCEMENT_NOT_FOUND(1021, "公告不存在"),
+    ANNOUNCEMENT_TITLE_REQUIRED(1022, "公告标题不能为空"),
+    ANNOUNCEMENT_CONTENT_REQUIRED(1023, "公告内容不能为空"),
+    ANNOUNCEMENT_SOFTWARE_INVALID(1024, "公告所属软件无效或无权操作"),
+    ANNOUNCEMENT_STATUS_INVALID(1025, "公告状态非法"),
+    ANNOUNCEMENT_TYPE_INVALID(1026, "公告类型非法"),
+    ANNOUNCEMENT_ALREADY_PUBLISHED(1027, "公告已发布，不能重复发布"),
+    ANNOUNCEMENT_ALREADY_OFFLINE(1028, "公告已下线"),
+    ANNOUNCEMENT_NOT_PUBLISHED(1029, "公告未发布，不能下线"),
+
+    /* ============ 更新包模块 1031-1040 ============ */
+    UPDATE_PACKAGE_NOT_FOUND(1031, "更新包不存在"),
+    UPDATE_PACKAGE_VERSION_REQUIRED(1032, "版本号不能为空"),
+    UPDATE_PACKAGE_FILE_TYPE_INVALID(1033, "文件类型不支持（仅支持 exe/sh/win/lua/zip/7z）"),
+    UPDATE_PACKAGE_FILE_TOO_LARGE(1034, "文件大小超过限制（500MB）"),
+    UPDATE_PACKAGE_FILE_EMPTY(1035, "上传文件为空"),
+    UPDATE_PACKAGE_SOFTWARE_INVALID(1036, "更新包所属软件无效或无权操作"),
+    UPDATE_PACKAGE_VERSION_DUPLICATE(1037, "同软件同通道版本号已存在"),
+    UPDATE_PACKAGE_STATUS_INVALID(1038, "更新包状态非法"),
+    UPDATE_PACKAGE_ALREADY_PUBLISHED(1039, "更新包已发布，不能重复发布"),
+    UPDATE_PACKAGE_ALREADY_OFFLINE(1040, "更新包已下线"),
+    UPDATE_PACKAGE_NOT_PUBLISHED(1041, "更新包未发布，不能下线"),
+    UPDATE_PACKAGE_HASH_MISMATCH(1042, "文件 SHA-256 校验失败（文件可能损坏）"),
 
     /* ============ 支付模块 2001-2999 ============ */
     PAY_CONFIG_NOT_FOUND(2001, "支付配置不存在"),
@@ -71,6 +107,19 @@ public enum ResultCode {
     BIND_CODE_USED(3014, "换机码已使用"),
     HEARTBEAT_SIGN_FAIL(3015, "心跳签名校验失败"),
     HEARTBEAT_NONCE_REPLAY(3016, "心跳 nonce 重复（疑似重放）"),
+
+    /* ============ SDK 鉴权子段 3100-3199 ============ */
+    SDK_APP_KEY_MISSING(3100, "X-App-Key 头缺失"),
+    SDK_APP_KEY_INVALID(3101, "AppKey 无效或软件不存在"),
+    SDK_SOFTWARE_DISABLED(3102, "软件已禁用"),
+    SDK_TIMESTAMP_MISSING(3103, "X-Timestamp 头缺失"),
+    SDK_TIMESTAMP_EXPIRED(3104, "时间戳超出 ±300s 容差"),
+    SDK_NONCE_MISSING(3105, "X-Nonce 头缺失"),
+    SDK_NONCE_REPLAY(3106, "Nonce 重复（疑似重放攻击）"),
+    SDK_SIGNATURE_MISSING(3107, "X-Signature 头缺失"),
+    SDK_SIGNATURE_INVALID(3108, "签名校验失败"),
+    SDK_CARD_CIPHER_MISSING(3109, "X-Card-Cipher 头缺失（卡密密文）"),
+    SDK_CARD_NOT_BELONG_TO_SOFTWARE(3110, "卡密不属于当前软件"),
 
     /* ============ 代理/分润/提现模块 4001-4999 ============ */
     AGENT_NOT_FOUND(4001, "代理不存在"),
@@ -133,7 +182,20 @@ public enum ResultCode {
     TICKET_CONTENT_TOO_LONG(8007, "工单内容超过长度限制"),
     TICKET_REPLY_EMPTY(8008, "回复内容不能为空"),
     TICKET_CREATOR_TYPE_INVALID(8009, "创建者类型非法"),
-    TICKET_PARAM_INVALID(8010, "工单参数非法");
+    TICKET_PARAM_INVALID(8010, "工单参数非法"),
+
+    /* ============ 鉴权模块 9001-9999 ============ */
+    AUTH_TOKEN_MISSING(9001, "未登录或令牌缺失"),
+    AUTH_TOKEN_INVALID(9002, "令牌无效或已过期"),
+    AUTH_TOKEN_WRONG_ROLE(9003, "令牌角色不匹配"),
+    AUTH_USER_NOT_FOUND(9004, "用户不存在"),
+    AUTH_PASSWORD_ERROR(9005, "用户名或密码错误"),
+    AUTH_USER_BANNED(9006, "账号已被封禁"),
+    AUTH_USER_ALREADY_EXISTS(9007, "用户名已存在"),
+    AUTH_OLD_PASSWORD_ERROR(9008, "原密码错误"),
+    AUTH_PASSWORD_TOO_SHORT(9009, "密码长度不足（至少 8 位）"),
+    AUTH_ROLE_INVALID(9010, "角色非法"),
+    AUTH_NO_PERMISSION(9011, "无权限访问该资源");
 
     private final Integer code;
     private final String msg;

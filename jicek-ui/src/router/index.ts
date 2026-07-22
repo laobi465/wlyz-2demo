@@ -1,12 +1,23 @@
 /**
  * 极策k 路由配置
  * 作者: 极策k  日期: 2026-07-21
+ *
+ * v0.7.0 鉴权：
+ *  - 新增 /login 路由（无需鉴权，独立布局）
+ *  - beforeEach 守卫：无 token 跳 /login；已登录访问 /login 跳 /dashboard
  */
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { TOKEN_KEY } from '@/api/request'
 
 const Layout = () => import('@/layout/DevLayout.vue')
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/dev/login/index.vue'),
+    meta: { title: '登录', public: true }
+  },
   {
     path: '/',
     component: Layout,
@@ -17,6 +28,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Dashboard',
         component: () => import('@/views/dev/dashboard/index.vue'),
         meta: { title: '控制台', icon: 'Odometer' }
+      },
+      {
+        path: 'software',
+        name: 'Software',
+        component: () => import('@/views/dev/software/index.vue'),
+        meta: { title: '软件管理', icon: 'Cpu' }
       },
       {
         path: 'card-key-gen',
@@ -89,6 +106,24 @@ const routes: RouteRecordRaw[] = [
         name: 'Ticket',
         component: () => import('@/views/dev/ticket/index.vue'),
         meta: { title: '工单管理', icon: 'Service' }
+      },
+      {
+        path: 'announcement',
+        name: 'Announcement',
+        component: () => import('@/views/dev/announcement/index.vue'),
+        meta: { title: '远程公告', icon: 'Bell' }
+      },
+      {
+        path: 'update-package',
+        name: 'UpdatePackage',
+        component: () => import('@/views/dev/update-package/index.vue'),
+        meta: { title: '更新包', icon: 'Upload' }
+      },
+      {
+        path: 'integration-doc',
+        name: 'IntegrationDoc',
+        component: () => import('@/views/dev/integration-doc/index.vue'),
+        meta: { title: '对接文档', icon: 'Document' }
       }
     ]
   }
@@ -97,6 +132,26 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 全局守卫：未登录跳 /login，已登录访问 /login 跳 /dashboard
+router.beforeEach((to, _from, next) => {
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (to.meta.public) {
+    // 公开页面（如登录页）：已登录则跳控制台
+    if (token && to.path === '/login') {
+      next('/dashboard')
+    } else {
+      next()
+    }
+    return
+  }
+  // 受保护页面：无 token 跳登录
+  if (!token) {
+    next({ path: '/login', query: { redirect: to.fullPath } })
+    return
+  }
+  next()
 })
 
 export default router

@@ -88,6 +88,24 @@ jicek:
     # 健康检查基础 URL
     health-check-base-url: ${JICEK_DEPLOY_HEALTH_URL:http://127.0.0.1:8080}
 
+  # 鉴权配置（v0.7.0 JWT 框架）
+  auth:
+    # JWT 签名密钥（HMAC-SHA256，环境变量注入，禁硬编码，铁律 04，至少 32 字节）
+    jwt-secret: ${JICEK_JWT_SECRET:}
+    # JWT 有效期（小时）
+    jwt-expire-hours: ${JICEK_JWT_EXPIRE_HOURS:24}
+    # JWT 签发者
+    jwt-issuer: jicek-license
+
+  # 存储配置（v0.11.0 更新包等文件存储）
+  storage:
+    # 文件存储根目录（环境变量注入，禁硬编码，铁律 04）
+    root: ${JICEK_STORAGE_ROOT:/data/jicek/storage}
+    # 下载基础 URL（SDK 下载用，末尾不带斜杠）
+    download-base-url: ${JICEK_STORAGE_DOWNLOAD_BASE_URL:}
+    # 更新包子目录（相对 root）
+    update-sub-dir: updates
+
 logging:
   level:
     com.jicek: debug

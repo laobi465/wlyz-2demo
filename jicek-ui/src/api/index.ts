@@ -4,9 +4,65 @@
  */
 import { api } from './request'
 
+/* ============ 鉴权 ============ */
+export const authApi = {
+  // 开发者登录（需提交 tenantId + username + password）
+  devLogin: (data: { tenantId: number; username: string; password: string }) =>
+    api.post('/api/auth/dev/login', data),
+  // 管理员登录（无需 tenantId）
+  adminLogin: (data: { username: string; password: string }) =>
+    api.post('/api/auth/admin/login', data),
+  // 获取当前登录用户信息
+  me: () => api.get('/api/auth/me'),
+  // 修改密码
+  changePassword: (data: { oldPassword: string; newPassword: string }) =>
+    api.post('/api/auth/change-password', data)
+}
+
 /* ============ 控制台 ============ */
 export const dashboardApi = {
   summary: (tenantId: number) => api.get('/api/dev/dashboard/summary', { tenantId })
+}
+
+/* ============ 软件管理（v0.8.0，tenantId 由后端从 AuthContext 获取） ============ */
+export const softwareApi = {
+  // 分页查询（name 模糊匹配，enabled 状态过滤）
+  page: (params: { current?: number; size?: number; name?: string; enabled?: number }) =>
+    api.get('/api/dev/software/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      name: params.name,
+      enabled: params.enabled
+    }),
+  // 详情（signSecret 脱敏，无 rsaPrivateKey）
+  get: (id: number) => api.get(`/api/dev/software/${id}`),
+  // 创建（返回含 signSecret + rsaPrivateKey 明文，仅此一次）
+  create: (data: {
+    name: string
+    version?: string
+    minVersion?: string
+    heartbeatInterval?: number
+    maxConcurrent?: number
+    enabled?: number
+  }) => api.post('/api/dev/software', data),
+  // 更新（仅非敏感字段，id 必填）
+  update: (data: {
+    id: number
+    name: string
+    version?: string
+    minVersion?: string
+    heartbeatInterval?: number
+    maxConcurrent?: number
+    enabled?: number
+  }) => api.put('/api/dev/software', data),
+  // 删除（关联卡类/设备/云函数时拒绝）
+  delete: (id: number) => api.delete(`/api/dev/software/${id}`),
+  // 轮换签名密钥（返回新明文，仅此一次）
+  regenerateSignSecret: (id: number) =>
+    api.post(`/api/dev/software/${id}/regenerate-sign-secret`),
+  // 轮换 RSA 密钥对（返回新公钥 + 私钥明文，仅此一次）
+  regenerateRsaKey: (id: number) =>
+    api.post(`/api/dev/software/${id}/regenerate-rsa-key`)
 }
 
 /* ============ 卡密 ============ */
@@ -209,4 +265,129 @@ export const ticketApi = {
   // 开发者补充回复
   submitReply: (data: any, tenantId: number, devUserId: number) =>
     api.post('/api/dev/ticket/submit/reply', data, { params: { tenantId, devUserId } })
+}
+
+/* ============ 公告管理（v0.10.0，开发者按软件/版本下发） ============ */
+export const announcementApi = {
+  // 分页查询
+  page: (params: {
+    current?: number
+    size?: number
+    softwareId?: number
+    status?: number
+    type?: number
+    title?: string
+  }) =>
+    api.get('/api/dev/announcement/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      softwareId: params.softwareId,
+      status: params.status,
+      type: params.type,
+      title: params.title
+    }),
+  // 详情
+  get: (id: number) => api.get(`/api/dev/announcement/${id}`),
+  // 创建（初始为草稿）
+  create: (data: {
+    softwareId: number
+    title: string
+    content: string
+    type: number
+    minVersion?: string
+    maxVersion?: string
+    sortOrder?: number
+    pinned?: number
+  }) => api.post('/api/dev/announcement', data),
+  // 编辑（仅草稿可编辑）
+  update: (data: {
+    id: number
+    softwareId: number
+    title: string
+    content: string
+    type: number
+    minVersion?: string
+    maxVersion?: string
+    sortOrder?: number
+    pinned?: number
+  }) => api.put('/api/dev/announcement', data),
+  // 删除
+  delete: (id: number) => api.delete(`/api/dev/announcement/${id}`),
+  // 发布（草稿 → 已发布）
+  publish: (id: number) => api.post(`/api/dev/announcement/${id}/publish`),
+  // 下线（已发布 → 已下线）
+  offline: (id: number) => api.post(`/api/dev/announcement/${id}/offline`)
+}
+
+/* ============ 更新包管理（v0.11.0，多格式 exe/sh/win/lua，SDK 检查更新） ============ */
+export const updatePackageApi = {
+  // 上传文件（multipart）
+  upload: (file: File, onProgress?: (percent: number) => void) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/api/dev/update-package/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded * 100) / e.total))
+        }
+      }
+    })
+  },
+  // 分页查询
+  page: (params: {
+    current?: number
+    size?: number
+    softwareId?: number
+    status?: number
+    channel?: number
+    version?: string
+  }) =>
+    api.get('/api/dev/update-package/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      softwareId: params.softwareId,
+      status: params.status,
+      channel: params.channel,
+      version: params.version
+    }),
+  // 详情
+  get: (id: number) => api.get(`/api/dev/update-package/${id}`),
+  // 创建（草稿）
+  create: (data: {
+    softwareId: number
+    version: string
+    channel: number
+    filePath: string
+    fileName: string
+    fileSize: number
+    fileSha256: string
+    fileType: string
+    releaseNotes?: string
+    minClientVersion?: string
+    maxClientVersion?: string
+    forceUpdate?: number
+  }) => api.post('/api/dev/update-package', data),
+  // 编辑（仅草稿，仅改 releaseNotes/版本范围/强制更新）
+  update: (data: {
+    id: number
+    softwareId: number
+    version: string
+    channel: number
+    filePath: string
+    fileName: string
+    fileSize: number
+    fileSha256: string
+    fileType: string
+    releaseNotes?: string
+    minClientVersion?: string
+    maxClientVersion?: string
+    forceUpdate?: number
+  }) => api.put('/api/dev/update-package', data),
+  // 删除（同时删物理文件）
+  delete: (id: number) => api.delete(`/api/dev/update-package/${id}`),
+  // 发布（草稿 → 已发布）
+  publish: (id: number) => api.post(`/api/dev/update-package/${id}/publish`),
+  // 下线（已发布 → 已下线）
+  offline: (id: number) => api.post(`/api/dev/update-package/${id}/offline`)
 }
