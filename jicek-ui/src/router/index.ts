@@ -71,6 +71,12 @@ const routes: RouteRecordRaw[] = [
         name: 'CloudFunc',
         component: () => import('@/views/dev/cloud-func/index.vue'),
         meta: { title: '云函数', icon: 'Cpu' }
+      },
+      {
+        path: 'stats',
+        name: 'Stats',
+        component: () => import('@/views/dev/stats/index.vue'),
+        meta: { title: '数据统计', icon: 'TrendCharts' }
       }
     ]
   }

@@ -57,6 +57,13 @@
           </template>
           <el-menu-item index="/cloud-func">云函数</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu index="stats">
+          <template #title>
+            <el-icon><TrendCharts /></el-icon>
+            <span>数据统计</span>
+          </template>
+          <el-menu-item index="/stats">数据统计</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </aside>
 

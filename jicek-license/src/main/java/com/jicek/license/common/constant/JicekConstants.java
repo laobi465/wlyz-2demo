@@ -150,4 +150,28 @@ public final class JicekConstants {
     /* ============ Redis Key 前缀（云函数模块，执行并发限流用） ============ */
     public static final String REDIS_KEY_CF_INVOKE_LOCK = "jicek:cloud-func:invoke:lock:";
     public static final String REDIS_KEY_CF_RATE_LIMIT = "jicek:cloud-func:rate:";
+
+    /* ============ 数据统计模块 ============ */
+    /** 统计粒度：按小时 */
+    public static final String STATS_GRANULARITY_HOUR = "hour";
+    /** 统计粒度：按天 */
+    public static final String STATS_GRANULARITY_DAY = "day";
+    /** 统计粒度：按月 */
+    public static final String STATS_GRANULARITY_MONTH = "month";
+
+    /** 收入统计维度：按支付通道 */
+    public static final String STATS_DIMENSION_CHANNEL = "channel";
+    /** 收入统计维度：按卡类 */
+    public static final String STATS_DIMENSION_CARD_TYPE = "cardType";
+    /** 收入统计维度：按代理 */
+    public static final String STATS_DIMENSION_AGENT = "agent";
+
+    /** 统计查询最大天数范围（防止全表扫描，铁律 04 禁硬编码） */
+    public static final int STATS_MAX_RANGE_DAYS = 90;
+    /** 统计查询默认天数 */
+    public static final int STATS_DEFAULT_RANGE_DAYS = 7;
+    /** 热力图固定天数（近 7 天 × 24 小时） */
+    public static final int STATS_HEATMAP_DAYS = 7;
+    /** 热力图小时维度（24 小时） */
+    public static final int STATS_HOURS_PER_DAY = 24;
 }

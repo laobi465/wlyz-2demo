@@ -1,5 +1,59 @@
 # 更新日志
 
+## [0.4.3] - 2026-07-22
+
+### [新增] 数据统计与可视化模块
+
+依据 UI-DESIGN.md 6.2 节「数据统计」4 子项规范 + 铁律三件套（04 禁硬编码 / 06 防幻觉 / 13 严格遵循项目文档规范），完整实现数据统计全层（DTO + Service + Controller + 前端页面 + 路由/菜单）。数据源全部基于现有业务表聚合，无独立统计表（铁律 06：禁止虚构表）。
+
+#### 后端 - DTO（4 个，对应 4 子项）
+- `VerifyTrendDTO`：验证量趋势（labels + activateCounts + newDeviceCounts + 汇总数）
+- `DeviceHeatmapDTO`：设备热力图（days + hours + points[day,hour,value] + currentOnline + totalDevice）
+- `IncomeStatsDTO`：收入统计（dimension + items[{name,key,amount,count}] + totalAmount + totalCount，内部 IncomeItem 静态类）
+- `AntiCrackStatsDTO`：防破解事件（bannedDeviceCount + bannedCardCount + bannedIpCount + 时间趋势序列）
+
+#### 后端 - StatsService（核心聚合逻辑）
+- `verifyTrend()`：基于 `jicek_card_key.first_use_time`（卡密激活）+ `jicek_device.bind_time`（新增设备），按 hour/day/month 内存分桶，时间标签连续补 0
+- `deviceHeatmap()`：基于 `jicek_device.last_heartbeat` 按天×小时聚合，固定近 7 天 × 24 小时网格，points 为 [dayIndex, hour, count] 三元组
+- `income()`：基于 `jicek_pay_order`(status=1 已支付) 聚合
+  - `groupByChannel()`：按 payType 分组（alipay/wxpay/qqpay/unionpay → 中文名映射，走常量禁字面量）
+  - `groupByCardType()`：按 cardTypeId 分组，预加载卡类名避免 N+1
+  - `groupByAgent()`：PayOrder 暂无 agent_id 字段，返回空列表 + 前端提示（铁律 06：禁止虚构字段）
+- `antiCrack()`：基于 `jicek_device.status=1`(封禁设备) + `jicek_card_key.status=2`(封禁卡密) + `bind_ip` 去重统计封禁 IP 数，按天趋势
+- 工具方法：`validateGranularity()` / `validateDimension()` / `sanitizeDays()`(超 90 天抛 STATS_RANGE_EXCEED) / `bucketByTime()` / `buildTimeLabels()`(连续日期序列)
+
+#### 后端 - DevStatsController
+- 路由前缀：`/api/dev/stats`
+- 4 接口：GET verify-trend / GET device-heatmap / GET income / GET anti-crack
+- 全部 `@RequestParam`，tenantId 必填，softwareId 可选，days 可选（默认 7/30）
+- 与 DevDashboardController（仅 /summary）分离，单一职责
+
+#### 后端 - 常量/错误码
+- `JicekConstants` 新增 11 个常量：STATS_GRANULARITY_HOUR/DAY/MONTH + STATS_DIMENSION_CHANNEL/CARD_TYPE/AGENT + STATS_MAX_RANGE_DAYS(90) + STATS_DEFAULT_RANGE_DAYS(7) + STATS_HEATMAP_DAYS(7) + STATS_HOURS_PER_DAY(24)
+- `ResultCode` 新增 4 个错误码（6001-6999）：STATS_GRANULARITY_INVALID(6001) / STATS_DIMENSION_INVALID(6002) / STATS_RANGE_EXCEED(6003) / STATS_PARAM_INVALID(6004)
+
+#### 前端
+- **数据统计页**（`views/dev/stats/index.vue`）：
+  - 4 Tab 布局：验证量趋势 / 设备在线热力图 / 收入统计 / 防破解事件
+  - 全局软件筛选（softwareId）+ 刷新按钮（reloadAll 并行加载 4 接口）
+  - **验证量趋势 Tab**：粒度切换（hour/day/month 单选按钮组）+ 天数配置 + 双折线图（卡密激活/新增设备，渐变 areaStyle）+ 汇总卡片
+  - **设备热力图 Tab**：ECharts heatmap（x=小时 0-23、y=日期、value=在线设备数）+ visualMap 渐变色（#F0F4FA→#2E7D5B）+ 当前在线/总设备汇总
+  - **收入统计 Tab**：维度切换（channel/cardType/agent）+ 天数配置 + 柱状图（金额）+ 折线图（订单数，双 Y 轴）+ 明细表格（名称/订单数/金额/占比进度条）+ 代理维度 alert 提示
+  - **防破解事件 Tab**：3 汇总卡片（封禁设备/卡密/IP）+ 双折线图（封禁设备/封禁卡密，渐变 areaStyle）
+  - ECharts 生命周期管理：onBeforeUnmount dispose 全部 4 图表 + watch softwareId 触发 reloadAll + Tab 切换后 setTimeout resize
+  - 金额展示使用 decimal.js 保证精度（铁律 13）
+- API 定义：新增 `statsApi`（4 方法）
+- 路由：新增 `/stats`（name: Stats, icon: TrendCharts）
+- 侧边栏：新增「数据统计」子菜单（icon: TrendCharts）+ 「数据统计」项
+
+#### 技术决策
+- **不新建统计表**：所有统计基于现有业务表（CardKey/Device/PayOrder）聚合，避免数据冗余和同步问题（铁律 06）
+- **内存分桶而非 SQL GROUP BY**：与现有代码风格一致（DevDashboardController 也是内存聚合），保持 MyBatis-Plus LambdaQueryWrapper 风格统一
+- **时间标签连续补 0**：buildTimeLabels() 生成完整日期序列，无数据时段补 0，避免图表 X 轴跳跃
+- **金额 BigDecimal + Decimal.js**：前后端均使用高精度数值类型（铁律 13：金额精度）
+- **代理维度预留**：PayOrder 当前无 agent_id 字段，前端显示 alert 提示「待扩展」，禁止虚构字段（铁律 06）
+- **热力图固定 7 天**：STATS_HEATMAP_DAYS(7)，避免维度爆炸（7×24=168 点足够展示周期规律）
+
 ## [0.3.1] - 2026-07-22
 
 ### [新增] 8 语言客户端 SDK 完整实现

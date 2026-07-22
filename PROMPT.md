@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.4.2 |
+| 当前版本 | v0.4.3 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板） |
@@ -50,6 +50,7 @@
 | 客户端 SDK | `sdk/` (java/python/nodejs/go/csharp/cpp/lua/shell/epl) | ✅ v0.3.1 |
 | 代理模块 | `agent/` (entity/mapper/dto/service/controller) | ✅ v0.4.0 |
 | 云函数模块 | `cloudfunc/` (entity/mapper/dto/sandbox/service/controller) | ✅ v0.4.2 |
+| 数据统计模块 | `stats/` (dto/service/controller) | ✅ v0.4.3 |
 
 ### 前端（jicek-ui）
 
@@ -71,6 +72,7 @@
 | 代理管理页 | `src/views/dev/agent/` | ✅ v0.4.0 |
 | 提现审核页 | `src/views/dev/withdraw/` | ✅ v0.4.0 |
 | 云函数管理页 | `src/views/dev/cloud-func/` | ✅ v0.4.2 |
+| 数据统计页 | `src/views/dev/stats/` | ✅ v0.4.3 |
 
 ## 3. 待办任务（按优先级）
 
@@ -108,7 +110,7 @@
 - **前端补全 - 剩余项**：
   - 软件管理页面（待后端 DevSoftwareController）
   - 用户管理页面（待后端 DevUserController）
-  - 数据统计扩展图表：验证量趋势 / 设备在线热力图 / 收入多维 / 防破解事件
+  - ~~数据统计扩展图表~~ ✅ v0.4.3 已完成（4 Tab：验证量趋势/设备热力图/收入统计/防破解事件）
   - H5 终端用户页面（购卡/续费/换机/在线设备，待后端 H5 Controller）
 
 ### P2（中，v0.4.2 已完成 ✅）
@@ -118,8 +120,14 @@
   - 前端双 Tab 页面（函数列表 + 执行日志）+ 路由/菜单集成
   - SDK 调用走 SdkCloudFunctionController 待后续版本实现（复用同一 Service）
 
+### P2（中，v0.4.3 已完成 ✅）
+- **数据统计与可视化**：
+  - 4 Tab 页面（验证量趋势折线图 / 设备在线热力图 / 收入统计柱状图+表格 / 防破解事件折线图）
+  - 数据源全部基于现有业务表聚合，无独立统计表（铁律 06）
+  - 代理维度因 PayOrder 暂无 agent_id 字段，前端 alert 提示「待扩展」
+  - Dashboard 页面（v0.4.1）保留为今日汇总快照，数据统计页（v0.4.3）为多维分析入口
+
 ### P2（中，待开始）
-- 数据统计与可视化（验证量趋势、设备热力图、收入多维统计）
 
 ### P3（低）
 - GitHub 自动更新部署（Webhook + 自动重启 + 管理员弹窗）
@@ -280,6 +288,10 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 云函数 | POST | `/api/dev/cloud-func/toggle-enabled` | 启用/禁用（params: tenantId/functionId/enabled） |
 | 云函数 | POST | `/api/dev/cloud-func/invoke` | 测试执行（body: tenantId/softwareId/functionId/input） |
 | 云函数 | GET | `/api/dev/cloud-func/log/page` | 执行日志分页（参数：tenantId/functionId/softwareId/status/invokeSource/current/size） |
+| 数据统计 | GET | `/api/dev/stats/verify-trend` | 验证量趋势（参数：tenantId/softwareId/granularity=hour\|day\|month/days） |
+| 数据统计 | GET | `/api/dev/stats/device-heatmap` | 设备在线热力图（参数：tenantId/softwareId/days，默认 7） |
+| 数据统计 | GET | `/api/dev/stats/income` | 收入统计（参数：tenantId/softwareId/dimension=channel\|cardType\|agent/days） |
+| 数据统计 | GET | `/api/dev/stats/anti-crack` | 防破解事件（参数：tenantId/softwareId/days） |
 
 ### 7.2 公开回调
 
@@ -330,7 +342,7 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 ```typescript
 import {
   dashboardApi, cardKeyApi, cardTypeApi, payApi,
-  agentApi, withdrawApi, deviceApi, cloudFuncApi
+  agentApi, withdrawApi, deviceApi, cloudFuncApi, statsApi
 } from '@/api'
 
 // 统一响应：{ code, msg, data }
@@ -396,6 +408,11 @@ const deviceList = await deviceApi.page({ tenantId: 1, current: 1, size: 20 })
 18. **云函数审计不可篡改**：`jicek_cloud_function_log` 表仅允许 INSERT + SELECT，Service 层禁 UPDATE/DELETE，确保执行历史完整可追溯。审计日志写入失败不应阻断主流程（invoke 已返回结果）。
 19. **云函数输入注入契约**：通过 `jicek.input` 全局变量传入字符串，Lua 代码 `return` 返回值由 `luaValueToJson()` 递归序列化为 JSON（table 自动判断数组 vs 对象，key 为 1..n 连续正整数则为数组）。输入/输出大小在 Service 层二次校验（DTO 校验 + 实际字节数校验），超限直接截断或拒绝。
 20. **云函数线程池隔离**：独立 `jicek-lua-sandbox` daemon 线程池（4 核心/16 最大/64 队列/CallerRunsPolicy）与业务线程池隔离，避免沙箱执行阻塞主业务。线程名必须为 daemon，防止 JVM 退出受阻。
+21. **数据统计不新建表**（v0.4.3）：所有统计基于现有业务表（CardKey/Device/PayOrder）内存聚合，禁虚构统计表（铁律 06）。时间分组使用 Java Stream + `DateTimeFormatter` 分桶，与现有 DevDashboardController 风格一致。
+22. **统计时间标签连续补 0**：`StatsService.buildTimeLabels()` 必须生成完整日期序列，无数据时段补 0，避免 ECharts X 轴跳跃。粒度切换时 hour 固定查近 1 天（24 点）、day/month 用 `STATS_DEFAULT_RANGE_DAYS`(7) 默认值，禁字面量（铁律 04）。
+23. **统计范围上限**：`STATS_MAX_RANGE_DAYS`(90) 天硬上限，超限抛 `STATS_RANGE_EXCEED`(6003)，防止全表扫描。热力图固定 `STATS_HEATMAP_DAYS`(7) 天避免维度爆炸。
+24. **统计代理维度预留**：PayOrder 当前无 `agent_id` 字段，`groupByAgent()` 返回空列表 + 前端 alert 提示「待扩展」，禁虚构字段（铁律 06）。待 PayOrder 扩展 agent_id 后再实现。
+25. **ECharts 生命周期**：多 Tab 页面每个 Tab 独立 chart 实例，`onBeforeUnmount` 必须 dispose 全部图表，Tab 切换后 `setTimeout(resize, 50)` 避免尺寸未初始化。`watch` 全局筛选（如 softwareId）触发 `reloadAll` 并行加载。
 
 ## 12. 验证清单
 

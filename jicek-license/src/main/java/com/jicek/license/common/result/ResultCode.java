@@ -15,6 +15,7 @@ import lombok.Getter;
  *  3001-3999  设备/心跳模块
  *  4001-4999  代理/分润/提现模块
  *  5001-5999  云函数模块
+ *  6001-6999  数据统计模块
  */
 @Getter
 @AllArgsConstructor
@@ -100,7 +101,13 @@ public enum ResultCode {
     CF_NAME_EXISTS(5009, "同一软件下函数名已存在"),
     CF_MEMORY_LIMIT(5010, "云函数内存超限"),
     CF_LOCK_FAIL(5011, "云函数执行处理中，请稍后"),
-    CF_PARAM_INVALID(5012, "参数非法");
+    CF_PARAM_INVALID(5012, "参数非法"),
+
+    /* ============ 数据统计模块 6001-6999 ============ */
+    STATS_GRANULARITY_INVALID(6001, "统计粒度非法（仅支持 hour/day/month）"),
+    STATS_DIMENSION_INVALID(6002, "统计维度非法（仅支持 channel/cardType/agent）"),
+    STATS_RANGE_EXCEED(6003, "统计时间范围超过最大限制（90 天）"),
+    STATS_PARAM_INVALID(6004, "统计参数非法");
 
     private final Integer code;
     private final String msg;

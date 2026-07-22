@@ -78,12 +78,16 @@
 │       │   ├── sandbox # LuaSandboxService（LuaJ 3.0.6 沙箱引擎，全局表裁剪 + 超时中断 + 输出截断）
 │       │   ├── service # CloudFunctionService
 │       │   └── controller # DevCloudFunctionController
+│       ├── stats      # ★ 数据统计模块（v0.4.3 新增，4 子项多维分析）
+│       │   ├── dto     # VerifyTrendDTO / DeviceHeatmapDTO / IncomeStatsDTO / AntiCrackStatsDTO
+│       │   ├── service # StatsService（内存分桶聚合，基于现有业务表）
+│       │   └── controller # DevStatsController
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数）
-    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计）
+    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置（9 个页面路由）
+    ├── src/router      # 路由配置（10 个页面路由）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     └── src/views/dev   # 开发者页面
         ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
@@ -95,7 +99,8 @@
         ├── pay-order   # 资金流水
         ├── agent       # 代理管理（v0.4.0）
         ├── withdraw    # 提现审核（v0.4.0）
-        └── cloud-func  # ★ 云函数管理（v0.4.2 新增，双 Tab：函数列表 + 执行日志）
+        ├── cloud-func  # ★ 云函数管理（v0.4.2 新增，双 Tab：函数列表 + 执行日志）
+        └── stats       # ★ 数据统计（v0.4.3 新增，4 Tab：验证趋势/设备热力图/收入统计/防破解事件）
 ```
 
 ### 2.3 数据流
@@ -182,7 +187,7 @@
 - 代理管理（多级代理、分润、提现审核）
 - 支付配置（通道选择、商户凭证、订单流水）
 - 云端数据（云变量、云函数、远程公告）
-- 数据统计（验证量、设备、收入、防破解事件）
+- 数据统计 ✅ v0.4.3（验证量趋势、设备在线热力图、收入多维统计、防破解事件，4 Tab + ECharts）
 - 安全中心（IP/设备黑名单、风控规则、密钥轮换）
 
 ### 4.3 代理

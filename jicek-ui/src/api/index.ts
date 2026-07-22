@@ -143,3 +143,33 @@ export const cloudFuncApi = {
       size: params.size || 20
     })
 }
+
+/* ============ 数据统计 ============ */
+export const statsApi = {
+  verifyTrend: (params: any) =>
+    api.get('/api/dev/stats/verify-trend', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      granularity: params.granularity || 'day',
+      days: params.days
+    }),
+  deviceHeatmap: (params: any) =>
+    api.get('/api/dev/stats/device-heatmap', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      days: params.days
+    }),
+  income: (params: any) =>
+    api.get('/api/dev/stats/income', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      dimension: params.dimension || 'channel',
+      days: params.days
+    }),
+  antiCrack: (params: any) =>
+    api.get('/api/dev/stats/anti-crack', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      days: params.days
+    })
+}
