@@ -143,6 +143,18 @@ public class CloudFunctionService {
     }
 
     /**
+     * 按软件 + 函数名查询云函数（SDK 端按 name 调用时用）
+     * 不存在返回 null（由调用方决定如何处理，便于区分 CF_NOT_FOUND / CF_DISABLED）
+     */
+    public CloudFunction findBySoftwareAndName(Long tenantId, Long softwareId, String name) {
+        return cfMapper.selectOne(
+                new LambdaQueryWrapper<CloudFunction>()
+                        .eq(CloudFunction::getTenantId, tenantId)
+                        .eq(CloudFunction::getSoftwareId, softwareId)
+                        .eq(CloudFunction::getName, name));
+    }
+
+    /**
      * 删除（带租户隔离校验）
      */
     @Transactional(rollbackFor = Exception.class)

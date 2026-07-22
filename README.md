@@ -2,7 +2,7 @@
 
 > 面向开发者的多租户卡密验证 SaaS 平台 · 基于 RuoYi-Vue-Plus 技术栈 · 国产开源可私有部署
 
-[![Version](https://img.shields.io/badge/version-0.15.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.16.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.6-green)](https://spring.io/projects/spring-boot)
@@ -18,7 +18,9 @@
 - **8 语言 SDK 全覆盖**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
 - **最前沿加密**：AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4）
 
-## 当前版本（v0.15.0）
+## 当前版本（v0.16.0）
+
+v0.16.0 补全三项历史遗留：收入统计代理维度（StatsService.groupByAgent）+ SDK 云函数调用接口（SdkCloudFunctionController）+ 国密 SM2/SM4 可选实现（SmCryptoService，默认关闭）。至此所有历史遗留全部清零。
 
 ### 已完成 ✅
 
@@ -41,14 +43,8 @@
 | v0.12.0 | SDK 代码生成器 + 对接文档 | 9 语言模板一键生成 + 对接文档页（纯前端） |
 | v0.13.0 | H5 验证界面 + 代理邀请码注册 + 内嵌卡网系统 | 详见 CHANGELOG.md |
 | v0.14.0 | 终端用户账号体系 + 多语言国际化 | 详见 CHANGELOG.md |
-| **v0.15.0** | **四项扩展全部完成** | **代理扣余额 + 分润回调 + 管理员端 + i18n 全量，详见 CHANGELOG.md** |
-
-#### v0.15.0 新增（4 项扩展）
-
-- **代理制卡扣余额**：CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance（先扣款再生成卡密，同事务）；CardKeyGenRequestDTO 加 agentId 字段。
-- **分润接入支付回调**：PayOrder 加 agentId 字段 + jicek_pay_order 表加 agent_id 列 + idx_agent 索引；PayNotifyService 支付成功后调用 CommissionService.grantCommission（try-catch，分润失败不回滚卡密）；jicek_commission 表加 uk_order_agent 幂等索引。
-- **管理员端 Controller**：AdminTicketController（/api/admin/ticket 4 接口）+ AdminDevUserController（/api/admin/dev-user 5 接口），@AuthRequired(role=2) 限制；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离。
-- **多语言国际化全量**：17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块，至此所有用户可见文案均支持中英文切换。
+| v0.15.0 | 四项扩展全部完成 | 代理扣余额 + 分润回调 + 管理员端 + i18n 全量，详见 CHANGELOG.md |
+| **v0.16.0** | **三项遗留补全** | **代理维度统计 + SDK 云函数 + 国密可选，详见 CHANGELOG.md** |
 
 ### 待实现
 
@@ -77,11 +73,12 @@ wlyz-2demo/
 │   └── src/main/java/com/jicek/license/
 │       ├── common/                   # 通用：R / ResultCode / ServiceException
 │       ├── config/                   # 配置：JicekProperties / MybatisPlusConfig / CorsConfig
-│       ├── crypto/                   # ★ 加密层（5 个服务）
+│       ├── crypto/                   # ★ 加密层（5 个服务 + 国密可选）
 │       │   ├── AesCryptoService      # AES-256-GCM
 │       │   ├── RsaCryptoService      # RSA-2048-OAEP
 │       │   ├── HmacSignService       # HMAC-SHA256
 │       │   ├── Md5SignService        # MD5（V1 兼容）+ SHA-256
+│       │   ├── SmCryptoService       # ★ SM2/SM4/SM3 国密可选（v0.16.0，@ConditionalOnProperty 默认关闭）
 │       │   └── CryptoConfiguration   # Bean 配置
 │       ├── card/                     # 卡密模块
 │       │   ├── entity                # CardType / CardKey
@@ -121,8 +118,13 @@ wlyz-2demo/
 │       │   └── controller            # AuthController + AdminDevUserController(/api/admin/dev-user 5 接口 @AuthRequired(role=2))
 │       ├── ticket/                   # ★ 工单模块（v0.6.0，v0.15.0 加 AdminTicketController）
 │       │   └── controller            # DevTicketController + AdminTicketController(/api/admin/ticket 4 接口 @AuthRequired(role=2))
-│       └── agent/                    # ★ 代理模块（v0.4.0 + v0.13.0 扩展 invite_code/invited_by）
-│           └── util                  # InviteCodeGenerator(8 位 SecureRandom)
+│       ├── agent/                    # ★ 代理模块（v0.4.0 + v0.13.0 扩展 invite_code/invited_by）
+│       │   └── util                  # InviteCodeGenerator(8 位 SecureRandom)
+│       └── sdk/                      # ★ SDK 模块（v0.9.0，v0.16.0 加 SdkCloudFunctionController）
+│           ├── auth                  # SdkAuthFilter + SoftwareContext + CachedBodyHttpServletRequest
+│           ├── dto                   # SdkLoginRequestDTO / SdkLoginResultDTO / SdkCloudFunctionInvokeDTO（v0.16.0）
+│           ├── service               # SdkAuthService
+│           └── controller            # SdkLoginController + SdkCloudFunctionController（v0.16.0，POST /api/sdk/cloud-function/invoke）
 ├── jicek-ui/                         # 前端 - Vue3 + TS + Element Plus
 │   └── src/
 │       ├── api/                      # API 客户端 + 接口定义（h5Api + shopApi v0.13.0 + endUserApi v0.14.0 + admin.ts v0.15.0 独立 adminAxios 实例）
@@ -462,6 +464,12 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 | POST | `/api/admin/dev-user/{id}/ban` | 封禁开发者（status=0） |
 | POST | `/api/admin/dev-user/{id}/unban` | 解封开发者（status=1） |
 | POST | `/api/admin/dev-user/reset-password` | 重置密码（BCrypt 哈希存储） |
+
+### SDK Cloud Function API（`/api/sdk/cloud-function/**`，SdkAuthFilter 鉴权，v0.16.0）
+
+| 方法 | 端点 | 说明 |
+|---|---|---|
+| POST | `/api/sdk/cloud-function/invoke` | SDK 端调用云函数（body: functionName + input，invokeSource="sdk"，复用 CloudFunctionService） |
 
 ## 数据库表（核心）
 

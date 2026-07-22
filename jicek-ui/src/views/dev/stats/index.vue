@@ -122,14 +122,6 @@
             </el-col>
           </el-row>
 
-          <el-alert
-            v-if="incomeFilter.dimension === 'agent'"
-            type="info"
-            :closable="false"
-            :title="t('stats.agentDimensionTip')"
-            style="margin-bottom: 16px"
-          />
-
           <div ref="incomeChartRef" class="chart-container-lg"></div>
 
           <el-table v-if="(incomeData.items || []).length > 0" :data="incomeData.items" border stripe style="margin-top: 16px">

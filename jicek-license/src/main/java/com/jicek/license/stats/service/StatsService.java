@@ -1,6 +1,8 @@
 package com.jicek.license.stats.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jicek.license.agent.entity.Agent;
+import com.jicek.license.agent.mapper.AgentMapper;
 import com.jicek.license.card.entity.CardKey;
 import com.jicek.license.card.entity.CardType;
 import com.jicek.license.card.mapper.CardKeyMapper;
@@ -45,15 +47,18 @@ public class StatsService {
     private final CardTypeMapper cardTypeMapper;
     private final DeviceMapper deviceMapper;
     private final PayOrderMapper payOrderMapper;
+    private final AgentMapper agentMapper;
 
     public StatsService(CardKeyMapper cardKeyMapper,
                         CardTypeMapper cardTypeMapper,
                         DeviceMapper deviceMapper,
-                        PayOrderMapper payOrderMapper) {
+                        PayOrderMapper payOrderMapper,
+                        AgentMapper agentMapper) {
         this.cardKeyMapper = cardKeyMapper;
         this.cardTypeMapper = cardTypeMapper;
         this.deviceMapper = deviceMapper;
         this.payOrderMapper = payOrderMapper;
+        this.agentMapper = agentMapper;
     }
 
     /* ============ 验证量趋势 ============ */
@@ -237,9 +242,7 @@ public class StatsService {
                 dto.setItems(groupByCardType(orders, tenantId));
                 break;
             case JicekConstants.STATS_DIMENSION_AGENT:
-                // 当前 PayOrder 无 agentId 字段（铁律 06：禁止虚构字段），暂返回空列表 + 提示
-                // 待 PayOrder 扩展 agent_id 后再实现代理维度
-                dto.setItems(Collections.emptyList());
+                dto.setItems(groupByAgent(orders, tenantId));
                 break;
             default:
                 break;
@@ -290,6 +293,38 @@ public class StatsService {
             IncomeStatsDTO.IncomeItem item = new IncomeStatsDTO.IncomeItem();
             item.setKey(String.valueOf(e.getKey()));
             item.setName(cardTypeNameMap.getOrDefault(e.getKey(), "卡类#" + e.getKey()));
+            item.setAmount(e.getValue().stream()
+                    .map(PayOrder::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+            item.setCount((long) e.getValue().size());
+            items.add(item);
+        }
+        items.sort((a, b) -> b.getAmount().compareTo(a.getAmount()));
+        return items;
+    }
+
+    /**
+     * 按代理分组
+     *
+     * 数据源：PayOrder.agentId（v0.15.0 起已扩展，null 表示终端用户购买，过滤掉）
+     * 代理名预加载避免 N+1（与 groupByCardType 风格一致）
+     */
+    private List<IncomeStatsDTO.IncomeItem> groupByAgent(List<PayOrder> orders, Long tenantId) {
+        // 预加载代理名（避免 N+1）
+        Map<Long, String> agentNameMap = agentMapper.selectList(
+                new LambdaQueryWrapper<Agent>().eq(Agent::getTenantId, tenantId))
+                .stream()
+                .collect(Collectors.toMap(Agent::getId, Agent::getUsername, (a, b) -> a));
+
+        Map<Long, List<PayOrder>> grouped = orders.stream()
+                .filter(o -> o.getAgentId() != null)
+                .collect(Collectors.groupingBy(PayOrder::getAgentId));
+
+        List<IncomeStatsDTO.IncomeItem> items = new ArrayList<>();
+        for (Map.Entry<Long, List<PayOrder>> e : grouped.entrySet()) {
+            IncomeStatsDTO.IncomeItem item = new IncomeStatsDTO.IncomeItem();
+            item.setKey(String.valueOf(e.getKey()));
+            item.setName(agentNameMap.getOrDefault(e.getKey(), "代理#" + e.getKey()));
             item.setAmount(e.getValue().stream()
                     .map(PayOrder::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add));

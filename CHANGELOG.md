@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.16.0] - 2026-07-22
+
+### [补全] 三项遗留全部完成（代理维度统计 + SDK 云函数 + 国密可选）
+
+补全早期版本标注的三项非阻塞遗留项，至此所有历史遗留全部清零。
+
+- **收入统计代理维度**：StatsService 新增 groupByAgent()（按 PayOrder.agentId 分组 + AgentMapper 预加载代理名），前端移除「待扩展」alert 提示，代理维度正常展示
+- **SDK 云函数调用接口**：新建 SdkCloudFunctionController（POST /api/sdk/cloud-function/invoke），SDK 端可调用云函数（SdkAuthFilter 鉴权，invokeSource="sdk"）；CloudFunctionService 新增 findBySoftwareAndName 三元查询
+- **国密 SM2/SM4 可选实现**：新建 SmCryptoService（SM4-CBC 对称 + SM2 非对称 + SM3 摘要），@ConditionalOnProperty 默认关闭，密钥环境变量注入（JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY），不影响现有 AES/RSA
+
 ## [0.15.0] - 2026-07-22
 
 ### [新增] 四项扩展全部完成（代理扣余额 + 分润回调 + 管理员端 + i18n 全量）

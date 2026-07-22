@@ -379,4 +379,12 @@ public final class JicekConstants {
     public static final int END_USER_PASSWORD_MIN_LEN = 6;
     /** 终端用户密码最大长度 */
     public static final int END_USER_PASSWORD_MAX_LEN = 64;
+
+    /* ============ 国密配置（可选，v0.x） ============ */
+    /** SM4 对称密钥长度（字节，128 位，对标 SPEC.md 6.6 国密可选-对称 SM4 128 CBC） */
+    public static final int SM4_KEY_LENGTH = 16;
+    /** SM4 CBC 模式 IV 长度（字节，等于分组大小） */
+    public static final int SM4_IV_LENGTH = 16;
+    /** SM2 私钥长度（字节，256 位，对标 SPEC.md 6.6 国密可选-非对称 SM2 256） */
+    public static final int SM2_KEY_LENGTH = 32;
 }

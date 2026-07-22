@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.15.0 |
+| 当前版本 | v0.16.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
@@ -64,6 +64,8 @@
 | enduser/ | `enduser/` (entity/mapper/dto/service/controller) | ✅ v0.14.0（终端用户账号体系，H5 账号密码登录复用 H5Session） |
 | ticket/controller/AdminTicketController | `ticket/controller/AdminTicketController` | ✅ v0.15.0（管理员工单处理：page/get/reply/close，@AuthRequired(role=2)） |
 | auth/controller/AdminDevUserController + auth/service/DevUserService | `auth/controller/AdminDevUserController` + `auth/service/DevUserService` | ✅ v0.15.0（管理员租户管理：page/get/ban/unban/reset-password，@AuthRequired(role=2)） |
+| sdk/controller/SdkCloudFunctionController | `sdk/controller/SdkCloudFunctionController` | ✅ v0.16.0（SDK 端云函数调用，POST /api/sdk/cloud-function/invoke，invokeSource="sdk"，SdkAuthFilter 鉴权） |
+| crypto/SmCryptoService | `crypto/SmCryptoService` | ✅ v0.16.0（国密 SM2/SM4/SM3 可选实现，@ConditionalOnProperty 默认关闭，不影响现有 AES/RSA） |
 
 ### 前端（jicek-ui）
 
@@ -438,6 +440,12 @@ SDK 请求头规范（所有 `/api/sdk/**` 必填）：
 | POST | `/api/admin/dev-user/{id}/unban` | 解封开发者（status=1） |
 | POST | `/api/admin/dev-user/reset-password` | 重置密码（BCrypt 哈希存储） |
 
+### 7.10 SDK Cloud Function API（`/api/sdk/cloud-function/**`，SdkAuthFilter 鉴权，v0.16.0）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/sdk/cloud-function/invoke` | SDK 端调用云函数（body: functionName + input，invokeSource="sdk"，复用 CloudFunctionService.invoke，softwareId 从 SoftwareContext 获取） |
+
 ## 8. 数据库表（核心）
 
 | 表名 | 关键字段 | 说明 |
@@ -601,6 +609,7 @@ const status = await deployApi.status()
 62. **多语言国际化渐进式改造**（v0.14.0）：vue-i18n 9.x Composition API 模式（legacy: false），useI18n() 在 setup 获取 t 函数。语言包按模块组织（common/lang/topbar/menu/login/endUser），新增页面应优先用 t() 而非硬编码中文。LangSwitch 切换后 location.reload() 同步 Element Plus 语言包（因 main.ts 仅初始化时按 localStorage 决定 EP locale）。localStorage key: `jicek_locale`。
 63. **管理员 token 独立于开发者 token**（v0.15.0）：管理员登录存 `jicek_admin_token`，开发者存 `jicek_token`，前端 `adminAxios` 独立实例注入 admin token，路由守卫按 `/admin/*` 前缀分流。后端 `@AuthRequired(role=2)` 限制管理员接口，`JwtAuthInterceptor` 拦截 `/api/admin/**`。
 64. **分润幂等与事务边界**（v0.15.0）：`PayNotifyService` 支付成功事务（订单状态+卡密发放）提交后，再调 `CommissionService.grantCommission`，分润独立事务 + try-catch。分润失败不回滚卡密（已发放不可逆）。`jicek_commission` 表 `uk_order_agent(out_trade_no, agent_id)` 唯一索引保证幂等，重复回调短路返回。代理制卡扣余额在制卡事务内先扣款再生成卡密，余额不足事务回滚。
+65. **国密 SM2/SM4 可选实现默认关闭**（v0.16.0）：`SmCryptoService` 用 `@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true")` 控制，默认 false 不启用。密钥通过 `JICEK_SM4_KEY`（16字节 hex）/ `JICEK_SM2_PRIVATE_KEY` 环境变量注入，未配置时 warn 不阻止启动。SM4 用 CBC 模式对标 SPEC 6.6，SM2 公钥由私钥派生无需单独配置。不影响现有 AES-256-GCM / RSA-2048-OAEP。
 
 ## 12. 验证清单
 

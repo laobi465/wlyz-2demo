@@ -453,6 +453,10 @@
 - 所有用户可见文案（表格列名/按钮/弹窗标题/表单 label/Empty/placeholder/状态标签/确认弹窗文案）均支持 `t('module.key')` 中英文切换
 - 保留 LangSwitch 组件（v0.14.0）切换机制：localStorage `jicek_locale` 持久化 + `location.reload` 同步 Element Plus 语言包
 
+### 8.11 收入统计代理维度（v0.16.0）
+
+- stats 页面代理维度（dimension=agent）移除「待扩展」alert 提示，正常展示柱状图+折线图+明细表格，与其他维度一致
+
 ## 9. 交互规范
 
 ### 9.1 加载状态

@@ -274,6 +274,15 @@
   - [x] 多语言国际化全量：17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块（dashboard/software/cardType/cardKey/device/agent/withdraw/payConfig/payOrder/cloudFunc/stats/ticket/deploy/updatePackage/announcement/shop + admin），所有用户可见文案支持中英文切换
 - 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.15.0 条目；7 份核心文档已同步（CHANGELOG/README/PROMPT/PROJECT/SPEC/UI-DESIGN/TODO）
 
+### [已完成] v0.16.0 新增功能 ✅
+- 优先级：P2（遗留补全）
+- 完成版本：v0.16.0
+- 完成项：
+  - [x] 收入统计代理维度：StatsService 新增 groupByAgent()（按 PayOrder.agentId 分组 + AgentMapper 预加载代理名），前端 stats 页移除 dimension='agent' 的 alert 提示，代理维度正常展示
+  - [x] SDK 云函数调用接口：新建 SdkCloudFunctionController（POST /api/sdk/cloud-function/invoke，SdkAuthFilter 鉴权，invokeSource="sdk"）；CloudFunctionService 新增 findBySoftwareAndName 三元查询；SdkCloudFunctionInvokeDTO 含 functionName + input
+  - [x] 国密 SM2/SM4 可选实现：新建 SmCryptoService（SM4-CBC 对称 + SM2 非对称 + SM3 摘要），@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true") 默认关闭；JicekProperties.Crypto 加 Sm 内部类；JicekConstants 加国密常量；application.yml 加 jicek.crypto.sm 配置段（JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY 环境变量绑定）；不影响现有 AES/RSA
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.16.0 条目；至此所有历史遗留全部清零；7 份核心文档已同步
+
 ## 待实现清单
 
 全部完成，无待实现项。核心功能与扩展项已全部完成，后续按需迭代。

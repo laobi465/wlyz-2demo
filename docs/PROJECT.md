@@ -44,11 +44,12 @@
 │   └── jicek-license   # ★ 卡密验证核心模块（新增，v0.2.0 已实现）
 │       ├── common      # 通用：R/ResultCode/ServiceException/常量
 │       ├── config      # 配置：JicekProperties/MybatisPlusConfig/CorsConfig
-│       ├── crypto      # ★ 加密层（已实现）
+│       ├── crypto      # ★ 加密层（已实现，v0.16.0 加 SmCryptoService 国密可选）
 │       │   ├── AesCryptoService     # AES-256-GCM
 │       │   ├── RsaCryptoService     # RSA-2048-OAEP
 │       │   ├── HmacSignService      # HMAC-SHA256
 │       │   ├── Md5SignService       # MD5（V1 兼容）+ SHA-256
+│       │   ├── SmCryptoService      # ★ SM2/SM4/SM3 国密可选（v0.16.0，@ConditionalOnProperty 默认关闭）
 │       │   └── CryptoConfiguration  # Bean 配置
 │       ├── card        # 卡密模块（已实现）
 │       │   ├── entity  # CardType / CardKey
@@ -107,11 +108,11 @@
 │       │   ├── dto     # SoftwareSaveDTO / SoftwareDetailDTO / SoftwareCreateResultDTO
 │       │   ├── service # SoftwareService（CRUD + 密钥生成 + 轮换 + 关联校验）
 │       │   └── controller # DevSoftwareController（/api/dev/software/* 7 接口）
-│       ├── sdk         # ★ SDK 模块（v0.9.0 新增，终端用户通过 SDK 在开发者软件内接入）
+│       ├── sdk         # ★ SDK 模块（v0.9.0 新增，终端用户通过 SDK 在开发者软件内接入；v0.16.0 加 SdkCloudFunctionController）
 │       │   ├── auth    # SdkAuthFilter（签名鉴权） + SoftwareContext（ThreadLocal） + CachedBodyHttpServletRequest
-│       │   ├── dto     # SdkLoginRequestDTO / SdkLoginResultDTO
+│       │   ├── dto     # SdkLoginRequestDTO / SdkLoginResultDTO / SdkCloudFunctionInvokeDTO（v0.16.0）
 │       │   ├── service # SdkAuthService（卡密登录）
-│       │   └── controller # SdkLoginController（/api/sdk/card/login）
+│       │   └── controller # SdkLoginController（/api/sdk/card/login） + SdkCloudFunctionController（v0.16.0，/api/sdk/cloud-function/invoke）
 │       ├── announcement # ★ 公告模块（v0.10.0 新增，开发者按软件/版本下发，SDK 拉取展示）
 │       │   ├── entity  # Announcement
 │       │   ├── mapper  # AnnouncementMapper
@@ -285,6 +286,11 @@
 - [x] 分润接入支付回调 ✅ v0.15.0（PayOrder 加 agentId + jicek_pay_order 加 idx_agent；PayNotifyService 支付成功后调 CommissionService.grantCommission，分润独立事务 + try-catch，分润失败不回滚卡密；jicek_commission 加 uk_order_agent 幂等）
 - [x] 管理员端工单处理 + 租户管理 ✅ v0.15.0（AdminTicketController 4 接口 + AdminDevUserController 5 接口，@AuthRequired(role=2)；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离）
 - [x] 多语言国际化全量 ✅ v0.15.0（17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块，所有用户可见文案支持中英文切换）
+
+### 3.11 v0.16.0 新增功能（已完成，三项遗留补全）
+- [x] 收入统计代理维度 ✅ v0.16.0（StatsService 新增 groupByAgent() 按 PayOrder.agentId 分组 + AgentMapper 预加载代理名；前端 stats 页移除 dimension='agent' 的 alert 提示，代理维度正常展示）
+- [x] SDK 云函数调用接口 ✅ v0.16.0（新建 SdkCloudFunctionController，POST /api/sdk/cloud-function/invoke，SdkAuthFilter 鉴权，invokeSource="sdk"；CloudFunctionService 新增 findBySoftwareAndName 三元查询；SdkCloudFunctionInvokeDTO 含 functionName + input）
+- [x] 国密 SM2/SM4 可选实现 ✅ v0.16.0（新建 SmCryptoService：SM4-CBC 对称 + SM2 非对称 + SM3 摘要；@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true") 默认关闭；密钥环境变量 JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY 注入；不影响现有 AES-256-GCM / RSA-2048-OAEP）
 
 ## 4. 角色权限体系
 
