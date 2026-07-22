@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.4.0 |
+| 当前版本 | v0.4.1 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板） |
@@ -60,9 +60,11 @@
 | 全局样式 | `src/styles/jicek.scss` | ✅ |
 | 布局 | `src/layout/DevLayout.vue` | ✅ |
 | 公共组件 | `src/components/jicek/` (StatusTag / AmountInput / ConfirmDialog) | ✅ |
-| 控制台页 | `src/views/dev/dashboard/` | ✅ |
+| 控制台页 | `src/views/dev/dashboard/` | ✅ v0.4.1 集成 ECharts |
 | 卡密生成页 | `src/views/dev/card-key-gen/` | ✅ |
 | 卡密查询页 | `src/views/dev/card-key-list/` | ✅ |
+| 卡类管理页 | `src/views/dev/card-type/` | ✅ v0.4.1 |
+| 设备管理页 | `src/views/dev/device/` | ✅ v0.4.1 |
 | 支付配置页 | `src/views/dev/pay-config/` | ✅ |
 | 资金流水页 | `src/views/dev/pay-order/` | ✅ |
 | 代理管理页 | `src/views/dev/agent/` | ✅ v0.4.0 |
@@ -87,15 +89,25 @@
   - 前端代理管理页 + 提现审核页 + API/路由/菜单集成
   - 技术决策：未引入 WarmFlow，采用简单状态机；密码用 Hutool BCrypt
 
+### P1（高，v0.4.1 已完成 ✅）
+- **前端补全 - 第一批**（依据铁律 06，仅实现后端 Controller 已存在的页面）：
+  - 卡类管理页：CRUD + 4 种卡类型联动表单 + Decimal.js 金额格式化
+  - 设备管理页：分页 + 详情弹窗 + 封禁/解封 + 指纹脱敏 + 设备状态组合
+  - Dashboard ECharts 集成：卡密状态分布饼图 + 今日收支柱状图
+  - StatusTag 扩展：新增 device 类型，现支持 4 种状态语义（order/card/withdraw/device）
+  - deviceApi 新增（page/get/ban/unban），含 current→page 参数映射
+  - 路由 /card-type + /device；侧边栏卡密管理子菜单 + 用户管理子菜单
+
 ### P1（高，v0.5.0 计划）
 - **SDK 联调**：接入真实服务端联调测试 + 加壳工具推荐文档（VMProtect/Themida/Enigma）
 - **CardKeyService.useCard 完整流程**：DeviceService.bindDevice 接入卡密校验 + Sa-Token 鉴权 + software 表读取签名密钥/心跳间隔
 - **分润接入支付回调**：PaymentTransactionService 支付成功时触发 CommissionService.grantCommission
 - **代理制卡扣余额**：AgentService.deductBalance 接入代理制卡流程
-- **前端补全**：
-  - 软件管理页面、卡类管理页面、用户管理页面、设备管理页面
-  - ECharts 数据统计图表
-  - H5 终端用户页面（购卡/续费/换机/在线设备）
+- **前端补全 - 剩余项**：
+  - 软件管理页面（待后端 DevSoftwareController）
+  - 用户管理页面（待后端 DevUserController）
+  - 数据统计扩展图表：验证量趋势 / 设备在线热力图 / 收入多维 / 防破解事件
+  - H5 终端用户页面（购卡/续费/换机/在线设备，待后端 H5 Controller）
 
 ### P2（中）
 - 云函数远程执行（沙箱：Lua/LuaJIT 或 GraalVM）
@@ -249,6 +261,10 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 提现 | GET | `/api/dev/withdraw/page` | 提现分页 |
 | 提现 | GET | `/api/dev/withdraw/{tenantId}/{withdrawId}` | 提现详情 |
 | 提现 | GET | `/api/dev/withdraw/pending-amount` | 待审核总额 |
+| 设备 | GET | `/api/dev/device/page` | 设备分页（参数：tenantId/softwareId/status/onlineStatus/page/size） |
+| 设备 | GET | `/api/dev/device/{tenantId}/{deviceId}` | 设备详情（含完整指纹） |
+| 设备 | POST | `/api/dev/device/ban` | 封禁设备（params: tenantId/deviceId） |
+| 设备 | POST | `/api/dev/device/unban` | 解封设备（params: tenantId/deviceId） |
 
 ### 7.2 公开回调
 
@@ -286,18 +302,26 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 
 | 组件 | 用途 |
 |---|---|
-| `StatusTag.vue` | 状态标签（订单/卡密/提现三种模式） |
+| `StatusTag.vue` | 状态标签（4 种类型：order 订单 / card 卡密 / withdraw 提现 / device 设备） |
 | `AmountInput.vue` | 金额输入（decimal.js 精度） |
 | `ConfirmDialog.vue` | 二次确认弹窗（资金/卡密操作） |
+
+> 设备状态约定（caller 需组合 status + onlineStatus 后传入）：0=在线 / 1=离线 / 2=封禁
 
 ### 9.3 API 调用约定
 
 ```typescript
-import { dashboardApi, cardKeyApi, cardTypeApi, payApi, agentApi, withdrawApi } from '@/api'
+import {
+  dashboardApi, cardKeyApi, cardTypeApi, payApi,
+  agentApi, withdrawApi, deviceApi
+} from '@/api'
 
 // 统一响应：{ code, msg, data }
 // 拦截器自动剥 data，失败自动 ElMessage.error
 const data = await dashboardApi.summary(tenantId)
+
+// 分页参数映射：前端 current/size → 后端 page/size（device 接口用 page/size，card-type 用 current/size，差异在 API 层屏蔽）
+const deviceList = await deviceApi.page({ tenantId: 1, current: 1, size: 20 })
 ```
 
 ## 10. 开发流程
@@ -346,6 +370,11 @@ const data = await dashboardApi.summary(tenantId)
 9. **提现状态机**：不可逆（0→1→3 / 0→2 / 1→4），资金流必须同事务（balance↔frozenBalance↔totalWithdraw），禁伪异步。
 10. **分润撤销余额不足**：余额 < 撤销金额时，余额清零 + 累计收益扣减差额，余额永不为负。
 11. **代理密码**：使用 Hutool `cn.hutool.crypto.digest.BCrypt`（spring-security-crypto 未引入依赖）。
+12. **设备状态组合**：Device 实体含两个状态字段（status 0/1 + onlineStatus 0/1），UI 层须通过 `deviceTagStatus()` 合并为 StatusTag 的 device 类型值（封禁→2 / 在线→0 / 离线→1），不可直接展示两个字段。
+13. **设备指纹脱敏**：列表展示仅前 16 字符 + `****`，详情弹窗可展示完整指纹（审计用），符合「敏感信息最小暴露」原则。
+14. **分页参数命名差异**：DevCardTypeController 使用 `current`/`size`，DevDeviceController 使用 `page`/`size`。前端统一使用 `current`/`size`，在 API 层做映射（如 `page: params.current || 1`），不可让调用方关心差异。
+15. **ECharts 生命周期**：必须 `onBeforeUnmount` 调用 `chart.dispose()` 释放实例；异步数据驱动渲染须用 `watch(data, () => nextTick(() => render()))` 确保 DOM 已就绪；窗口 resize 须监听并调用 `chart.resize()`。
+16. **页面实现范围**（铁律 06）：仅实现后端 Controller 已存在的页面。若 UI-DESIGN.md 列出但后端无 Controller，**禁止虚构接口**，应标注「待后端 XXController 实现后再补」。
 
 ## 12. 验证清单
 

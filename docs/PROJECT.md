@@ -72,18 +72,22 @@
 │       ├── device      # 设备指纹（待实现 v0.3.0）
 │       ├── heartbeat   # 心跳保活（待实现 v0.3.0）
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架）
-    ├── src/api         # API 客户端 + 接口定义
-    ├── src/components/jicek # 公共组件（StatusTag/AmountInput/ConfirmDialog）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表）
+    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi）
+    ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置
+    ├── src/router      # 路由配置（8 个页面路由）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     └── src/views/dev   # 开发者页面
-        ├── dashboard   # 控制台
+        ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
         ├── card-key-gen # 卡密生成
         ├── card-key-list # 卡密查询
+        ├── card-type   # ★ 卡类管理（v0.4.1 新增，CRUD + 4 种类型联动表单）
+        ├── device      # ★ 设备管理（v0.4.1 新增，分页 + 详情 + 封禁/解封 + 指纹脱敏）
         ├── pay-config  # 支付配置
-        └── pay-order   # 资金流水
+        ├── pay-order   # 资金流水
+        ├── agent       # 代理管理（v0.4.0）
+        └── withdraw    # 提现审核（v0.4.0）
 ```
 
 ### 2.3 数据流
@@ -109,10 +113,10 @@
 - [ ] 在线/离线状态管理
 
 ### 3.2 卡密管理
-- [ ] 卡类管理（4 种类型 + 定价 + 绑定策略）
-- [ ] 批量生成（自定义前缀、字符集、长度）
-- [ ] 加密存储（AES-256-GCM）
-- [ ] 查询/封禁/解封/退款
+- [x] 卡类管理（4 种类型 + 定价 + 绑定策略）✅ v0.4.1（前端 CRUD + 类型联动表单）
+- [x] 批量生成（自定义前缀、字符集、长度）✅ v0.2.0
+- [x] 加密存储（AES-256-GCM）✅ v0.2.0
+- [x] 查询/封禁/解封/退款 ✅ v0.2.0
 
 ### 3.3 支付系统
 - [ ] 彩虹易支付 V1 适配器（MD5 签名）

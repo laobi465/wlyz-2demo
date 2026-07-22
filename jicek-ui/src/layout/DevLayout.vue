@@ -23,8 +23,16 @@
             <el-icon><Key /></el-icon>
             <span>卡密管理</span>
           </template>
+          <el-menu-item index="/card-type">卡类管理</el-menu-item>
           <el-menu-item index="/card-key-gen">卡密生成</el-menu-item>
           <el-menu-item index="/card-key-list">卡密查询</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="user">
+          <template #title>
+            <el-icon><Monitor /></el-icon>
+            <span>用户管理</span>
+          </template>
+          <el-menu-item index="/device">设备管理</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="pay">
           <template #title>

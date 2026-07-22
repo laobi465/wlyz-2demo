@@ -28,6 +28,25 @@ export const cardTypeApi = {
   delete: (id: number) => api.delete(`/api/dev/card-type/${id}`)
 }
 
+/* ============ 设备 ============ */
+export const deviceApi = {
+  page: (params: any) =>
+    api.get('/api/dev/device/page', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      status: params.status,
+      onlineStatus: params.onlineStatus,
+      page: params.current || 1,
+      size: params.size || 20
+    }),
+  get: (tenantId: number, deviceId: number) =>
+    api.get(`/api/dev/device/${tenantId}/${deviceId}`),
+  ban: (tenantId: number, deviceId: number) =>
+    api.post('/api/dev/device/ban', null, { params: { tenantId, deviceId } }),
+  unban: (tenantId: number, deviceId: number) =>
+    api.post('/api/dev/device/unban', null, { params: { tenantId, deviceId } })
+}
+
 /* ============ 支付 ============ */
 export const payApi = {
   getConfig: (tenantId: number) => api.get(`/api/dev/pay/config/${tenantId}`),

@@ -31,6 +31,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '卡密查询', icon: 'Search' }
       },
       {
+        path: 'card-type',
+        name: 'CardType',
+        component: () => import('@/views/dev/card-type/index.vue'),
+        meta: { title: '卡类管理', icon: 'Files' }
+      },
+      {
+        path: 'device',
+        name: 'Device',
+        component: () => import('@/views/dev/device/index.vue'),
+        meta: { title: '设备管理', icon: 'Monitor' }
+      },
+      {
         path: 'pay-config',
         name: 'PayConfig',
         component: () => import('@/views/dev/pay-config/index.vue'),

@@ -174,10 +174,68 @@
 - 提现工作流：采用简单状态机（对标 PayOrderStateMachineService 模式），未引入 WarmFlow（保持依赖精简）
 - 分润撤销余额不足保护：余额 < 撤销金额时，余额清零 + 累计收益扣减差额，确保余额永不为负
 
+## [0.4.1] - 2026-07-22
+
+### [新增] 前端补全（卡类/设备/Dashboard 图表）
+
+依据 UI-DESIGN.md 6.2 节页面清单 + 铁律 06（仅实现后端 Controller 已存在的页面），完成 3 个前端页面 + ECharts 数据可视化，并对 StatusTag/API/路由/菜单进行配套扩展。
+
+#### 新增页面
+
+- **卡类管理页**（`views/dev/card-type/index.vue`）：
+  - 完整 CRUD：分页列表 + 创建/编辑表单 + 删除二次确认
+  - 类型联动表单：4 种卡类型（1时长卡/2次数卡/3功能卡/4永久卡）通过 `v-if` 切换显示对应字段
+  - `durationHint` 计算属性：将秒数转为「X天Y小时」人类可读时长
+  - `specText()` / `bindStrategyText()` 表格列展示
+  - 金额字段使用 Decimal.js 格式化（铁律 13 金额精度）
+  - 表单校验规则（必填项 + 数值范围）
+
+- **设备管理页**（`views/dev/device/index.vue`）：
+  - 分页查询：支持按 softwareId / status / onlineStatus 筛选
+  - 详情弹窗：el-descriptions 2 列布局，含完整指纹（`<code>` 等宽字体展示）
+  - 封禁/解封操作：调用 `/api/dev/device/ban` + `/unban`，操作后刷新列表
+  - **设备状态组合**：Device 实体含两个状态字段（status 0/1 + onlineStatus 0/1），通过 `deviceTagStatus()` 组合为 StatusTag 的 device 类型值（封禁→2 / 在线→0 / 离线→1）
+  - **指纹脱敏**：列表中指纹仅展示前 16 字符 + `****`，详情弹窗展示完整指纹
+  - OS 类型以 el-tag 色彩映射展示（windows/linux/macos/android/ios）
+
+- **Dashboard ECharts 集成**（`views/dev/dashboard/index.vue` 改写）：
+  - 新增依赖：`echarts@^5.5.0`
+  - 卡密状态分布饼图（环形，40%/65% 半径）：未使用（#6B7280 灰）/ 已使用（#2E7D5B 绿）/ 已封禁（#B23A3A 红）
+  - 今日收支柱状图：今日收入（#2E7D5B 绿）/ 今日退款（#B23A3A 红）/ 今日净收入（#1A4D8F 主色蓝）
+  - 生命周期管理：`ref<HTMLElement>` 容器 + `let chart: ECharts | null` 实例 + `onBeforeUnmount` 销毁 + `window:resize` 监听
+  - 数据驱动渲染：`watch(summary, ...)` + `nextTick()` 确保异步数据加载后 DOM 已就绪
+  - 空数据保护：饼图数据为 0 时显示「暂无数据」灰色占位
+  - 金额 tooltip 使用 Decimal.js：`¥${new Decimal(p.value).toFixed(2)}`
+
+#### 公共组件扩展
+
+- **StatusTag.vue 扩展**：Props.type 新增 `'device'` 类型，配套 `deviceMap` 三态映射（0=在线 success / 1=离线 pending / 2=已封禁 danger），`map` computed 分支扩展支持 4 类型
+- 现支持 4 种状态语义：order（订单）/ card（卡密）/ withdraw（提现）/ device（设备）
+
+#### API 定义
+
+- 新增 `deviceApi`（`src/api/index.ts`）：
+  - `page` / `get` / `ban` / `unban` 4 方法
+  - 分页参数映射：前端 `current`/`size` → 后端 `page`/`size`（DevDeviceController 使用 page/size，DevCardTypeController 使用 current/size，差异在 API 层屏蔽）
+- `cardTypeApi` 此前已存在（v0.2.0）
+
+#### 路由 + 菜单
+
+- 路由新增：`/card-type`（CardType，icon: Files）+ `/device`（Device，icon: Monitor）
+- DevLayout 侧边栏：
+  - 「卡密管理」子菜单新增「卡类管理」项
+  - 新增「用户管理」子菜单（icon: Monitor）+ 「设备管理」项
+
+#### 技术决策
+
+- **页面实现范围**：依据铁律 06（防幻觉），仅实现后端 Controller 已存在的页面。软件管理（无 Software Controller）/ 用户管理（无 User Controller）/ H5 终端用户页（无对应 Controller）均未实现，避免虚构接口
+- **设备状态组合策略**：Device 实体的 status 和 onlineStatus 字段语义不同（封禁态 vs 在线态），UI 层合并为单一展示态，避免重复标签
+- **指纹脱敏策略**：列表展示脱敏（前 16 字符）+ 详情弹窗展示完整（用于审计），符合「敏感信息最小暴露」原则
+
 ## 待发布版本（开发中）
 
 ### [未发布] v0.5.0
-- 前端补全：软件/卡类/用户/设备管理 + ECharts + H5
+- 前端补全剩余项：软件/用户管理（待后端 Controller）+ H5 终端用户页面
 - CardKeyService.useCard 完整流程接入 + Sa-Token 鉴权 + software 表读取签名密钥/心跳间隔
 - 代理制卡扣余额接入 AgentService.deductBalance
 - 分润发放接入 PaymentTransactionService（支付成功回调触发 grantCommission）
