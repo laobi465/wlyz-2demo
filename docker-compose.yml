@@ -1,0 +1,119 @@
+services:
+  jicek-mysql:
+    image: mysql:8.0
+    container_name: jicek-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-jicek_root_2024}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-jicek}
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-jicek}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-jicek_2024}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./jicek-license/src/main/resources/sql/jicek_init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-jicek_root_2024}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - jicek-net
+
+  jicek-redis:
+    image: redis:7-alpine
+    container_name: jicek-redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jicek-net
+
+  jicek-app:
+    build:
+      context: ./jicek-license
+      dockerfile: Dockerfile
+    container_name: jicek-app
+    restart: unless-stopped
+    depends_on:
+      jicek-mysql:
+        condition: service_healthy
+      jicek-redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MYSQL_HOST: jicek-mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-jicek}
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-jicek}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-jicek_2024}
+      REDIS_HOST: jicek-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # 加密密钥（必须配置，否则启动 warn）
+      JICEK_AES_KEY: ${JICEK_AES_KEY:-}
+      JICEK_RSA_PRIVATE_KEY: ${JICEK_RSA_PRIVATE_KEY:-}
+      JICEK_RSA_PUBLIC_KEY: ${JICEK_RSA_PUBLIC_KEY:-}
+      JICEK_HMAC_KEY: ${JICEK_HMAC_KEY:-}
+      JICEK_JWT_SECRET: ${JICEK_JWT_SECRET:-}
+      # 可选：国密
+      JICEK_SM_ENABLED: ${JICEK_SM_ENABLED:-false}
+      JICEK_SM4_KEY: ${JICEK_SM4_KEY:-}
+      JICEK_SM2_PRIVATE_KEY: ${JICEK_SM2_PRIVATE_KEY:-}
+      # 可选：部署（默认关闭；如需启用请在宿主机另行配置 git/mvn/npm 环境）
+      JICEK_DEPLOY_ENABLED: ${JICEK_DEPLOY_ENABLED:-false}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      JICEK_DEPLOY_RESTART_MODE: ${JICEK_DEPLOY_RESTART_MODE:-docker}
+      JICEK_DEPLOY_DOCKER_CONTAINER: jicek-app
+      JICEK_DEPLOY_PROJECT_ROOT: ${JICEK_DEPLOY_PROJECT_ROOT:-/workspace}
+      JICEK_DEPLOY_HEALTH_URL: http://127.0.0.1:8080
+      # 存储配置
+      JICEK_STORAGE_ROOT: /data/jicek/storage
+      JICEK_STORAGE_DOWNLOAD_BASE_URL: ${JICEK_STORAGE_DOWNLOAD_BASE_URL:-}
+      # JVM 参数
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
+      TZ: Asia/Shanghai
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - app_storage:/data/jicek/storage
+    networks:
+      - jicek-net
+
+  jicek-ui:
+    build:
+      context: ./jicek-ui
+      dockerfile: Dockerfile
+    container_name: jicek-ui
+    restart: unless-stopped
+    depends_on:
+      - jicek-app
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "${UI_PORT:-80}:80"
+    networks:
+      - jicek-net
+
+volumes:
+  mysql_data:
+  redis_data:
+  app_storage:
+
+networks:
+  jicek-net:
+    driver: bridge

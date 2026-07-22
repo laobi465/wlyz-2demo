@@ -5,11 +5,18 @@
  * v0.7.0 鉴权：
  *  - 新增 /login 路由（无需鉴权，独立布局）
  *  - beforeEach 守卫：无 token 跳 /login；已登录访问 /login 跳 /dashboard
+ *
+ * v0.15.0 管理员后台：
+ *  - 新增 /admin/login（公开）+ /admin（受保护，AdminLayout）路由
+ *  - 管理员 token 独立存储（jicek_admin_token），与开发者 jicek_token 隔离
+ *  - 守卫按路径前缀分流：/admin/* 校验管理员 token，其余校验开发者 token
  */
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { TOKEN_KEY } from '@/api/request'
+import { ADMIN_TOKEN_KEY } from '@/api/admin'
 
 const Layout = () => import('@/layout/DevLayout.vue')
+const AdminLayout = () => import('@/layout/AdminLayout.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -17,6 +24,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Login',
     component: () => import('@/views/dev/login/index.vue'),
     meta: { title: '登录', public: true }
+  },
+  {
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: () => import('@/views/admin/login/index.vue'),
+    meta: { title: '管理员登录', public: true, admin: true }
   },
   {
     path: '/h5',
@@ -182,6 +195,25 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '内嵌卡网', icon: 'Shop' }
       }
     ]
+  },
+  {
+    path: '/admin',
+    component: AdminLayout,
+    redirect: '/admin/ticket',
+    children: [
+      {
+        path: 'ticket',
+        name: 'AdminTicket',
+        component: () => import('@/views/admin/ticket/index.vue'),
+        meta: { title: '工单管理', icon: 'Service', admin: true }
+      },
+      {
+        path: 'dev-user',
+        name: 'AdminDevUser',
+        component: () => import('@/views/admin/dev-user/index.vue'),
+        meta: { title: '开发者管理', icon: 'User', admin: true }
+      }
+    ]
   }
 ]
 
@@ -190,11 +222,36 @@ const router = createRouter({
   routes
 })
 
-// 全局守卫：未登录跳 /login，已登录访问 /login 跳 /dashboard
+// 全局守卫：
+//  - /admin/* 路由校验管理员 token（jicek_admin_token），缺失跳 /admin/login
+//  - 其余受保护页面校验开发者 token（jicek_token），缺失跳 /login
 router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem(TOKEN_KEY)
+  const isAdminRoute = to.path.startsWith('/admin')
+  const isAdminLogin = to.path === '/admin/login'
+
+  if (isAdminRoute) {
+    const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY)
+    if (isAdminLogin) {
+      // 管理员登录页：已登录跳工单管理
+      if (adminToken) {
+        next('/admin/ticket')
+      } else {
+        next()
+      }
+      return
+    }
+    // 受保护管理员页面：无 token 跳管理员登录
+    if (!adminToken) {
+      next({ path: '/admin/login', query: { redirect: to.fullPath } })
+      return
+    }
+    next()
+    return
+  }
+
+  // 开发者/H5 公开页
   if (to.meta.public) {
-    // 公开页面（如登录页）：已登录则跳控制台
+    const token = localStorage.getItem(TOKEN_KEY)
     if (token && to.path === '/login') {
       next('/dashboard')
     } else {
@@ -202,7 +259,9 @@ router.beforeEach((to, _from, next) => {
     }
     return
   }
-  // 受保护页面：无 token 跳登录
+
+  // 受保护开发者页面：无 token 跳登录
+  const token = localStorage.getItem(TOKEN_KEY)
   if (!token) {
     next({ path: '/login', query: { redirect: to.fullPath } })
     return

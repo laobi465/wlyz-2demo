@@ -1,5 +1,39 @@
 # 更新日志
 
+## [0.17.0] - 2026-07-22
+
+### [新增] Docker 一键部署（宝塔面板 + Docker Compose）
+
+新增 Docker 部署能力，支持宝塔面板环境下一键安装。
+
+- **一键安装脚本**：install.sh 自动检测宝塔面板 + Docker + 端口冲突 + 生成密钥 + 部署 4 服务 + 输出配置到 /root/jicek-deploy-info.txt
+- **Docker 编排**：docker-compose.yml 编排 mysql/redis/app/ui 4 服务，健康检查 + 依赖顺序启动
+- **多阶段构建**：后端 Dockerfile（maven temurin-17 → jre-jammy + curl HEALTHCHECK），前端 Dockerfile（node:20-alpine → nginx:stable-alpine）
+- **端口冲突检测**：用 ss/netstat 实查 6 端口（8080/3306/6379/80/8888/888），识别占用进程名，无假数据
+- **密钥自动生成**：MySQL/AES/HMAC/JWT/RSA 运行时随机生成，不硬编码占位
+- **pom.xml**：新增 spring-boot-starter-actuator（HEALTHCHECK 依赖 /actuator/health）
+
+## [0.16.0] - 2026-07-22
+
+### [补全] 三项遗留全部完成（代理维度统计 + SDK 云函数 + 国密可选）
+
+补全早期版本标注的三项非阻塞遗留项，至此所有历史遗留全部清零。
+
+- **收入统计代理维度**：StatsService 新增 groupByAgent()（按 PayOrder.agentId 分组 + AgentMapper 预加载代理名），前端移除「待扩展」alert 提示，代理维度正常展示
+- **SDK 云函数调用接口**：新建 SdkCloudFunctionController（POST /api/sdk/cloud-function/invoke），SDK 端可调用云函数（SdkAuthFilter 鉴权，invokeSource="sdk"）；CloudFunctionService 新增 findBySoftwareAndName 三元查询
+- **国密 SM2/SM4 可选实现**：新建 SmCryptoService（SM4-CBC 对称 + SM2 非对称 + SM3 摘要），@ConditionalOnProperty 默认关闭，密钥环境变量注入（JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY），不影响现有 AES/RSA
+
+## [0.15.0] - 2026-07-22
+
+### [新增] 四项扩展全部完成（代理扣余额 + 分润回调 + 管理员端 + i18n 全量）
+
+四项遗留扩展全部实施完毕，核心功能与扩展项均已完成。
+
+- **代理制卡扣余额**：CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance（先扣款再生成卡密，同事务）；CardKeyGenRequestDTO 加 agentId 字段
+- **分润接入支付回调**：PayOrder 加 agentId 字段 + jicek_pay_order 表加 agent_id 列；PayNotifyService 支付成功后调用 CommissionService.grantCommission（try-catch，分润失败不回滚卡密）；jicek_commission 表加 uk_order_agent 幂等索引
+- **管理员端 Controller**：AdminTicketController（/api/admin/ticket 4 接口）+ AdminDevUserController（/api/admin/dev-user 5 接口），@AuthRequired(role=2) 限制；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离
+- **多语言国际化全量**：17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块，至此所有用户可见文案均支持中英文切换
+
 ## [0.14.0] - 2026-07-22
 
 ### [新增] 终端用户账号体系 + 多语言国际化

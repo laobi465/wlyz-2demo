@@ -17,33 +17,33 @@
   <div class="jicek-page">
     <el-card>
       <template #header>
-        <span class="jicek-card-title">代理管理</span>
+        <span class="jicek-card-title">{{ t('agent.title') }}</span>
         <div style="float: right">
-          <el-button type="primary" @click="handleCreate">新增代理</el-button>
-          <el-button @click="loadTree">{{ treeVisible ? '隐藏树形' : '显示树形' }}</el-button>
+          <el-button type="primary" @click="handleCreate">{{ t('agent.create') }}</el-button>
+          <el-button @click="loadTree">{{ treeVisible ? t('agent.hideTree') : t('agent.showTree') }}</el-button>
         </div>
       </template>
 
       <!-- 筛选 -->
       <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-        <el-form-item label="上级代理">
-          <el-input v-model.number="filter.parentId" placeholder="0=顶级" clearable style="width: 140px" />
+        <el-form-item :label="t('agent.parentId')">
+          <el-input v-model.number="filter.parentId" :placeholder="t('agent.parentIdPlaceholder')" clearable style="width: 140px" />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filter.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="正常" :value="1" />
-            <el-option label="封禁" :value="0" />
+        <el-form-item :label="t('agent.status')">
+          <el-select v-model="filter.status" :placeholder="t('common.all')" clearable style="width: 120px">
+            <el-option :label="t('agent.statusNormal')" :value="1" />
+            <el-option :label="t('agent.statusBanned')" :value="0" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadData">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="loadData">{{ t('common.search') }}</el-button>
+          <el-button @click="handleReset">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
 
       <!-- 树形展示 -->
       <el-card v-if="treeVisible" shadow="never" style="margin-bottom: 16px">
-        <template #header><span style="font-weight: 600">代理树形结构</span></template>
+        <template #header><span style="font-weight: 600">{{ t('agent.treeTitle') }}</span></template>
         <el-tree
           v-if="treeData.length"
           :data="treeData"
@@ -54,50 +54,50 @@
           <template #default="{ data }">
             <span>
               <span>{{ data.username }}</span>
-              <el-tag v-if="data.status === 0" type="danger" size="small" style="margin-left: 8px">封禁</el-tag>
+              <el-tag v-if="data.status === 0" type="danger" size="small" style="margin-left: 8px">{{ t('agent.banned') }}</el-tag>
               <span style="margin-left: 12px; color: var(--jicek-text-secondary); font-size: 12px">
-                L{{ data.level }} | 余额 ¥{{ formatAmount(data.balance) }} | 分润 {{ data.commissionRate }}% | 下级 {{ data.subCount }}
+                {{ t('agent.treeStats', { level: data.level, balance: formatAmount(data.balance), rate: data.commissionRate, subCount: data.subCount }) }}
               </span>
             </span>
           </template>
         </el-tree>
-        <el-empty v-else description="暂无代理" />
+        <el-empty v-else :description="t('agent.treeEmpty')" />
       </el-card>
 
       <!-- 表格 -->
       <el-table v-loading="loading" :data="tableData" border stripe style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column prop="realName" label="姓名" width="100" />
-        <el-table-column prop="contact" label="联系方式" min-width="140" />
-        <el-table-column prop="level" label="级别" width="80">
+        <el-table-column prop="username" :label="t('agent.username')" min-width="120" />
+        <el-table-column prop="realName" :label="t('agent.realName')" width="100" />
+        <el-table-column prop="contact" :label="t('agent.contact')" min-width="140" />
+        <el-table-column prop="level" :label="t('agent.level')" width="80">
           <template #default="{ row }">L{{ row.level }}</template>
         </el-table-column>
-        <el-table-column prop="balance" label="可用余额" width="120">
+        <el-table-column prop="balance" :label="t('agent.balance')" width="120">
           <template #default="{ row }">¥{{ formatAmount(row.balance) }}</template>
         </el-table-column>
-        <el-table-column prop="frozenBalance" label="冻结余额" width="120">
+        <el-table-column prop="frozenBalance" :label="t('agent.frozenBalance')" width="120">
           <template #default="{ row }">¥{{ formatAmount(row.frozenBalance) }}</template>
         </el-table-column>
-        <el-table-column prop="totalEarnings" label="累计收益" width="120">
+        <el-table-column prop="totalEarnings" :label="t('agent.totalEarnings')" width="120">
           <template #default="{ row }">¥{{ formatAmount(row.totalEarnings) }}</template>
         </el-table-column>
-        <el-table-column prop="commissionRate" label="分润比例" width="100">
+        <el-table-column prop="commissionRate" :label="t('agent.commissionRate')" width="100">
           <template #default="{ row }">{{ row.commissionRate }}%</template>
         </el-table-column>
-        <el-table-column prop="maxSubLevel" label="可发展下级" width="100" />
-        <el-table-column prop="status" label="状态" width="80">
+        <el-table-column prop="maxSubLevel" :label="t('agent.maxSubLevel')" width="100" />
+        <el-table-column prop="status" :label="t('agent.status')" width="80">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-              {{ row.status === 1 ? '正常' : '封禁' }}
+              {{ row.status === 1 ? t('agent.statusNormal') : t('agent.statusBanned') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" min-width="160" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column prop="createTime" :label="t('agent.createTime')" min-width="160" />
+        <el-table-column :label="t('common.operation')" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="success" size="small" @click="handleRecharge(row)">充值</el-button>
+            <el-button link type="primary" size="small" @click="handleEdit(row)">{{ t('agent.editBtn') }}</el-button>
+            <el-button link type="success" size="small" @click="handleRecharge(row)">{{ t('agent.recharge') }}</el-button>
             <el-button
               v-if="row.status === 1"
               link
@@ -105,7 +105,7 @@
               size="small"
               @click="handleBan(row)"
             >
-              封禁
+              {{ t('agent.ban') }}
             </el-button>
             <el-button
               v-else
@@ -114,7 +114,7 @@
               size="small"
               @click="handleUnban(row)"
             >
-              解封
+              {{ t('agent.unban') }}
             </el-button>
           </template>
         </el-table-column>
@@ -135,35 +135,35 @@
     <!-- 创建/编辑弹窗 -->
     <el-dialog
       v-model="formVisible"
-      :title="formMode === 'create' ? '新增代理' : '编辑代理'"
+      :title="formMode === 'create' ? t('agent.create') : t('agent.edit')"
       width="560px"
     >
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="110px">
-        <el-form-item label="所属开发者" v-if="formMode === 'create'">
+        <el-form-item :label="t('agent.tenant')" v-if="formMode === 'create'">
           <el-input-number v-model="formData.tenantId" :min="1" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="上级代理">
+        <el-form-item :label="t('agent.parentIdLabel')">
           <el-input-number v-model="formData.parentId" :min="0" style="width: 100%" />
-          <span style="color: var(--jicek-text-secondary); font-size: 12px">0 = 顶级代理</span>
+          <span style="color: var(--jicek-text-secondary); font-size: 12px">{{ t('agent.parentIdHint') }}</span>
         </el-form-item>
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="formData.username" placeholder="4-32 字符" />
+        <el-form-item :label="t('agent.username')" prop="username">
+          <el-input v-model="formData.username" :placeholder="t('agent.usernamePlaceholder')" />
         </el-form-item>
-        <el-form-item label="密码" prop="password">
+        <el-form-item :label="t('agent.password')" prop="password">
           <el-input
             v-model="formData.password"
             type="password"
             show-password
-            :placeholder="formMode === 'edit' ? '留空表示不修改' : '至少 6 位'"
+            :placeholder="formMode === 'edit' ? t('agent.passwordEditPlaceholder') : t('agent.passwordCreatePlaceholder')"
           />
         </el-form-item>
-        <el-form-item label="真实姓名">
+        <el-form-item :label="t('agent.realNameLabel')">
           <el-input v-model="formData.realName" />
         </el-form-item>
-        <el-form-item label="联系方式">
-          <el-input v-model="formData.contact" placeholder="QQ/微信/手机" />
+        <el-form-item :label="t('agent.contact')">
+          <el-input v-model="formData.contact" :placeholder="t('agent.contactPlaceholder')" />
         </el-form-item>
-        <el-form-item label="分润比例" prop="commissionRate">
+        <el-form-item :label="t('agent.commissionRate')" prop="commissionRate">
           <el-input-number
             v-model="formData.commissionRate"
             :min="0"
@@ -171,32 +171,32 @@
             :precision="2"
             style="width: 100%"
           />
-          <span style="color: var(--jicek-text-secondary); font-size: 12px">0-100，10 表示 10%</span>
+          <span style="color: var(--jicek-text-secondary); font-size: 12px">{{ t('agent.commissionRateHint') }}</span>
         </el-form-item>
-        <el-form-item label="可发展下级" prop="maxSubLevel">
+        <el-form-item :label="t('agent.maxSubLevel')" prop="maxSubLevel">
           <el-input-number v-model="formData.maxSubLevel" :min="0" :max="10" style="width: 100%" />
-          <span style="color: var(--jicek-text-secondary); font-size: 12px">0 = 不可发展下级</span>
+          <span style="color: var(--jicek-text-secondary); font-size: 12px">{{ t('agent.maxSubLevelHint') }}</span>
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item :label="t('agent.remark')">
           <el-input v-model="formData.remark" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmitForm">确认</el-button>
+        <el-button @click="formVisible = false">{{ t('agent.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmitForm">{{ t('agent.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 充值弹窗 -->
-    <el-dialog v-model="rechargeVisible" title="代理充值" width="420px">
+    <el-dialog v-model="rechargeVisible" :title="t('agent.rechargeTitle')" width="420px">
       <el-form :model="rechargeForm" label-width="100px">
-        <el-form-item label="代理">
+        <el-form-item :label="t('agent.agentLabel')">
           <span>{{ rechargeForm.username }} (ID: {{ rechargeForm.agentId }})</span>
         </el-form-item>
-        <el-form-item label="当前余额">
+        <el-form-item :label="t('agent.currentBalance')">
           <span>¥{{ formatAmount(rechargeForm.currentBalance) }}</span>
         </el-form-item>
-        <el-form-item label="充值金额">
+        <el-form-item :label="t('agent.rechargeAmount')">
           <el-input-number
             v-model="rechargeForm.amount"
             :min="0.01"
@@ -204,24 +204,24 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item :label="t('agent.remark')">
           <el-input v-model="rechargeForm.remark" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="rechargeVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleRechargeSubmit">确认充值</el-button>
+        <el-button @click="rechargeVisible = false">{{ t('agent.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleRechargeSubmit">{{ t('agent.rechargeConfirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 封禁确认 -->
     <ConfirmDialog
       v-model="banVisible"
-      title="封禁代理确认"
+      :title="t('agent.banTitle')"
       type="danger"
-      :message="`确认封禁代理 ${banRow?.username}?`"
-      sub-message="封禁后该代理无法登录、制卡、提现，已产生的分润流水保留"
-      confirm-text="确认封禁"
+      :message="t('agent.banMessage', { username: banRow?.username })"
+      :sub-message="t('agent.banSubMessage')"
+      :confirm-text="t('agent.banConfirm')"
       @confirm="doBan"
     />
   </div>
@@ -229,11 +229,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { agentApi } from '@/api'
 import StatusTag from '@/components/jicek/StatusTag.vue'
 import ConfirmDialog from '@/components/jicek/ConfirmDialog.vue'
 import Decimal from 'decimal.js'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -271,17 +274,17 @@ const formData = reactive({
 
 const formRules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 4, max: 32, message: '4-32 字符', trigger: 'blur' }
+    { required: true, message: t('agent.usernameRequired'), trigger: 'blur' },
+    { min: 4, max: 32, message: t('agent.usernameLength'), trigger: 'blur' }
   ],
   password: [
     {
       validator: (_: any, value: string, callback: any) => {
         if (formMode.value === 'create') {
-          if (!value) return callback(new Error('请输入密码'))
-          if (value.length < 6) return callback(new Error('密码至少 6 位'))
+          if (!value) return callback(new Error(t('agent.passwordRequired')))
+          if (value.length < 6) return callback(new Error(t('agent.passwordMinLength')))
         } else if (value && value.length < 6) {
-          return callback(new Error('密码至少 6 位'))
+          return callback(new Error(t('agent.passwordMinLength')))
         }
         callback()
       },
@@ -289,8 +292,8 @@ const formRules: FormRules = {
     }
   ],
   commissionRate: [
-    { required: true, message: '请输入分润比例', trigger: 'blur' },
-    { type: 'number', min: 0, max: 100, message: '0-100', trigger: 'blur' }
+    { required: true, message: t('agent.commissionRateRequired'), trigger: 'blur' },
+    { type: 'number', min: 0, max: 100, message: t('agent.commissionRateRange'), trigger: 'blur' }
   ]
 }
 
@@ -377,10 +380,10 @@ const handleSubmitForm = async () => {
   try {
     if (formMode.value === 'create') {
       await agentApi.create(formData)
-      ElMessage.success('代理创建成功')
+      ElMessage.success(t('agent.createSuccess'))
     } else {
       await agentApi.update(formData)
-      ElMessage.success('代理更新成功')
+      ElMessage.success(t('agent.updateSuccess'))
     }
     formVisible.value = false
     loadData()
@@ -405,7 +408,7 @@ const handleRechargeSubmit = async () => {
   submitting.value = true
   try {
     await agentApi.recharge(filter.tenantId, rechargeForm.agentId, rechargeForm.amount, rechargeForm.remark)
-    ElMessage.success('充值成功')
+    ElMessage.success(t('agent.rechargeSuccess'))
     rechargeVisible.value = false
     loadData()
   } finally {
@@ -422,7 +425,7 @@ const doBan = async () => {
   if (!banRow.value) return
   try {
     await agentApi.ban(filter.tenantId, banRow.value.id)
-    ElMessage.success('代理已封禁')
+    ElMessage.success(t('agent.banSuccess'))
     loadData()
   } catch {
     // 错误已在拦截器处理
@@ -432,7 +435,7 @@ const doBan = async () => {
 const handleUnban = async (row: any) => {
   try {
     await agentApi.unban(filter.tenantId, row.id)
-    ElMessage.success('代理解封')
+    ElMessage.success(t('agent.unbanSuccess'))
     loadData()
   } catch {
     // 静默

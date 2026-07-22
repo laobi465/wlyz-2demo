@@ -20,60 +20,60 @@
   <div class="jicek-page">
     <el-tabs v-model="activeTab" type="border-card">
       <!-- 函数列表 -->
-      <el-tab-pane label="函数列表" name="list">
+      <el-tab-pane :label="t('cloudFunc.listTab')" name="list">
         <el-card>
           <template #header>
             <div class="tab-header">
-              <span class="jicek-card-title">云函数列表</span>
-              <el-button type="primary" :icon="Plus" @click="handleCreate">新建函数</el-button>
+              <span class="jicek-card-title">{{ t('cloudFunc.listTitle') }}</span>
+              <el-button type="primary" :icon="Plus" @click="handleCreate">{{ t('cloudFunc.create') }}</el-button>
             </div>
           </template>
 
           <!-- 筛选 -->
           <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-            <el-form-item label="软件ID">
+            <el-form-item :label="t('cloudFunc.softwareId')">
               <el-input-number v-model="filter.softwareId" :min="1" clearable style="width: 140px" />
             </el-form-item>
-            <el-form-item label="函数名">
-              <el-input v-model="filter.name" placeholder="支持模糊查询" clearable style="width: 180px" />
+            <el-form-item :label="t('cloudFunc.functionName')">
+              <el-input v-model="filter.name" :placeholder="t('cloudFunc.functionNamePlaceholder')" clearable style="width: 180px" />
             </el-form-item>
-            <el-form-item label="状态">
-              <el-select v-model="filter.enabled" placeholder="全部" clearable style="width: 120px">
-                <el-option label="启用" :value="1" />
-                <el-option label="禁用" :value="0" />
+            <el-form-item :label="t('cloudFunc.status')">
+              <el-select v-model="filter.enabled" :placeholder="t('common.all')" clearable style="width: 120px">
+                <el-option :label="t('cloudFunc.enabled')" :value="1" />
+                <el-option :label="t('cloudFunc.disabled')" :value="0" />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="loadList">查询</el-button>
-              <el-button @click="handleReset">重置</el-button>
+              <el-button type="primary" @click="loadList">{{ t('common.search') }}</el-button>
+              <el-button @click="handleReset">{{ t('common.reset') }}</el-button>
             </el-form-item>
           </el-form>
 
           <!-- 表格 -->
           <el-table v-loading="loading" :data="tableData" border stripe style="width: 100%">
             <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="softwareId" label="软件ID" width="90" />
-            <el-table-column prop="name" label="函数名" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
-            <el-table-column label="运行时" width="90">
+            <el-table-column prop="softwareId" :label="t('cloudFunc.softwareId')" width="90" />
+            <el-table-column prop="name" :label="t('cloudFunc.functionName')" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="description" :label="t('cloudFunc.description')" min-width="180" show-overflow-tooltip />
+            <el-table-column :label="t('cloudFunc.runtime')" width="90">
               <template #default="{ row }">
                 <el-tag size="small" type="info">{{ row.runtime || 'lua' }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="timeoutMs" label="超时(ms)" width="100" />
-            <el-table-column label="状态" width="80">
+            <el-table-column prop="timeoutMs" :label="t('cloudFunc.timeoutMs')" width="100" />
+            <el-table-column :label="t('cloudFunc.status')" width="80">
               <template #default="{ row }">
-                <el-tag v-if="row.enabled === 1" type="success" size="small">启用</el-tag>
-                <el-tag v-else type="info" size="small">禁用</el-tag>
+                <el-tag v-if="row.enabled === 1" type="success" size="small">{{ t('cloudFunc.enabled') }}</el-tag>
+                <el-tag v-else type="info" size="small">{{ t('cloudFunc.disabled') }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="version" label="版本" width="70" />
-            <el-table-column prop="invokeCount" label="调用次数" width="100" />
-            <el-table-column prop="lastInvokeTime" label="最后调用" min-width="160" />
-            <el-table-column label="操作" width="280" fixed="right">
+            <el-table-column prop="version" :label="t('cloudFunc.version')" width="70" />
+            <el-table-column prop="invokeCount" :label="t('cloudFunc.invokeCount')" width="100" />
+            <el-table-column prop="lastInvokeTime" :label="t('cloudFunc.lastInvokeTime')" min-width="160" />
+            <el-table-column :label="t('common.operation')" width="280" fixed="right">
               <template #default="{ row }">
-                <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-                <el-button link type="success" size="small" @click="handleTest(row)">测试</el-button>
+                <el-button link type="primary" size="small" @click="handleEdit(row)">{{ t('cloudFunc.edit') }}</el-button>
+                <el-button link type="success" size="small" @click="handleTest(row)">{{ t('cloudFunc.test') }}</el-button>
                 <el-button
                   v-if="row.enabled === 1"
                   link
@@ -81,7 +81,7 @@
                   size="small"
                   @click="handleToggle(row, 0)"
                 >
-                  禁用
+                  {{ t('cloudFunc.disable') }}
                 </el-button>
                 <el-button
                   v-else
@@ -90,9 +90,9 @@
                   size="small"
                   @click="handleToggle(row, 1)"
                 >
-                  启用
+                  {{ t('cloudFunc.enable') }}
                 </el-button>
-                <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+                <el-button link type="danger" size="small" @click="handleDelete(row)">{{ t('cloudFunc.delete') }}</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -111,64 +111,64 @@
       </el-tab-pane>
 
       <!-- 执行日志 -->
-      <el-tab-pane label="执行日志" name="log">
+      <el-tab-pane :label="t('cloudFunc.logTab')" name="log">
         <el-card>
           <template #header>
-            <span class="jicek-card-title">云函数执行日志</span>
+            <span class="jicek-card-title">{{ t('cloudFunc.logTitle') }}</span>
           </template>
 
           <el-form :inline="true" :model="logFilter" style="margin-bottom: 16px">
-            <el-form-item label="函数ID">
+            <el-form-item :label="t('cloudFunc.functionId')">
               <el-input-number v-model="logFilter.functionId" :min="1" clearable style="width: 140px" />
             </el-form-item>
-            <el-form-item label="软件ID">
+            <el-form-item :label="t('cloudFunc.softwareId')">
               <el-input-number v-model="logFilter.softwareId" :min="1" clearable style="width: 140px" />
             </el-form-item>
-            <el-form-item label="状态">
-              <el-select v-model="logFilter.status" placeholder="全部" clearable style="width: 150px">
-                <el-option label="成功" :value="0" />
-                <el-option label="编译失败" :value="1" />
-                <el-option label="运行时错误" :value="2" />
-                <el-option label="超时" :value="3" />
-                <el-option label="内存超限" :value="4" />
-                <el-option label="输入超限" :value="5" />
-                <el-option label="输出超限" :value="6" />
+            <el-form-item :label="t('cloudFunc.status')">
+              <el-select v-model="logFilter.status" :placeholder="t('common.all')" clearable style="width: 150px">
+                <el-option :label="t('cloudFunc.logStatusSuccess')" :value="0" />
+                <el-option :label="t('cloudFunc.logStatusCompileFail')" :value="1" />
+                <el-option :label="t('cloudFunc.logStatusRuntimeError')" :value="2" />
+                <el-option :label="t('cloudFunc.logStatusTimeout')" :value="3" />
+                <el-option :label="t('cloudFunc.logStatusMemoryLimit')" :value="4" />
+                <el-option :label="t('cloudFunc.logStatusInputLimit')" :value="5" />
+                <el-option :label="t('cloudFunc.logStatusOutputLimit')" :value="6" />
               </el-select>
             </el-form-item>
-            <el-form-item label="来源">
-              <el-select v-model="logFilter.invokeSource" placeholder="全部" clearable style="width: 120px">
-                <el-option label="开发者测试" value="dev" />
-                <el-option label="SDK 调用" value="sdk" />
+            <el-form-item :label="t('cloudFunc.invokeSource')">
+              <el-select v-model="logFilter.invokeSource" :placeholder="t('common.all')" clearable style="width: 120px">
+                <el-option :label="t('cloudFunc.sourceDev')" value="dev" />
+                <el-option :label="t('cloudFunc.sourceSdk')" value="sdk" />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="loadLogs">查询</el-button>
-              <el-button @click="handleLogReset">重置</el-button>
+              <el-button type="primary" @click="loadLogs">{{ t('common.search') }}</el-button>
+              <el-button @click="handleLogReset">{{ t('common.reset') }}</el-button>
             </el-form-item>
           </el-form>
 
           <el-table v-loading="logLoading" :data="logData" border stripe style="width: 100%">
             <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="functionId" label="函数ID" width="90" />
-            <el-table-column prop="functionName" label="函数名" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="softwareId" label="软件ID" width="90" />
-            <el-table-column label="来源" width="100">
+            <el-table-column prop="functionId" :label="t('cloudFunc.functionId')" width="90" />
+            <el-table-column prop="functionName" :label="t('cloudFunc.functionName')" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="softwareId" :label="t('cloudFunc.softwareId')" width="90" />
+            <el-table-column :label="t('cloudFunc.invokeSource')" width="100">
               <template #default="{ row }">
-                <el-tag v-if="row.invokeSource === 'dev'" size="small" type="info">开发者</el-tag>
-                <el-tag v-else size="small">SDK</el-tag>
+                <el-tag v-if="row.invokeSource === 'dev'" size="small" type="info">{{ t('cloudFunc.sourceDevTag') }}</el-tag>
+                <el-tag v-else size="small">{{ t('cloudFunc.sourceSdkTag') }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="110">
+            <el-table-column :label="t('cloudFunc.status')" width="110">
               <template #default="{ row }">
                 <el-tag :type="logStatusTag(row.status)" size="small">{{ logStatusText(row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="durationMs" label="耗时(ms)" width="100" />
-            <el-table-column prop="inputSize" label="输入(B)" width="100" />
-            <el-table-column prop="outputSize" label="输出(B)" width="100" />
-            <el-table-column prop="callerIp" label="调用IP" width="130" />
-            <el-table-column prop="errorMessage" label="错误信息" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="createTime" label="执行时间" min-width="160" />
+            <el-table-column prop="durationMs" :label="t('cloudFunc.durationMs')" width="100" />
+            <el-table-column prop="inputSize" :label="t('cloudFunc.inputB')" width="100" />
+            <el-table-column prop="outputSize" :label="t('cloudFunc.outputB')" width="100" />
+            <el-table-column prop="callerIp" :label="t('cloudFunc.callerIp')" width="130" />
+            <el-table-column prop="errorMessage" :label="t('cloudFunc.errorMessage')" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="createTime" :label="t('cloudFunc.executeTime')" min-width="160" />
           </el-table>
 
           <el-pagination
@@ -188,94 +188,94 @@
     <!-- 编辑/新建弹窗 -->
     <el-dialog
       v-model="editVisible"
-      :title="editForm.id ? '编辑云函数' : '新建云函数'"
+      :title="editForm.id ? t('cloudFunc.editTitleEdit') : t('cloudFunc.editTitleCreate')"
       width="820px"
       :close-on-click-modal="false"
     >
       <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="120px">
-        <el-form-item label="软件ID" prop="softwareId">
+        <el-form-item :label="t('cloudFunc.softwareIdLabel')" prop="softwareId">
           <el-input-number v-model="editForm.softwareId" :min="1" :disabled="!!editForm.id" style="width: 200px" />
         </el-form-item>
-        <el-form-item label="函数名" prop="name">
+        <el-form-item :label="t('cloudFunc.functionNameLabel')" prop="name">
           <el-input
             v-model="editForm.name"
             :disabled="!!editForm.id"
-            placeholder="字母开头，仅含字母数字下划线，最长 64 字符"
+            :placeholder="t('cloudFunc.functionNameInputPlaceholder')"
             style="max-width: 320px"
           />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item :label="t('cloudFunc.descriptionLabel')">
           <el-input v-model="editForm.description" maxlength="255" show-word-count style="max-width: 600px" />
         </el-form-item>
-        <el-form-item label="Lua 代码" prop="code">
+        <el-form-item :label="t('cloudFunc.codeLabel')" prop="code">
           <div class="code-wrap">
             <el-input
               v-model="editForm.code"
               type="textarea"
               :rows="14"
-              placeholder="-- 输入 Lua 代码，通过 jicek.input 获取输入，return 返回结果&#10;-- 示例：&#10;-- local s = jicek.input&#10;-- return string.upper(s)"
+              :placeholder="t('cloudFunc.codePlaceholder')"
               resize="vertical"
               class="code-textarea"
             />
             <div class="code-meta">{{ codeBytesText }}</div>
           </div>
         </el-form-item>
-        <el-form-item label="超时(ms)" prop="timeoutMs">
+        <el-form-item :label="t('cloudFunc.timeoutMsLabel')" prop="timeoutMs">
           <el-input-number v-model="editForm.timeoutMs" :min="100" :max="30000" :step="500" style="width: 200px" />
-          <span class="form-tip">范围 100-30000，默认 3000</span>
+          <span class="form-tip">{{ t('cloudFunc.timeoutMsHint') }}</span>
         </el-form-item>
-        <el-form-item label="内存上限(KB)" prop="memoryLimitKb">
+        <el-form-item :label="t('cloudFunc.memoryLimitKb')" prop="memoryLimitKb">
           <el-input-number v-model="editForm.memoryLimitKb" :min="1" :max="262144" :step="1024" style="width: 200px" />
         </el-form-item>
-        <el-form-item label="输入上限(KB)" prop="maxInputKb">
+        <el-form-item :label="t('cloudFunc.maxInputKb')" prop="maxInputKb">
           <el-input-number v-model="editForm.maxInputKb" :min="1" :max="256" style="width: 200px" />
         </el-form-item>
-        <el-form-item label="输出上限(KB)" prop="maxOutputKb">
+        <el-form-item :label="t('cloudFunc.maxOutputKb')" prop="maxOutputKb">
           <el-input-number v-model="editForm.maxOutputKb" :min="1" :max="256" style="width: 200px" />
         </el-form-item>
-        <el-form-item label="启用">
+        <el-form-item :label="t('cloudFunc.enabledLabel')">
           <el-switch v-model="editForm.enabled" :active-value="1" :inactive-value="0" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <el-button @click="editVisible = false">{{ t('cloudFunc.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">{{ t('cloudFunc.save') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 测试执行弹窗 -->
     <el-dialog
       v-model="testVisible"
-      :title="`测试执行：${testRow?.name || ''}`"
+      :title="t('cloudFunc.testTitle', { name: testRow?.name || '' })"
       width="820px"
       :close-on-click-modal="false"
     >
       <el-form label-width="100px">
-        <el-form-item label="函数ID">
+        <el-form-item :label="t('cloudFunc.functionIdLabel')">
           <span>{{ testRow?.id }}</span>
         </el-form-item>
-        <el-form-item label="输入(JSON)">
+        <el-form-item :label="t('cloudFunc.inputLabel')">
           <el-input
             v-model="testInput"
             type="textarea"
             :rows="6"
-            placeholder='输入任意文本，沙箱内通过 jicek.input 获取（字符串）'
+            :placeholder="t('cloudFunc.inputPlaceholder')"
             class="code-textarea"
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="invoking" @click="doInvoke">执行</el-button>
-          <el-button @click="testInput = ''; testResult = null">清空</el-button>
+          <el-button type="primary" :loading="invoking" @click="doInvoke">{{ t('cloudFunc.execute') }}</el-button>
+          <el-button @click="testInput = ''; testResult = null">{{ t('cloudFunc.clear') }}</el-button>
         </el-form-item>
-        <el-form-item v-if="testResult" label="执行结果">
+        <el-form-item v-if="testResult" :label="t('cloudFunc.resultLabel')">
           <div class="result-block">
             <div class="result-meta">
               <el-tag :type="logStatusTag(testResult.status)" size="small">
                 {{ logStatusText(testResult.status) }}
               </el-tag>
-              <span class="meta-item">耗时 {{ testResult.durationMs }}ms</span>
-              <span class="meta-item">输入 {{ testResult.inputSize }}B</span>
-              <span class="meta-item">输出 {{ testResult.outputSize }}B</span>
+              <span class="meta-item">{{ t('cloudFunc.durationLabel', { ms: testResult.durationMs }) }}</span>
+              <span class="meta-item">{{ t('cloudFunc.inputSizeLabel', { size: testResult.inputSize }) }}</span>
+              <span class="meta-item">{{ t('cloudFunc.outputSizeLabel', { size: testResult.outputSize }) }}</span>
             </div>
             <pre v-if="testResult.result" class="result-output">{{ formatResult(testResult.result) }}</pre>
             <div v-if="testResult.errorMessage" class="result-error">{{ testResult.errorMessage }}</div>
@@ -287,11 +287,11 @@
     <!-- 删除确认 -->
     <ConfirmDialog
       v-model="deleteVisible"
-      title="删除云函数确认"
+      :title="t('cloudFunc.deleteTitle')"
       type="danger"
-      :message="`确认删除云函数 ${deleteRow?.name}?`"
-      sub-message="删除后不可恢复，执行日志保留用于审计"
-      confirm-text="确认删除"
+      :message="t('cloudFunc.deleteMessage', { name: deleteRow?.name })"
+      :sub-message="t('cloudFunc.deleteSubMessage')"
+      :confirm-text="t('cloudFunc.deleteConfirm')"
       @confirm="doDelete"
     />
   </div>
@@ -299,10 +299,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { cloudFuncApi } from '@/api'
 import ConfirmDialog from '@/components/jicek/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const activeTab = ref<'list' | 'log'>('list')
 
@@ -357,22 +360,22 @@ const editForm = reactive({
 })
 
 const editRules: FormRules = {
-  softwareId: [{ required: true, message: '请输入软件ID', trigger: 'blur' }],
+  softwareId: [{ required: true, message: t('cloudFunc.softwareIdRequired'), trigger: 'blur' }],
   name: [
-    { required: true, message: '请输入函数名', trigger: 'blur' },
+    { required: true, message: t('cloudFunc.functionNameRequired'), trigger: 'blur' },
     {
       pattern: /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/,
-      message: '字母开头，仅含字母数字下划线，最长 64 字符',
+      message: t('cloudFunc.functionNamePattern'),
       trigger: 'blur'
     }
   ],
-  code: [{ required: true, message: '请输入 Lua 代码', trigger: 'blur' }],
-  timeoutMs: [{ required: true, message: '请输入超时', trigger: 'blur' }]
+  code: [{ required: true, message: t('cloudFunc.codeRequired'), trigger: 'blur' }],
+  timeoutMs: [{ required: true, message: t('cloudFunc.timeoutMsRequired'), trigger: 'blur' }]
 }
 
 const codeBytesText = computed(() => {
   const bytes = new Blob([editForm.code || '']).size
-  return `${bytes} / 65536 字节`
+  return t('cloudFunc.codeBytes', { bytes })
 })
 
 const handleCreate = () => {
@@ -420,7 +423,7 @@ const handleSave = async () => {
     saving.value = true
     try {
       await cloudFuncApi.save({ ...editForm })
-      ElMessage.success(editForm.id ? '更新成功' : '创建成功')
+      ElMessage.success(editForm.id ? t('cloudFunc.updateSuccess') : t('cloudFunc.createSuccess'))
       editVisible.value = false
       loadList()
     } finally {
@@ -432,7 +435,7 @@ const handleSave = async () => {
 const handleToggle = async (row: any, enabled: number) => {
   try {
     await cloudFuncApi.toggleEnabled(filter.tenantId, row.id, enabled)
-    ElMessage.success(enabled ? '已启用' : '已禁用')
+    ElMessage.success(enabled ? t('cloudFunc.enabledSuccess') : t('cloudFunc.disabledSuccess'))
     loadList()
   } catch {
     // 静默
@@ -448,7 +451,7 @@ const doDelete = async () => {
   if (!deleteRow.value) return
   try {
     await cloudFuncApi.delete(filter.tenantId, deleteRow.value.id)
-    ElMessage.success('已删除')
+    ElMessage.success(t('cloudFunc.deleted'))
     loadList()
   } catch {
     // 静默
@@ -481,9 +484,9 @@ const doInvoke = async () => {
     })
     testResult.value = result
     if (result.status === 0) {
-      ElMessage.success(`执行成功，耗时 ${result.durationMs}ms`)
+      ElMessage.success(t('cloudFunc.executeSuccess', { ms: result.durationMs }))
     } else {
-      ElMessage.warning(`执行失败：${logStatusText(result.status)}`)
+      ElMessage.warning(t('cloudFunc.executeFailed', { reason: logStatusText(result.status) }))
     }
   } finally {
     invoking.value = false
@@ -539,14 +542,14 @@ const handleLogReset = () => {
 
 const logStatusText = (status: number) => {
   return ({
-    0: '成功',
-    1: '编译失败',
-    2: '运行时错误',
-    3: '超时',
-    4: '内存超限',
-    5: '输入超限',
-    6: '输出超限'
-  } as Record<number, string>)[status] || '未知'
+    0: t('cloudFunc.logStatusSuccess'),
+    1: t('cloudFunc.logStatusCompileFail'),
+    2: t('cloudFunc.logStatusRuntimeError'),
+    3: t('cloudFunc.logStatusTimeout'),
+    4: t('cloudFunc.logStatusMemoryLimit'),
+    5: t('cloudFunc.logStatusInputLimit'),
+    6: t('cloudFunc.logStatusOutputLimit')
+  } as Record<number, string>)[status] || t('cloudFunc.logStatusUnknown')
 }
 
 const logStatusTag = (status: number) => {

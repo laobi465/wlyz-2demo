@@ -46,6 +46,18 @@ public class JicekProperties {
         private String rsaPublicKey;
         /** HMAC-SHA256 主密钥 Base64 */
         private String hmacKey;
+        /** 国密 SM2/SM3/SM4 配置（可选，默认关闭，铁律 04 密钥环境变量注入） */
+        private Sm sm = new Sm();
+    }
+
+    @Data
+    public static class Sm {
+        /** 是否启用国密（默认 false，可选实现，不影响现有 AES/RSA） */
+        private boolean enabled = false;
+        /** SM4 对称密钥 Base64（16 字节 / 128 位，环境变量 JICEK_SM4_KEY 注入） */
+        private String sm4Key;
+        /** SM2 私钥 hex（32 字节 / 256 位，环境变量 JICEK_SM2_PRIVATE_KEY 注入） */
+        private String sm2PrivateKey;
     }
 
     @Data

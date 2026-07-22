@@ -44,11 +44,12 @@
 │   └── jicek-license   # ★ 卡密验证核心模块（新增，v0.2.0 已实现）
 │       ├── common      # 通用：R/ResultCode/ServiceException/常量
 │       ├── config      # 配置：JicekProperties/MybatisPlusConfig/CorsConfig
-│       ├── crypto      # ★ 加密层（已实现）
+│       ├── crypto      # ★ 加密层（已实现，v0.16.0 加 SmCryptoService 国密可选）
 │       │   ├── AesCryptoService     # AES-256-GCM
 │       │   ├── RsaCryptoService     # RSA-2048-OAEP
 │       │   ├── HmacSignService      # HMAC-SHA256
 │       │   ├── Md5SignService       # MD5（V1 兼容）+ SHA-256
+│       │   ├── SmCryptoService      # ★ SM2/SM4/SM3 国密可选（v0.16.0，@ConditionalOnProperty 默认关闭）
 │       │   └── CryptoConfiguration  # Bean 配置
 │       ├── card        # 卡密模块（已实现）
 │       │   ├── entity  # CardType / CardKey
@@ -88,30 +89,30 @@
 │       │   ├── dto     # WebhookResultDTO / ManualDeployDTO / DeployStatusDTO
 │       │   ├── service # DeployService（备份→拉代码→构建→重启→健康检查→失败回滚，HMAC-SHA256 验签 + Redisson 锁 + 异步 daemon 线程）
 │       │   └── controller # DevDeployController
-│       ├── ticket     # ★ 工单模块（v0.6.0 新增，双向工单）
+│       ├── ticket     # ★ 工单模块（v0.6.0 新增，双向工单；v0.15.0 加 AdminTicketController）
 │       │   ├── entity  # Ticket / TicketReply
 │       │   ├── mapper  # TicketMapper / TicketReplyMapper（回复表禁 UPDATE/DELETE）
-│       │   ├── dto     # TicketCreateDTO / TicketReplyDTO / TicketDetailDTO
-│       │   ├── service # TicketService（CRUD + 状态机 + 分类，类型字段由 Controller 设定防越权）
-│       │   └── controller # H5TicketController + DevTicketController（双角色双入口）
-│       ├── auth       # ★ 鉴权模块（v0.7.0 新增，JWT + @AuthRequired 渐进式）
+│       │   ├── dto     # TicketCreateDTO / TicketReplyDTO / TicketDetailDTO / AdminTicketReplyDTO（v0.15.0）
+│       │   ├── service # TicketService（CRUD + 状态机 + 分类 + adminPage/adminGet/adminReply/adminClose，类型字段由 Controller 设定防越权）
+│       │   └── controller # H5TicketController + DevTicketController + AdminTicketController（v0.15.0，/api/admin/ticket 4 接口 @AuthRequired(role=2)）
+│       ├── auth       # ★ 鉴权模块（v0.7.0 新增，JWT + @AuthRequired 渐进式；v0.15.0 加 AdminDevUserController + DevUserService）
 │       │   ├── entity  # DevUser / AdminUser
 │       │   ├── mapper  # DevUserMapper / AdminUserMapper
-│       │   ├── dto     # LoginDTO / LoginResultDTO / ChangePasswordDTO / UserInfoDTO
-│       │   ├── service # JwtService（HMAC-SHA256） + AuthService（登录/当前用户/改密）
+│       │   ├── dto     # LoginDTO / LoginResultDTO / ChangePasswordDTO / UserInfoDTO / DevUserDetailDTO / DevUserResetPasswordDTO（v0.15.0）
+│       │   ├── service # JwtService（HMAC-SHA256） + AuthService（登录/当前用户/改密） + DevUserService（v0.15.0，page/get/ban/unban/resetPassword）
 │       │   ├── interceptor # AuthContext（ThreadLocal） + @AuthRequired 注解 + JwtAuthInterceptor
-│       │   └── controller # AuthController（/api/auth/* 4 接口）
+│       │   └── controller # AuthController（/api/auth/* 4 接口） + AdminDevUserController（v0.15.0，/api/admin/dev-user 5 接口 @AuthRequired(role=2)）
 │       ├── software   # ★ 软件模块（v0.8.0 新增，CRUD + 密钥生成/轮换 + 关联校验）
 │       │   ├── entity  # Software
 │       │   ├── mapper  # SoftwareMapper
 │       │   ├── dto     # SoftwareSaveDTO / SoftwareDetailDTO / SoftwareCreateResultDTO
 │       │   ├── service # SoftwareService（CRUD + 密钥生成 + 轮换 + 关联校验）
 │       │   └── controller # DevSoftwareController（/api/dev/software/* 7 接口）
-│       ├── sdk         # ★ SDK 模块（v0.9.0 新增，终端用户通过 SDK 在开发者软件内接入）
+│       ├── sdk         # ★ SDK 模块（v0.9.0 新增，终端用户通过 SDK 在开发者软件内接入；v0.16.0 加 SdkCloudFunctionController）
 │       │   ├── auth    # SdkAuthFilter（签名鉴权） + SoftwareContext（ThreadLocal） + CachedBodyHttpServletRequest
-│       │   ├── dto     # SdkLoginRequestDTO / SdkLoginResultDTO
+│       │   ├── dto     # SdkLoginRequestDTO / SdkLoginResultDTO / SdkCloudFunctionInvokeDTO（v0.16.0）
 │       │   ├── service # SdkAuthService（卡密登录）
-│       │   └── controller # SdkLoginController（/api/sdk/card/login）
+│       │   └── controller # SdkLoginController（/api/sdk/card/login） + SdkCloudFunctionController（v0.16.0，/api/sdk/cloud-function/invoke）
 │       ├── announcement # ★ 公告模块（v0.10.0 新增，开发者按软件/版本下发，SDK 拉取展示）
 │       │   ├── entity  # Announcement
 │       │   ├── mapper  # AnnouncementMapper
@@ -144,16 +145,16 @@
 │       │   ├── service # EndUserService（CRUD + ban/unban + reset-password + 账号登录自建 H5Session）
 │       │   └── controller # DevEndUserController（/api/dev/end-user/* 8 接口 JWT） + H5EndUserController（/api/h5/end-user/login 公开）
 │       └── sdk-gen     # ★ SDK 代码生成器（v0.12.0 前端实现，9 语言模板，无后端）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网，v0.14.0 新增终端用户管理 + 多语言国际化）
-    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 + endUserApi v0.14.0 新增）
+├── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网，v0.14.0 新增终端用户管理 + 多语言国际化，v0.15.0 新增管理员后台 + i18n 全量）
+    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 + endUserApi v0.14.0 + admin.ts v0.15.0 独立 adminAxios 实例 jicek_admin_token 隔离）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/components/LangSwitch.vue # ★ 多语言切换组件（v0.14.0，顶栏下拉 + localStorage 持久化）
-    ├── src/i18n        # ★ 多语言国际化（v0.14.0，index.ts 注册 vue-i18n 9.x + locales/{zh-CN,en-US}.ts 六模块）
-    ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置（11 个页面路由 + /h5/* 7 个 public 子路由 v0.13.0 + /shop 后台路由 + /end-user v0.14.0）
+    ├── src/i18n        # ★ 多语言国际化（v0.14.0 起，v0.15.0 全量改造 17 dev 页面 + 语言包扩展 16 新模块，所有用户可见文案中英文切换）
+    ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏) + AdminLayout（v0.15.0 管理员后台布局）
+    ├── src/router      # 路由配置（11 个页面路由 + /h5/* 7 个 public 子路由 v0.13.0 + /shop 后台路由 + /end-user v0.14.0 + /admin/* 守卫 v0.15.0 校验 jicek_admin_token）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     ├── src/utils       # ★ sdk-code-templates.ts（v0.12.0，9 语言代码模板生成器）
-    ├── src/views/dev   # 开发者页面
+    ├── src/views/dev   # 开发者页面（v0.15.0 全量 i18n 改造）
         ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
         ├── card-key-gen # 卡密生成
         ├── card-key-list # 卡密查询
@@ -172,7 +173,14 @@
         ├── integration-doc # ★ 对接文档页（v0.12.0 新增，接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引）
         ├── shop        # ★ 内嵌卡网管理（v0.13.0 新增，店铺 + 商品双层弹窗）
         └── end-user    # ★ 终端用户管理（v0.14.0 新增，CRUD + 封禁 + 重置密码）
-    └── src/views/h5    # ★ H5 终端用户页（v0.13.0 新增，7 页：H5Layout + login + my-card + announcement + agent/register + shop + shop/order）
+    ├── src/views/h5    # ★ H5 终端用户页（v0.13.0 新增，7 页：H5Layout + login + my-card + announcement + agent/register + shop + shop/order）
+    └── src/views/admin # ★ 管理员后台页（v0.15.0 新增，jicek_admin_token 隔离 + adminAxios 独立实例）
+        ├── login       # 管理员登录（用户名+密码，无租户ID）
+        ├── ticket      # 工单管理（筛选+表格+详情弹窗+回复+关闭）
+        └── dev-user    # 开发者管理（筛选+表格+封禁/解封+重置密码）
+├── install.sh              # ★ 一键安装脚本（v0.17.0，宝塔检测+Docker+端口冲突实查+密钥随机生成+部署+输出 /root/jicek-deploy-info.txt 权限 600）
+├── docker-compose.yml      # ★ Docker 编排（v0.17.0，mysql/redis/app/ui 4 服务 + 健康检查 + depends_on 顺序启动 + ${VAR:-默认值} 端口注入）
+└── .dockerignore           # ★ Docker 忽略规则（v0.17.0，根目录；jicek-license/.dockerignore + jicek-ui/.dockerignore 同步存在）
 ```
 
 ### 2.3 数据流
@@ -240,8 +248,8 @@
 - [x] 向上链式分润（直推 type=1 + 父级链 type=2，最多 10 层，同事务原子）✅ v0.4.0
 - [x] 分润撤销（退款触发，余额不足保护）✅ v0.4.0
 - [x] 提现审核状态机（简单状态机，未引入 WarmFlow）✅ v0.4.0
-- [ ] 代理制卡扣余额（待接入 AgentService.deductBalance）
-- [ ] 分润接入支付回调（待接入 PaymentTransactionService）
+- [x] 代理制卡扣余额 ✅ v0.15.0（CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance，先扣款再生成卡密，同事务）
+- [x] 分润接入支付回调 ✅ v0.15.0（PayNotifyService 支付成功事务提交后调 CommissionService.grantCommission，分润独立事务 + try-catch，分润失败不回滚卡密；jicek_commission 加 uk_order_agent 幂等索引）
 
 ### 3.5 云端数据
 - [ ] 云变量（key/value + 签名加密）
@@ -275,6 +283,23 @@
 ### 3.9 v0.14.0 新增功能（已完成）
 - [x] 终端用户账号体系 ✅ v0.14.0（jicek_end_user 表 + 后台 8 接口 CRUD/封禁/重置密码 + H5 账号密码登录复用 H5Session）
 - [x] 多语言国际化 ✅ v0.14.0（vue-i18n 9.x 中英文 + LangSwitch 组件 + 渐进式改造）
+
+### 3.10 v0.15.0 新增功能（已完成）
+- [x] 代理制卡扣余额 ✅ v0.15.0（CardKeyService.batchGenerate 代理制卡分支调 AgentService.deductBalance，先扣款再生成卡密同事务；CardKeyGenRequestDTO 加 agentId）
+- [x] 分润接入支付回调 ✅ v0.15.0（PayOrder 加 agentId + jicek_pay_order 加 idx_agent；PayNotifyService 支付成功后调 CommissionService.grantCommission，分润独立事务 + try-catch，分润失败不回滚卡密；jicek_commission 加 uk_order_agent 幂等）
+- [x] 管理员端工单处理 + 租户管理 ✅ v0.15.0（AdminTicketController 4 接口 + AdminDevUserController 5 接口，@AuthRequired(role=2)；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离）
+- [x] 多语言国际化全量 ✅ v0.15.0（17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块，所有用户可见文案支持中英文切换）
+
+### 3.11 v0.16.0 新增功能（已完成，三项遗留补全）
+- [x] 收入统计代理维度 ✅ v0.16.0（StatsService 新增 groupByAgent() 按 PayOrder.agentId 分组 + AgentMapper 预加载代理名；前端 stats 页移除 dimension='agent' 的 alert 提示，代理维度正常展示）
+- [x] SDK 云函数调用接口 ✅ v0.16.0（新建 SdkCloudFunctionController，POST /api/sdk/cloud-function/invoke，SdkAuthFilter 鉴权，invokeSource="sdk"；CloudFunctionService 新增 findBySoftwareAndName 三元查询；SdkCloudFunctionInvokeDTO 含 functionName + input）
+- [x] 国密 SM2/SM4 可选实现 ✅ v0.16.0（新建 SmCryptoService：SM4-CBC 对称 + SM2 非对称 + SM3 摘要；@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true") 默认关闭；密钥环境变量 JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY 注入；不影响现有 AES-256-GCM / RSA-2048-OAEP）
+
+### 3.12 v0.17.0 新增功能（已完成，Docker 一键部署）
+- [x] 一键安装脚本 ✅ v0.17.0（install.sh：操作系统检测 CentOS/Ubuntu/Debian/RHEL/Rocky/AlmaLinux + 宝塔面板检测/自动安装 + Docker + Compose v2 检测/安装 + 端口冲突实查 ss/netstat 6 端口 8080/3306/6379/80/8888/888 + 密钥运行时随机生成 MySQL/AES-256/HMAC/JWT/RSA-2048 + docker compose build/up -d 部署 4 服务 + 输出 /root/jicek-deploy-info.txt 权限 600）
+- [x] Docker 编排 ✅ v0.17.0（docker-compose.yml：mysql + redis + app + ui 4 服务，healthcheck 健康检查 + depends_on service_healthy 顺序启动 + ${VAR:-默认值} 端口/密码环境变量注入 + named volumes 持久化 + jicek-net bridge 网络）
+- [x] 多阶段构建 ✅ v0.17.0（后端 Dockerfile：maven:3.9-eclipse-temurin-17 → eclipse-temurin:17-jre-jammy + curl HEALTHCHECK /actuator/health；前端 Dockerfile：node:20-alpine → nginx:stable-alpine；前端 nginx.conf：Vue history + /api 反代 + gzip + 静态资源缓存 30d）
+- [x] pom.xml actuator 依赖 ✅ v0.17.0（新增 spring-boot-starter-actuator，Docker HEALTHCHECK 依赖 /actuator/health 端点）
 
 ## 4. 角色权限体系
 

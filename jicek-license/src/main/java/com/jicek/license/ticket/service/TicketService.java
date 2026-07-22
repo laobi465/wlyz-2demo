@@ -3,6 +3,7 @@ package com.jicek.license.ticket.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.jicek.license.auth.interceptor.AuthContext;
 import com.jicek.license.common.constant.JicekConstants;
 import com.jicek.license.common.exception.ServiceException;
 import com.jicek.license.common.result.ResultCode;
@@ -181,12 +182,138 @@ public class TicketService {
         return dto;
     }
 
+    /* ============ 管理员端（v0.15.0） ============ */
+
+    /**
+     * 管理员分页查询所有租户工单（不限 tenantId）
+     *
+     * @param current  当前页
+     * @param size     每页条数
+     * @param tenantId 租户ID（可选筛选）
+     * @param category 分类（可选筛选）
+     * @param status   状态（可选筛选）
+     */
+    public Page<Ticket> adminPage(int current, int size, Long tenantId,
+                                    Integer category, Integer status) {
+        LambdaQueryWrapper<Ticket> qw = new LambdaQueryWrapper<>();
+        qw.eq(Ticket::getCreatorType, JicekConstants.TICKET_CREATOR_DEV)
+                .eq(Ticket::getTarget, JicekConstants.TICKET_TARGET_ADMIN)
+                .eq(tenantId != null, Ticket::getTenantId, tenantId)
+                .eq(category != null, Ticket::getCategory, category)
+                .eq(status != null, Ticket::getStatus, status)
+                .orderByDesc(Ticket::getCreateTime);
+        return ticketMapper.selectPage(new Page<>(current, size), qw);
+    }
+
+    /**
+     * 管理员查看任意租户工单详情（含回复列表）
+     *
+     * @param ticketId 工单ID
+     */
+    public TicketDetailDTO adminGet(Long ticketId) {
+        Ticket ticket = getTicketByIdOrThrow(ticketId);
+
+        LambdaQueryWrapper<TicketReply> qw = new LambdaQueryWrapper<>();
+        qw.eq(TicketReply::getTicketId, ticketId)
+                .orderByAsc(TicketReply::getCreateTime);
+        List<TicketReply> replies = ticketReplyMapper.selectList(qw);
+
+        TicketDetailDTO dto = new TicketDetailDTO();
+        dto.setTicket(ticket);
+        dto.setReplies(replies);
+        return dto;
+    }
+
+    /**
+     * 管理员回复工单
+     * <p>
+     * replierType 固定为 TICKET_REPLIER_ADMIN(3)，replierId / replierName 从 AuthContext 获取，
+     * 工单状态置为「已回复」(2)。
+     * <p>
+     * 注：任务背景描述「管理员回复 replierType=2」与 JicekConstants 定义冲突
+     * （TICKET_REPLIER_DEV=2，TICKET_REPLIER_ADMIN=3）。按铁律 04（用常量不硬编码）+
+     * 铁律 06（状态机受控），此处使用 TICKET_REPLIER_ADMIN(3)，使 decideStatusAfterReply
+     * 正确流转到「已回复」。
+     *
+     * @param ticketId 工单ID
+     * @param content  回复内容
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Long adminReply(Long ticketId, String content) {
+        Ticket ticket = getTicketByIdOrThrow(ticketId);
+
+        if (ticket.getStatus() == JicekConstants.TICKET_STATUS_CLOSED) {
+            throw new ServiceException(ResultCode.TICKET_ALREADY_CLOSED);
+        }
+        if (content == null || content.isBlank()) {
+            throw new ServiceException(ResultCode.TICKET_REPLY_EMPTY);
+        }
+        if (content.length() > JicekConstants.TICKET_CONTENT_MAX_LENGTH) {
+            throw new ServiceException(ResultCode.TICKET_CONTENT_TOO_LONG, "回复内容超过长度限制");
+        }
+
+        AuthContext.AuthUser ctx = AuthContext.require();
+
+        // 插入回复（审计表，仅 INSERT）
+        TicketReply reply = new TicketReply();
+        reply.setTenantId(ticket.getTenantId());
+        reply.setTicketId(ticketId);
+        reply.setReplierType(JicekConstants.TICKET_REPLIER_ADMIN);
+        reply.setReplierId(ctx.getUserId());
+        reply.setReplierName(ctx.getUsername());
+        reply.setContent(content);
+        reply.setCreateTime(LocalDateTime.now());
+        ticketReplyMapper.insert(reply);
+
+        // 受控更新工单状态 → 已回复
+        int newStatus = decideStatusAfterReply(JicekConstants.TICKET_REPLIER_ADMIN);
+        updateTicketStatusOnReply(ticket, newStatus, ctx.getUserId());
+
+        log.info("管理员回复工单: ticketId={}, adminId={}, newStatus={}",
+                ticketId, ctx.getUserId(), newStatus);
+        return reply.getId();
+    }
+
+    /**
+     * 管理员关闭工单（状态 → 已关闭，幂等）
+     *
+     * @param ticketId 工单ID
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void adminClose(Long ticketId) {
+        Ticket ticket = getTicketByIdOrThrow(ticketId);
+
+        // 已关闭幂等返回（任意状态可 → 已关闭）
+        if (ticket.getStatus() == JicekConstants.TICKET_STATUS_CLOSED) {
+            return;
+        }
+
+        LambdaUpdateWrapper<Ticket> uw = new LambdaUpdateWrapper<>();
+        uw.eq(Ticket::getId, ticketId)
+                .set(Ticket::getStatus, JicekConstants.TICKET_STATUS_CLOSED)
+                .set(Ticket::getCloseTime, LocalDateTime.now())
+                .set(Ticket::getUpdateTime, LocalDateTime.now());
+        ticketMapper.update(null, uw);
+        log.info("管理员关闭工单: ticketId={}", ticketId);
+    }
+
     /* ============ 私有工具方法 ============ */
 
     private Ticket getTicketOrThrow(Long ticketId, Long tenantId) {
         LambdaQueryWrapper<Ticket> qw = new LambdaQueryWrapper<>();
         qw.eq(Ticket::getId, ticketId).eq(Ticket::getTenantId, tenantId);
         Ticket ticket = ticketMapper.selectOne(qw);
+        if (ticket == null) {
+            throw new ServiceException(ResultCode.TICKET_NOT_FOUND);
+        }
+        return ticket;
+    }
+
+    /**
+     * 管理员按 ID 查工单（不限租户）
+     */
+    private Ticket getTicketByIdOrThrow(Long ticketId) {
+        Ticket ticket = ticketMapper.selectById(ticketId);
         if (ticket == null) {
             throw new ServiceException(ResultCode.TICKET_NOT_FOUND);
         }

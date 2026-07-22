@@ -41,6 +41,11 @@ jicek:
     rsa-private-key: ${JICEK_RSA_PRIVATE_KEY:}  # RSA 私钥 PKCS#8 Base64
     rsa-public-key: ${JICEK_RSA_PUBLIC_KEY:}    # RSA 公钥 X.509 Base64
     hmac-key: ${JICEK_HMAC_KEY:}            # HMAC-SHA256 主密钥 Base64
+    # 国密配置（可选，默认关闭；启用需 jicek.crypto.sm.enabled=true，不影响现有 AES/RSA）
+    sm:
+      enabled: ${JICEK_SM_ENABLED:false}            # 国密开关，默认 false
+      sm4-key: ${JICEK_SM4_KEY:}                    # SM4 对称密钥 Base64（16 字节 / 128 位）
+      sm2-private-key: ${JICEK_SM2_PRIVATE_KEY:}    # SM2 私钥 hex（32 字节 / 256 位）
 
   # 支付配置
   pay:

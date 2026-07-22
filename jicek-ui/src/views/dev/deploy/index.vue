@@ -21,13 +21,13 @@
       <el-col :span="8">
         <el-card>
           <template #header>
-            <span class="jicek-card-title">部署功能</span>
+            <span class="jicek-card-title">{{ t('deploy.featureTitle') }}</span>
           </template>
           <div class="status-block">
-            <el-tag v-if="status.enabled" type="success" size="large">已启用</el-tag>
-            <el-tag v-else type="info" size="large">未启用</el-tag>
+            <el-tag v-if="status.enabled" type="success" size="large">{{ t('deploy.featureEnabled') }}</el-tag>
+            <el-tag v-else type="info" size="large">{{ t('deploy.featureDisabled') }}</el-tag>
             <div class="status-hint">
-              {{ status.enabled ? 'Webhook 自动更新已开启' : '请在 application.yml 配置 jicek.deploy.enabled=true' }}
+              {{ status.enabled ? t('deploy.enabledHint') : t('deploy.disabledHint') }}
             </div>
           </div>
         </el-card>
@@ -35,13 +35,13 @@
       <el-col :span="8">
         <el-card>
           <template #header>
-            <span class="jicek-card-title">当前状态</span>
+            <span class="jicek-card-title">{{ t('deploy.currentStatusTitle') }}</span>
           </template>
           <div class="status-block">
-            <el-tag v-if="status.deploying" type="warning" size="large">部署中...</el-tag>
-            <el-tag v-else type="success" size="large">空闲</el-tag>
+            <el-tag v-if="status.deploying" type="warning" size="large">{{ t('deploy.deploying') }}</el-tag>
+            <el-tag v-else type="success" size="large">{{ t('deploy.idle') }}</el-tag>
             <div class="status-hint">
-              {{ status.deploying ? '部署任务进行中，请等待完成' : '当前无部署任务' }}
+              {{ status.deploying ? t('deploy.deployingHint') : t('deploy.idleHint') }}
             </div>
           </div>
         </el-card>
@@ -49,7 +49,7 @@
       <el-col :span="8">
         <el-card>
           <template #header>
-            <span class="jicek-card-title">最近部署</span>
+            <span class="jicek-card-title">{{ t('deploy.lastDeployTitle') }}</span>
           </template>
           <div class="status-block">
             <el-tag
@@ -59,7 +59,7 @@
             >
               {{ deployStatusText(status.lastDeploy.status) }}
             </el-tag>
-            <span v-else class="status-hint">暂无部署记录</span>
+            <span v-else class="status-hint">{{ t('deploy.noDeployRecord') }}</span>
             <div v-if="status.lastDeploy" class="status-hint">
               {{ formatTime(status.lastDeploy.createTime) }} · {{ durationText(status.lastDeploy.durationMs) }}
             </div>
@@ -71,7 +71,7 @@
     <el-card style="margin-top: 16px">
       <template #header>
         <div class="card-header-with-action">
-          <span class="jicek-card-title">部署日志</span>
+          <span class="jicek-card-title">{{ t('deploy.deployLogTitle') }}</span>
           <div>
             <el-button
               type="primary"
@@ -79,69 +79,69 @@
               :disabled="!status.enabled || status.deploying"
               @click="handleManualDeploy"
             >
-              手动触发部署
+              {{ t('deploy.manualDeploy') }}
             </el-button>
-            <el-button @click="reloadAll">刷新</el-button>
+            <el-button @click="reloadAll">{{ t('deploy.refresh') }}</el-button>
           </div>
         </div>
       </template>
 
       <!-- 筛选 -->
       <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-        <el-form-item label="状态">
-          <el-select v-model="filter.status" placeholder="全部" clearable style="width: 140px">
-            <el-option label="进行中" :value="0" />
-            <el-option label="成功" :value="1" />
-            <el-option label="失败" :value="2" />
-            <el-option label="已回滚" :value="3" />
+        <el-form-item :label="t('deploy.status')">
+          <el-select v-model="filter.status" :placeholder="t('common.all')" clearable style="width: 140px">
+            <el-option :label="t('deploy.statusInProgress')" :value="0" />
+            <el-option :label="t('deploy.statusSuccess')" :value="1" />
+            <el-option :label="t('deploy.statusFailed')" :value="2" />
+            <el-option :label="t('deploy.statusRolledBack')" :value="3" />
           </el-select>
         </el-form-item>
-        <el-form-item label="来源">
-          <el-select v-model="filter.triggerSource" placeholder="全部" clearable style="width: 120px">
-            <el-option label="Webhook 自动" value="webhook" />
-            <el-option label="手动触发" value="manual" />
+        <el-form-item :label="t('deploy.source')">
+          <el-select v-model="filter.triggerSource" :placeholder="t('common.all')" clearable style="width: 120px">
+            <el-option :label="t('deploy.sourceWebhook')" value="webhook" />
+            <el-option :label="t('deploy.sourceManual')" value="manual" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="handleSearch">{{ t('common.search') }}</el-button>
+          <el-button @click="handleReset">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
 
       <!-- 日志表格 -->
       <el-table v-loading="loading" :data="tableData" border stripe style="width: 100%">
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column label="来源" width="110">
+        <el-table-column :label="t('deploy.source')" width="110">
           <template #default="{ row }">
-            <el-tag v-if="row.triggerSource === 'webhook'" type="success" size="small">Webhook</el-tag>
-            <el-tag v-else type="warning" size="small">手动</el-tag>
+            <el-tag v-if="row.triggerSource === 'webhook'" type="success" size="small">{{ t('deploy.sourceWebhookTag') }}</el-tag>
+            <el-tag v-else type="warning" size="small">{{ t('deploy.sourceManualTag') }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column :label="t('deploy.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="deployTagType(row.status)" size="small">
               {{ deployStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="branch" label="分支" width="100" />
-        <el-table-column prop="commitHash" label="Commit" min-width="160" show-overflow-tooltip>
+        <el-table-column prop="branch" :label="t('deploy.branch')" width="100" />
+        <el-table-column prop="commitHash" :label="t('deploy.commit')" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">
             <code class="commit-hash">{{ row.commitHash ? row.commitHash.substring(0, 7) : '-' }}</code>
           </template>
         </el-table-column>
-        <el-table-column label="耗时" width="100">
+        <el-table-column :label="t('deploy.duration')" width="100">
           <template #default="{ row }">
             {{ durationText(row.durationMs) }}
           </template>
         </el-table-column>
-        <el-table-column prop="operatorIp" label="操作 IP" width="140" />
-        <el-table-column label="时间" min-width="160">
+        <el-table-column prop="operatorIp" :label="t('deploy.operatorIp')" width="140" />
+        <el-table-column :label="t('deploy.time')" min-width="160">
           <template #default="{ row }">
             {{ formatTime(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="errorMessage" label="错误信息" min-width="200" show-overflow-tooltip>
+        <el-table-column prop="errorMessage" :label="t('deploy.errorMessage')" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.errorMessage" class="error-text">{{ row.errorMessage }}</span>
             <span v-else style="color: var(--jicek-text-secondary)">-</span>
@@ -164,11 +164,11 @@
     <!-- 手动触发确认 -->
     <ConfirmDialog
       v-model="manualVisible"
-      title="手动触发部署确认"
+      :title="t('deploy.manualTitle')"
       type="warning"
-      message="确认立即触发部署？"
-      sub-message="将执行 git pull → 构建后端 → 构建前端 → 重启服务，过程约 1-3 分钟，期间服务可能短暂不可用"
-      confirm-text="确认部署"
+      :message="t('deploy.manualMessage')"
+      :sub-message="t('deploy.manualSubMessage')"
+      :confirm-text="t('deploy.manualConfirm')"
       @confirm="doManualDeploy"
     />
   </div>
@@ -177,8 +177,11 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { deployApi } from '@/api'
 import ConfirmDialog from '@/components/jicek/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -208,11 +211,11 @@ const deployTagType = (statusCode: number): string => {
 }
 
 const deployStatusText = (statusCode: number): string => {
-  if (statusCode === 0) return '进行中'
-  if (statusCode === 1) return '成功'
-  if (statusCode === 2) return '失败'
-  if (statusCode === 3) return '已回滚'
-  return '未知'
+  if (statusCode === 0) return t('deploy.statusInProgress')
+  if (statusCode === 1) return t('deploy.statusSuccess')
+  if (statusCode === 2) return t('deploy.statusFailed')
+  if (statusCode === 3) return t('deploy.statusRolledBack')
+  return t('deploy.statusUnknown')
 }
 
 const durationText = (ms: number) => {
@@ -273,7 +276,7 @@ const doManualDeploy = async () => {
       tenantId: filter.tenantId,
       branch: 'main'
     })
-    ElMessage.success(resp.message || '部署已触发')
+    ElMessage.success(resp.message || t('deploy.deployTriggered'))
     await reloadAll()
   } catch {
     // 错误已在拦截器处理

@@ -36,6 +36,9 @@ public class PayOrder {
     /** 购买的卡类ID */
     private Long cardTypeId;
 
+    /** 关联代理ID（null 表示终端用户购买，非空时支付成功后触发分润） */
+    private Long agentId;
+
     /** 购买数量 */
     private Integer quantity;
 

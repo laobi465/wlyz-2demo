@@ -20,6 +20,9 @@ public class CardKeyGenRequestDTO {
     @NotNull
     private Long cardTypeId;
 
+    /** 代理制卡场景传入代理ID；null 表示开发者制卡（不扣代理余额） */
+    private Long agentId;
+
     /** 生成数量，上限 1000 */
     @Min(1)
     private Integer quantity = 1;

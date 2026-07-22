@@ -10,26 +10,26 @@
   <div class="jicek-page">
     <el-card>
       <template #header>
-        <span class="jicek-card-title">资金流水</span>
+        <span class="jicek-card-title">{{ t('payOrder.title') }}</span>
         <div style="float: right">
-          <el-button @click="handleExport">导出 Excel</el-button>
+          <el-button @click="handleExport">{{ t('payOrder.export') }}</el-button>
         </div>
       </template>
 
       <!-- 筛选 -->
       <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-        <el-form-item label="状态">
-          <el-select v-model="filter.status" placeholder="全部" clearable style="width: 140px">
-            <el-option label="待支付" :value="0" />
-            <el-option label="已支付" :value="1" />
-            <el-option label="失败" :value="2" />
-            <el-option label="已退款" :value="3" />
-            <el-option label="已关闭" :value="4" />
+        <el-form-item :label="t('payOrder.status')">
+          <el-select v-model="filter.status" :placeholder="t('common.all')" clearable style="width: 140px">
+            <el-option :label="t('payOrder.statusPending')" :value="0" />
+            <el-option :label="t('payOrder.statusPaid')" :value="1" />
+            <el-option :label="t('payOrder.statusFailed')" :value="2" />
+            <el-option :label="t('payOrder.statusRefunded')" :value="3" />
+            <el-option :label="t('payOrder.statusClosed')" :value="4" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadData">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="loadData">{{ t('common.search') }}</el-button>
+          <el-button @click="handleReset">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
 
@@ -40,9 +40,7 @@
         style="margin-bottom: 16px"
       >
         <template #title>
-          汇总：今日收入 ¥{{ formatAmount(summary.todayIncome) }} |
-          已退款 ¥{{ formatAmount(summary.todayRefund) }} |
-          净收入 ¥{{ formatAmount(summary.todayNetIncome) }}
+          {{ t('payOrder.summary', { income: formatAmount(summary.todayIncome), refund: formatAmount(summary.todayRefund), netIncome: formatAmount(summary.todayNetIncome) }) }}
         </template>
       </el-alert>
 
@@ -54,26 +52,26 @@
         stripe
         style="width: 100%"
       >
-        <el-table-column prop="outTradeNo" label="订单号" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="amount" label="金额" width="100">
+        <el-table-column prop="outTradeNo" :label="t('payOrder.outTradeNo')" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="amount" :label="t('payOrder.amount')" width="100">
           <template #default="{ row }">
             ¥{{ formatAmount(row.amount) }}
           </template>
         </el-table-column>
-        <el-table-column prop="payType" label="通道" width="100">
+        <el-table-column prop="payType" :label="t('payOrder.channel')" width="100">
           <template #default="{ row }">
             {{ channelText(row.payType) }}
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" :label="t('payOrder.status')" width="100">
           <template #default="{ row }">
             <StatusTag :status="row.status" type="order" />
           </template>
         </el-table-column>
-        <el-table-column prop="quantity" label="数量" width="80" />
-        <el-table-column prop="payTime" label="支付时间" min-width="160" />
-        <el-table-column prop="createTime" label="创建时间" min-width="160" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column prop="quantity" :label="t('payOrder.quantity')" width="80" />
+        <el-table-column prop="payTime" :label="t('payOrder.payTime')" min-width="160" />
+        <el-table-column prop="createTime" :label="t('payOrder.createTime')" min-width="160" />
+        <el-table-column :label="t('payOrder.operation')" width="120" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 1"
@@ -82,7 +80,7 @@
               size="small"
               @click="handleRefund(row)"
             >
-              退款
+              {{ t('payOrder.refund') }}
             </el-button>
           </template>
         </el-table-column>
@@ -104,11 +102,11 @@
     <!-- 退款确认弹窗 -->
     <ConfirmDialog
       v-model="refundVisible"
-      title="退款确认"
+      :title="t('payOrder.refundTitle')"
       type="danger"
-      :message="`确认退款订单 ${refundOrder?.outTradeNo}?`"
-      sub-message="退款后关联的卡密将立即失效，不可恢复"
-      confirm-text="确认退款"
+      :message="t('payOrder.refundMessage', { tradeNo: refundOrder?.outTradeNo })"
+      :sub-message="t('payOrder.refundSubMessage')"
+      :confirm-text="t('payOrder.refundConfirm')"
       @confirm="doRefund"
     />
   </div>
@@ -116,11 +114,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { payApi, dashboardApi } from '@/api'
 import StatusTag from '@/components/jicek/StatusTag.vue'
 import ConfirmDialog from '@/components/jicek/ConfirmDialog.vue'
 import Decimal from 'decimal.js'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -147,10 +148,10 @@ const formatAmount = (val: any) => {
 
 const channelText = (type: string) => {
   return {
-    alipay: '支付宝',
-    wxpay: '微信',
-    qqpay: 'QQ',
-    unionpay: '银联'
+    alipay: t('payOrder.channelAlipay'),
+    wxpay: t('payOrder.channelWxpay'),
+    qqpay: t('payOrder.channelQqpay'),
+    unionpay: t('payOrder.channelUnionpay')
   }[type] || type || '-'
 }
 
@@ -187,8 +188,8 @@ const handleRefund = (row: any) => {
 const doRefund = async () => {
   if (!refundOrder.value) return
   try {
-    await payApi.refund(refundOrder.value.outTradeNo, '管理员手动退款')
-    ElMessage.success('退款成功')
+    await payApi.refund(refundOrder.value.outTradeNo, t('payOrder.refund'))
+    ElMessage.success(t('payOrder.refundSuccess'))
     loadData()
     loadSummary()
   } catch {
@@ -197,7 +198,7 @@ const doRefund = async () => {
 }
 
 const handleExport = () => {
-  ElMessage.info('导出 Excel 功能待实现（v0.3.0）')
+  ElMessage.info(t('payOrder.exportTodo'))
 }
 
 onMounted(() => {

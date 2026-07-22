@@ -21,32 +21,32 @@
   <div class="jicek-page">
     <el-card>
       <template #header>
-        <span class="jicek-card-title">数据统计</span>
+        <span class="jicek-card-title">{{ t('stats.title') }}</span>
       </template>
 
       <!-- 全局筛选 -->
       <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-        <el-form-item label="软件ID">
+        <el-form-item :label="t('stats.softwareId')">
           <el-input-number v-model="filter.softwareId" :min="1" clearable style="width: 140px" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="reloadAll">刷新</el-button>
+          <el-button type="primary" @click="reloadAll">{{ t('stats.refresh') }}</el-button>
         </el-form-item>
       </el-form>
 
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <!-- 1. 验证量趋势 -->
-        <el-tab-pane label="验证量趋势" name="verify">
+        <el-tab-pane :label="t('stats.verifyTrend')" name="verify">
           <div class="tab-toolbar">
             <el-form :inline="true" :model="verifyFilter">
-              <el-form-item label="粒度">
+              <el-form-item :label="t('stats.granularity')">
                 <el-radio-group v-model="verifyFilter.granularity" @change="loadVerify">
-                  <el-radio-button label="hour">按小时</el-radio-button>
-                  <el-radio-button label="day">按天</el-radio-button>
-                  <el-radio-button label="month">按月</el-radio-button>
+                  <el-radio-button label="hour">{{ t('stats.granularityHour') }}</el-radio-button>
+                  <el-radio-button label="day">{{ t('stats.granularityDay') }}</el-radio-button>
+                  <el-radio-button label="month">{{ t('stats.granularityMonth') }}</el-radio-button>
                 </el-radio-group>
               </el-form-item>
-              <el-form-item v-if="verifyFilter.granularity !== 'hour'" label="天数">
+              <el-form-item v-if="verifyFilter.granularity !== 'hour'" :label="t('stats.days')">
                 <el-input-number v-model="verifyFilter.days" :min="1" :max="90" style="width: 100px" @change="loadVerify" />
               </el-form-item>
             </el-form>
@@ -55,13 +55,13 @@
           <el-row :gutter="16" class="stat-row">
             <el-col :span="12">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">总激活次数</div>
+                <div class="jicek-stat-label">{{ t('stats.totalActivate') }}</div>
                 <div class="jicek-stat-value success">{{ verifyData.totalActivate || 0 }}</div>
               </div>
             </el-col>
             <el-col :span="12">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">总新增设备</div>
+                <div class="jicek-stat-label">{{ t('stats.totalNewDevice') }}</div>
                 <div class="jicek-stat-value">{{ verifyData.totalNewDevice || 0 }}</div>
               </div>
             </el-col>
@@ -71,17 +71,17 @@
         </el-tab-pane>
 
         <!-- 2. 设备在线热力图 -->
-        <el-tab-pane label="设备在线热力图" name="heatmap">
+        <el-tab-pane :label="t('stats.deviceHeatmap')" name="heatmap">
           <el-row :gutter="16" class="stat-row">
             <el-col :span="12">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">当前在线设备</div>
+                <div class="jicek-stat-label">{{ t('stats.currentOnline') }}</div>
                 <div class="jicek-stat-value success">{{ heatmapData.currentOnline || 0 }}</div>
               </div>
             </el-col>
             <el-col :span="12">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">总设备数</div>
+                <div class="jicek-stat-label">{{ t('stats.totalDevice') }}</div>
                 <div class="jicek-stat-value">{{ heatmapData.totalDevice || 0 }}</div>
               </div>
             </el-col>
@@ -91,17 +91,17 @@
         </el-tab-pane>
 
         <!-- 3. 收入统计 -->
-        <el-tab-pane label="收入统计" name="income">
+        <el-tab-pane :label="t('stats.incomeStats')" name="income">
           <div class="tab-toolbar">
             <el-form :inline="true" :model="incomeFilter">
-              <el-form-item label="维度">
+              <el-form-item :label="t('stats.dimension')">
                 <el-radio-group v-model="incomeFilter.dimension" @change="loadIncome">
-                  <el-radio-button label="channel">支付通道</el-radio-button>
-                  <el-radio-button label="cardType">卡类</el-radio-button>
-                  <el-radio-button label="agent">代理</el-radio-button>
+                  <el-radio-button label="channel">{{ t('stats.dimensionChannel') }}</el-radio-button>
+                  <el-radio-button label="cardType">{{ t('stats.dimensionCardType') }}</el-radio-button>
+                  <el-radio-button label="agent">{{ t('stats.dimensionAgent') }}</el-radio-button>
                 </el-radio-group>
               </el-form-item>
-              <el-form-item label="天数">
+              <el-form-item :label="t('stats.days')">
                 <el-input-number v-model="incomeFilter.days" :min="1" :max="90" style="width: 100px" @change="loadIncome" />
               </el-form-item>
             </el-form>
@@ -110,38 +110,30 @@
           <el-row :gutter="16" class="stat-row">
             <el-col :span="12">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">总收入金额</div>
+                <div class="jicek-stat-label">{{ t('stats.totalAmount') }}</div>
                 <div class="jicek-stat-value success">¥{{ formatAmount(incomeData.totalAmount) }}</div>
               </div>
             </el-col>
             <el-col :span="12">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">总订单数</div>
+                <div class="jicek-stat-label">{{ t('stats.totalCount') }}</div>
                 <div class="jicek-stat-value">{{ incomeData.totalCount || 0 }}</div>
               </div>
             </el-col>
           </el-row>
 
-          <el-alert
-            v-if="incomeFilter.dimension === 'agent'"
-            type="info"
-            :closable="false"
-            title="代理维度统计待 PayOrder 扩展 agent_id 字段后开放"
-            style="margin-bottom: 16px"
-          />
-
           <div ref="incomeChartRef" class="chart-container-lg"></div>
 
           <el-table v-if="(incomeData.items || []).length > 0" :data="incomeData.items" border stripe style="margin-top: 16px">
             <el-table-column type="index" label="#" width="60" />
-            <el-table-column prop="name" label="名称" min-width="140" />
-            <el-table-column prop="count" label="订单数" width="120" />
-            <el-table-column label="金额" min-width="140">
+            <el-table-column prop="name" :label="t('stats.name')" min-width="140" />
+            <el-table-column prop="count" :label="t('stats.orderCount')" width="120" />
+            <el-table-column :label="t('stats.amount')" min-width="140">
               <template #default="{ row }">
                 <span class="amount-text">¥{{ formatAmount(row.amount) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="占比" min-width="200">
+            <el-table-column :label="t('stats.proportion')" min-width="200">
               <template #default="{ row }">
                 <el-progress :percentage="amountPercent(row.amount)" :stroke-width="10" />
               </template>
@@ -150,10 +142,10 @@
         </el-tab-pane>
 
         <!-- 4. 防破解事件 -->
-        <el-tab-pane label="防破解事件" name="antiCrack">
+        <el-tab-pane :label="t('stats.antiCrack')" name="antiCrack">
           <div class="tab-toolbar">
             <el-form :inline="true" :model="antiFilter">
-              <el-form-item label="天数">
+              <el-form-item :label="t('stats.days')">
                 <el-input-number v-model="antiFilter.days" :min="1" :max="90" style="width: 100px" @change="loadAntiCrack" />
               </el-form-item>
             </el-form>
@@ -162,19 +154,19 @@
           <el-row :gutter="16" class="stat-row">
             <el-col :span="8">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">封禁设备数</div>
+                <div class="jicek-stat-label">{{ t('stats.bannedDevice') }}</div>
                 <div class="jicek-stat-value danger">{{ antiCrackData.bannedDeviceCount || 0 }}</div>
               </div>
             </el-col>
             <el-col :span="8">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">封禁卡密数</div>
+                <div class="jicek-stat-label">{{ t('stats.bannedCard') }}</div>
                 <div class="jicek-stat-value danger">{{ antiCrackData.bannedCardCount || 0 }}</div>
               </div>
             </el-col>
             <el-col :span="8">
               <div class="jicek-stat-card">
-                <div class="jicek-stat-label">封禁 IP 数</div>
+                <div class="jicek-stat-label">{{ t('stats.bannedIp') }}</div>
                 <div class="jicek-stat-value warning">{{ antiCrackData.bannedIpCount || 0 }}</div>
               </div>
             </el-col>
@@ -189,9 +181,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts'
 import { statsApi } from '@/api'
 import Decimal from 'decimal.js'
+
+const { t } = useI18n()
 
 // 全局筛选
 const filter = reactive({
@@ -233,9 +228,11 @@ const renderVerifyChart = () => {
   const labels = verifyData.value.labels || []
   const activate = verifyData.value.activateCounts || []
   const devices = verifyData.value.newDeviceCounts || []
+  const seriesActivate = t('stats.seriesActivate')
+  const seriesNewDevice = t('stats.seriesNewDevice')
   verifyChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['卡密激活', '新增设备'], bottom: 0, textStyle: { color: '#6B7280' } },
+    legend: { data: [seriesActivate, seriesNewDevice], bottom: 0, textStyle: { color: '#6B7280' } },
     grid: { left: 60, right: 30, top: 30, bottom: 50 },
     xAxis: {
       type: 'category',
@@ -253,7 +250,7 @@ const renderVerifyChart = () => {
     },
     series: [
       {
-        name: '卡密激活',
+        name: seriesActivate,
         type: 'line',
         smooth: true,
         symbol: 'circle',
@@ -268,7 +265,7 @@ const renderVerifyChart = () => {
         }
       },
       {
-        name: '新增设备',
+        name: seriesNewDevice,
         type: 'line',
         smooth: true,
         symbol: 'circle',
@@ -314,6 +311,7 @@ const renderHeatmapChart = () => {
   const hours = heatmapData.value.hours || []
   const points = heatmapData.value.points || []
   const maxVal = points.reduce((m: number, p: any) => Math.max(m, Number(p[2]) || 0), 0)
+  const hourSuffix = t('stats.hourSuffix')
   heatmapChart.setOption({
     tooltip: {
       position: 'top',
@@ -322,13 +320,13 @@ const renderHeatmapChart = () => {
         const hour = p.value[1]
         const val = p.value[2]
         const dayLabel = days[dayIdx] || ''
-        return `${dayLabel} ${String(hour).padStart(2, '0')}:00<br/>在线设备: <b>${val}</b>`
+        return t('stats.heatmapTooltip', { day: dayLabel, hour: String(hour).padStart(2, '0'), val })
       }
     },
     grid: { left: 100, right: 30, top: 30, bottom: 60 },
     xAxis: {
       type: 'category',
-      data: hours.map((h: number) => `${String(h).padStart(2, '0')}时`),
+      data: hours.map((h: number) => `${String(h).padStart(2, '0')}${hourSuffix}`),
       splitArea: { show: true },
       axisLabel: { color: '#6B7280', fontSize: 11 }
     },
@@ -392,6 +390,8 @@ const renderIncomeChart = () => {
   const names = items.map((i: any) => i.name)
   const amounts = items.map((i: any) => Number(i.amount) || 0)
   const counts = items.map((i: any) => Number(i.count) || 0)
+  const seriesAmount = t('stats.seriesAmount')
+  const seriesOrderCount = t('stats.seriesOrderCount')
   incomeChart.setOption({
     tooltip: {
       trigger: 'axis',
@@ -399,7 +399,7 @@ const renderIncomeChart = () => {
       formatter: (params: any) => {
         return params
           .map((p: any) => {
-            if (p.seriesName === '金额') {
+            if (p.seriesName === seriesAmount) {
               return `${p.name}<br/>${p.seriesName}: ¥${new Decimal(p.value).toFixed(2)}`
             }
             return `${p.seriesName}: ${p.value}`
@@ -407,7 +407,7 @@ const renderIncomeChart = () => {
           .join('<br/>')
       }
     },
-    legend: { data: ['金额', '订单数'], bottom: 0, textStyle: { color: '#6B7280' } },
+    legend: { data: [seriesAmount, seriesOrderCount], bottom: 0, textStyle: { color: '#6B7280' } },
     grid: { left: 70, right: 60, top: 30, bottom: 50 },
     xAxis: {
       type: 'category',
@@ -418,7 +418,7 @@ const renderIncomeChart = () => {
     yAxis: [
       {
         type: 'value',
-        name: '金额',
+        name: seriesAmount,
         position: 'left',
         axisLine: { show: false },
         axisLabel: { color: '#6B7280', fontSize: 12, formatter: '¥{value}' },
@@ -426,7 +426,7 @@ const renderIncomeChart = () => {
       },
       {
         type: 'value',
-        name: '订单数',
+        name: seriesOrderCount,
         position: 'right',
         minInterval: 1,
         axisLine: { show: false },
@@ -435,14 +435,14 @@ const renderIncomeChart = () => {
     ],
     series: [
       {
-        name: '金额',
+        name: seriesAmount,
         type: 'bar',
         barWidth: '40%',
         data: amounts.map((v: number) => ({ value: v, itemStyle: { color: '#2E7D5B' } })),
         itemStyle: { borderRadius: [4, 4, 0, 0] }
       },
       {
-        name: '订单数',
+        name: seriesOrderCount,
         type: 'line',
         smooth: true,
         symbol: 'circle',
@@ -493,9 +493,11 @@ const renderAntiChart = () => {
   const labels = antiCrackData.value.labels || []
   const deviceSeries = antiCrackData.value.bannedDeviceTrend || []
   const cardSeries = antiCrackData.value.bannedCardTrend || []
+  const seriesBannedDevice = t('stats.seriesBannedDevice')
+  const seriesBannedCard = t('stats.seriesBannedCard')
   antiChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['封禁设备', '封禁卡密'], bottom: 0, textStyle: { color: '#6B7280' } },
+    legend: { data: [seriesBannedDevice, seriesBannedCard], bottom: 0, textStyle: { color: '#6B7280' } },
     grid: { left: 60, right: 30, top: 30, bottom: 50 },
     xAxis: {
       type: 'category',
@@ -513,7 +515,7 @@ const renderAntiChart = () => {
     },
     series: [
       {
-        name: '封禁设备',
+        name: seriesBannedDevice,
         type: 'line',
         smooth: true,
         symbol: 'circle',
@@ -528,7 +530,7 @@ const renderAntiChart = () => {
         }
       },
       {
-        name: '封禁卡密',
+        name: seriesBannedCard,
         type: 'line',
         smooth: true,
         symbol: 'circle',

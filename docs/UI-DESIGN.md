@@ -438,6 +438,25 @@
 - 新建/编辑弹窗：EndUserSaveDTO 表单（软件下拉 + 用户名 + 密码 + 昵称 + 邮箱 + 手机号 + 状态 + 备注），编辑时密码可空表示不改
 - 重置密码弹窗：单字段（新密码）+ 确认按钮
 
+### 8.9 管理员后台布局（v0.15.0）
+- 独立于开发者后台：路由 `/admin/*`，独立 `AdminLayout.vue`（不复用 DevLayout），路由守卫校验 `jicek_admin_token`，缺失跳 `/admin/login`
+- 管理员登录页（`/admin/login`）：用户名 + 密码（无租户ID，因管理员跨租户），调 `/api/auth/admin/login`，token 存 `jicek_admin_token`，用户信息存 `jicek_admin_user`
+- `adminAxios` 独立 axios 实例（`src/api/admin.ts`）：请求拦截注入 `Bearer ${token}`，响应拦截 401/9001/9002/9003 清理 token + 跳 `/admin/login`
+- 管理员工单管理页（`/admin/ticket`）：筛选区（租户ID + 分类 + 状态）+ 表格（工单号/标题/分类/状态/创建者/创建时间/操作）+ 详情弹窗（对话流回复 + 关闭按钮）
+- 管理员开发者管理页（`/admin/dev-user`）：筛选区（租户ID + 用户名模糊 + 状态）+ 表格（用户名/昵称/租户ID/状态/最后登录/创建时间/操作）+ 封禁/解封切换 + 重置密码弹窗
+- 布局沿用 5.1 后台布局规范（220px 侧栏 + 60px 顶栏），仅菜单项不同（工单管理 / 开发者管理 / 退出）
+
+### 8.10 多语言国际化全量改造（v0.15.0）
+- v0.14.0 渐进式改造 → v0.15.0 全量完成：17 个 dev 页面全部接入 vue-i18n（dashboard/software/cardType/cardKey/device/agent/withdraw/payConfig/payOrder/cloudFunc/stats/ticket/deploy/updatePackage/announcement/shop + login）
+- 语言包扩展 16 个新模块（zh-CN.ts + en-US.ts 同步）：dashboard/software/cardType/cardKey/device/agent/withdraw/payConfig/payOrder/cloudFunc/stats/ticket/deploy/updatePackage/announcement/shop + admin（管理员后台专用）
+- 管理员后台文案单独走 admin 模块（与开发者模块解耦，避免键名冲突）
+- 所有用户可见文案（表格列名/按钮/弹窗标题/表单 label/Empty/placeholder/状态标签/确认弹窗文案）均支持 `t('module.key')` 中英文切换
+- 保留 LangSwitch 组件（v0.14.0）切换机制：localStorage `jicek_locale` 持久化 + `location.reload` 同步 Element Plus 语言包
+
+### 8.11 收入统计代理维度（v0.16.0）
+
+- stats 页面代理维度（dimension=agent）移除「待扩展」alert 提示，正常展示柱状图+折线图+明细表格，与其他维度一致
+
 ## 9. 交互规范
 
 ### 9.1 加载状态

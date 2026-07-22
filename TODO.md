@@ -264,11 +264,36 @@
 - 完成版本：v0.14.0
 - 备注：vue-i18n 9.x 中英文 + 渐进式改造，详见 v0.14.0 新增功能条目
 
+### [已完成] v0.15.0 新增功能 ✅
+- 优先级：P1
+- 完成版本：v0.15.0
+- 完成项：
+  - [x] 代理制卡扣余额：CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance（先扣款再生成卡密，同事务）；CardKeyGenRequestDTO 加 agentId 字段
+  - [x] 分润接入支付回调：PayOrder 加 agentId 字段 + jicek_pay_order 表加 idx_agent 索引；PayNotifyService 支付成功事务提交后调 CommissionService.grantCommission（分润独立事务 + try-catch，分润失败不回滚卡密）；jicek_commission 表加 uk_order_agent(out_trade_no, agent_id) 幂等索引
+  - [x] 管理员端 Controller：AdminTicketController（/api/admin/ticket 4 接口 page/get/reply/close）+ AdminDevUserController（/api/admin/dev-user 5 接口 page/get/ban/unban/reset-password），@AuthRequired(role=JicekConstants.ROLE_ADMIN)；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离
+  - [x] 多语言国际化全量：17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块（dashboard/software/cardType/cardKey/device/agent/withdraw/payConfig/payOrder/cloudFunc/stats/ticket/deploy/updatePackage/announcement/shop + admin），所有用户可见文案支持中英文切换
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.15.0 条目；7 份核心文档已同步（CHANGELOG/README/PROMPT/PROJECT/SPEC/UI-DESIGN/TODO）
+
+### [已完成] v0.16.0 新增功能 ✅
+- 优先级：P2（遗留补全）
+- 完成版本：v0.16.0
+- 完成项：
+  - [x] 收入统计代理维度：StatsService 新增 groupByAgent()（按 PayOrder.agentId 分组 + AgentMapper 预加载代理名），前端 stats 页移除 dimension='agent' 的 alert 提示，代理维度正常展示
+  - [x] SDK 云函数调用接口：新建 SdkCloudFunctionController（POST /api/sdk/cloud-function/invoke，SdkAuthFilter 鉴权，invokeSource="sdk"）；CloudFunctionService 新增 findBySoftwareAndName 三元查询；SdkCloudFunctionInvokeDTO 含 functionName + input
+  - [x] 国密 SM2/SM4 可选实现：新建 SmCryptoService（SM4-CBC 对称 + SM2 非对称 + SM3 摘要），@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true") 默认关闭；JicekProperties.Crypto 加 Sm 内部类；JicekConstants 加国密常量；application.yml 加 jicek.crypto.sm 配置段（JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY 环境变量绑定）；不影响现有 AES/RSA
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.16.0 条目；至此所有历史遗留全部清零；7 份核心文档已同步
+
+### [已完成] v0.17.0 新增功能 ✅
+- 优先级：P1（Docker 一键部署）
+- 完成版本：v0.17.0
+- 完成项：
+  - [x] 一键安装脚本：install.sh 自动检测操作系统（CentOS/Ubuntu/Debian/RHEL/Rocky/AlmaLinux）+ 宝塔面板检测/自动安装 + Docker + Compose v2 检测/安装 + 端口冲突实查 ss/netstat（6 端口 8080/3306/6379/80/8888/888，无假数据）+ 密钥运行时随机生成（MySQL 24 位/AES-256 Base64/HMAC-SHA256/JWT 48 字节/RSA-2048 openssl PKCS#8+X.509）+ docker compose build/up -d 部署 4 服务 + 输出 /root/jicek-deploy-info.txt（权限 600）
+  - [x] Docker 编排：docker-compose.yml 编排 mysql + redis + app + ui 4 服务，healthcheck 健康检查 + depends_on service_healthy 顺序启动 + ${VAR:-默认值} 端口/密码环境变量注入 + named volumes 持久化（mysql_data/redis_data/app_storage）+ jicek-net bridge 网络
+  - [x] 多阶段构建：后端 Dockerfile（maven:3.9-eclipse-temurin-17 → eclipse-temurin:17-jre-jammy + curl HEALTHCHECK /actuator/health）；前端 Dockerfile（node:20-alpine → nginx:stable-alpine）；前端 nginx.conf（Vue history try_files + /api 反代 jicek-app:8080 + gzip + 静态资源缓存 30d）
+  - [x] pom.xml 依赖：新增 spring-boot-starter-actuator（Docker HEALTHCHECK 依赖 /actuator/health 端点）
+  - [x] .dockerignore：根目录 + jicek-license/ + jicek-ui/ 三处 .dockerignore 配置
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.17.0 条目；7 份核心文档已同步（CHANGELOG/README/PROMPT/PROJECT/SPEC/UI-DESIGN/TODO）；端口冲突可通过 APP_PORT/MYSQL_PORT/REDIS_PORT/UI_PORT 环境变量自定义
+
 ## 待实现清单
 
-核心功能已全部完成，后续按需迭代。剩余增强项（非阻塞）：
-
-- 代理制卡扣余额接入（AgentService.deductBalance）
-- 分润接入支付回调（PaymentTransactionService 触发 grantCommission）
-- 管理员端 Controller（工单处理 + 租户管理）
-- 多语言国际化剩余页面逐步替换（当前登录页 + DevLayout + 终端用户页已全量 i18n）
+全部完成，无待实现项。核心功能与扩展项已全部完成，后续按需迭代。
