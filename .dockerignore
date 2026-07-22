@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# 文档
+*.md
+docs/
+
+# IDE
+.idea
+.vscode
+*.iml
+
+# 构建产物
+jicek-license/target/
+jicek-ui/dist/
+jicek-ui/node_modules/
+
+# 环境变量
+.env
+.env.*
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 备份
+.jicek-backup/
+
+# SDK 示例
+sdk/
+
+# 脚本
+install.sh

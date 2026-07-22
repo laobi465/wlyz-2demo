@@ -283,6 +283,17 @@
   - [x] 国密 SM2/SM4 可选实现：新建 SmCryptoService（SM4-CBC 对称 + SM2 非对称 + SM3 摘要），@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true") 默认关闭；JicekProperties.Crypto 加 Sm 内部类；JicekConstants 加国密常量；application.yml 加 jicek.crypto.sm 配置段（JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY 环境变量绑定）；不影响现有 AES/RSA
 - 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.16.0 条目；至此所有历史遗留全部清零；7 份核心文档已同步
 
+### [已完成] v0.17.0 新增功能 ✅
+- 优先级：P1（Docker 一键部署）
+- 完成版本：v0.17.0
+- 完成项：
+  - [x] 一键安装脚本：install.sh 自动检测操作系统（CentOS/Ubuntu/Debian/RHEL/Rocky/AlmaLinux）+ 宝塔面板检测/自动安装 + Docker + Compose v2 检测/安装 + 端口冲突实查 ss/netstat（6 端口 8080/3306/6379/80/8888/888，无假数据）+ 密钥运行时随机生成（MySQL 24 位/AES-256 Base64/HMAC-SHA256/JWT 48 字节/RSA-2048 openssl PKCS#8+X.509）+ docker compose build/up -d 部署 4 服务 + 输出 /root/jicek-deploy-info.txt（权限 600）
+  - [x] Docker 编排：docker-compose.yml 编排 mysql + redis + app + ui 4 服务，healthcheck 健康检查 + depends_on service_healthy 顺序启动 + ${VAR:-默认值} 端口/密码环境变量注入 + named volumes 持久化（mysql_data/redis_data/app_storage）+ jicek-net bridge 网络
+  - [x] 多阶段构建：后端 Dockerfile（maven:3.9-eclipse-temurin-17 → eclipse-temurin:17-jre-jammy + curl HEALTHCHECK /actuator/health）；前端 Dockerfile（node:20-alpine → nginx:stable-alpine）；前端 nginx.conf（Vue history try_files + /api 反代 jicek-app:8080 + gzip + 静态资源缓存 30d）
+  - [x] pom.xml 依赖：新增 spring-boot-starter-actuator（Docker HEALTHCHECK 依赖 /actuator/health 端点）
+  - [x] .dockerignore：根目录 + jicek-license/ + jicek-ui/ 三处 .dockerignore 配置
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.17.0 条目；7 份核心文档已同步（CHANGELOG/README/PROMPT/PROJECT/SPEC/UI-DESIGN/TODO）；端口冲突可通过 APP_PORT/MYSQL_PORT/REDIS_PORT/UI_PORT 环境变量自定义
+
 ## 待实现清单
 
 全部完成，无待实现项。核心功能与扩展项已全部完成，后续按需迭代。

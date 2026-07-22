@@ -570,6 +570,14 @@ services:
 - `application-prod.yml`：生产配置（不入 git，仅环境变量覆盖）
 - 所有敏感信息必须走环境变量，禁硬编码（铁律 04）
 
+### 7.4 Docker 一键部署（v0.17.0）
+- install.sh 自动检测宝塔面板 + Docker + 端口冲突 + 生成密钥 + 部署
+- 端口检测用 ss/netstat 实查（铁律 06），无假数据
+- 密钥运行时随机生成（铁律 04），不硬编码占位
+- /root/jicek-deploy-info.txt 权限 600，含所有配置信息
+- docker-compose.yml 编排 mysql/redis/app/ui 4 服务，健康检查 + 依赖顺序
+- Dockerfile 多阶段构建（后端 maven→jre，前端 node→nginx）
+
 ## 8. UI 规范
 
 ### 8.1 禁用项

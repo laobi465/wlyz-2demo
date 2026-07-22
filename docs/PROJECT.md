@@ -145,7 +145,7 @@
 │       │   ├── service # EndUserService（CRUD + ban/unban + reset-password + 账号登录自建 H5Session）
 │       │   └── controller # DevEndUserController（/api/dev/end-user/* 8 接口 JWT） + H5EndUserController（/api/h5/end-user/login 公开）
 │       └── sdk-gen     # ★ SDK 代码生成器（v0.12.0 前端实现，9 语言模板，无后端）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网，v0.14.0 新增终端用户管理 + 多语言国际化，v0.15.0 新增管理员后台 + i18n 全量）
+├── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网，v0.14.0 新增终端用户管理 + 多语言国际化，v0.15.0 新增管理员后台 + i18n 全量）
     ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 + endUserApi v0.14.0 + admin.ts v0.15.0 独立 adminAxios 实例 jicek_admin_token 隔离）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/components/LangSwitch.vue # ★ 多语言切换组件（v0.14.0，顶栏下拉 + localStorage 持久化）
@@ -178,6 +178,9 @@
         ├── login       # 管理员登录（用户名+密码，无租户ID）
         ├── ticket      # 工单管理（筛选+表格+详情弹窗+回复+关闭）
         └── dev-user    # 开发者管理（筛选+表格+封禁/解封+重置密码）
+├── install.sh              # ★ 一键安装脚本（v0.17.0，宝塔检测+Docker+端口冲突实查+密钥随机生成+部署+输出 /root/jicek-deploy-info.txt 权限 600）
+├── docker-compose.yml      # ★ Docker 编排（v0.17.0，mysql/redis/app/ui 4 服务 + 健康检查 + depends_on 顺序启动 + ${VAR:-默认值} 端口注入）
+└── .dockerignore           # ★ Docker 忽略规则（v0.17.0，根目录；jicek-license/.dockerignore + jicek-ui/.dockerignore 同步存在）
 ```
 
 ### 2.3 数据流
@@ -291,6 +294,12 @@
 - [x] 收入统计代理维度 ✅ v0.16.0（StatsService 新增 groupByAgent() 按 PayOrder.agentId 分组 + AgentMapper 预加载代理名；前端 stats 页移除 dimension='agent' 的 alert 提示，代理维度正常展示）
 - [x] SDK 云函数调用接口 ✅ v0.16.0（新建 SdkCloudFunctionController，POST /api/sdk/cloud-function/invoke，SdkAuthFilter 鉴权，invokeSource="sdk"；CloudFunctionService 新增 findBySoftwareAndName 三元查询；SdkCloudFunctionInvokeDTO 含 functionName + input）
 - [x] 国密 SM2/SM4 可选实现 ✅ v0.16.0（新建 SmCryptoService：SM4-CBC 对称 + SM2 非对称 + SM3 摘要；@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true") 默认关闭；密钥环境变量 JICEK_SM4_KEY/JICEK_SM2_PRIVATE_KEY 注入；不影响现有 AES-256-GCM / RSA-2048-OAEP）
+
+### 3.12 v0.17.0 新增功能（已完成，Docker 一键部署）
+- [x] 一键安装脚本 ✅ v0.17.0（install.sh：操作系统检测 CentOS/Ubuntu/Debian/RHEL/Rocky/AlmaLinux + 宝塔面板检测/自动安装 + Docker + Compose v2 检测/安装 + 端口冲突实查 ss/netstat 6 端口 8080/3306/6379/80/8888/888 + 密钥运行时随机生成 MySQL/AES-256/HMAC/JWT/RSA-2048 + docker compose build/up -d 部署 4 服务 + 输出 /root/jicek-deploy-info.txt 权限 600）
+- [x] Docker 编排 ✅ v0.17.0（docker-compose.yml：mysql + redis + app + ui 4 服务，healthcheck 健康检查 + depends_on service_healthy 顺序启动 + ${VAR:-默认值} 端口/密码环境变量注入 + named volumes 持久化 + jicek-net bridge 网络）
+- [x] 多阶段构建 ✅ v0.17.0（后端 Dockerfile：maven:3.9-eclipse-temurin-17 → eclipse-temurin:17-jre-jammy + curl HEALTHCHECK /actuator/health；前端 Dockerfile：node:20-alpine → nginx:stable-alpine；前端 nginx.conf：Vue history + /api 反代 + gzip + 静态资源缓存 30d）
+- [x] pom.xml actuator 依赖 ✅ v0.17.0（新增 spring-boot-starter-actuator，Docker HEALTHCHECK 依赖 /actuator/health 端点）
 
 ## 4. 角色权限体系
 

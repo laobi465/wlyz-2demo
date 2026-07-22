@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.16.0 |
+| 当前版本 | v0.17.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
@@ -66,6 +66,7 @@
 | auth/controller/AdminDevUserController + auth/service/DevUserService | `auth/controller/AdminDevUserController` + `auth/service/DevUserService` | ✅ v0.15.0（管理员租户管理：page/get/ban/unban/reset-password，@AuthRequired(role=2)） |
 | sdk/controller/SdkCloudFunctionController | `sdk/controller/SdkCloudFunctionController` | ✅ v0.16.0（SDK 端云函数调用，POST /api/sdk/cloud-function/invoke，invokeSource="sdk"，SdkAuthFilter 鉴权） |
 | crypto/SmCryptoService | `crypto/SmCryptoService` | ✅ v0.16.0（国密 SM2/SM4/SM3 可选实现，@ConditionalOnProperty 默认关闭，不影响现有 AES/RSA） |
+| 部署：install.sh + docker-compose.yml + Dockerfile | `install.sh` + `docker-compose.yml` + `jicek-license/Dockerfile` + `jicek-ui/Dockerfile` + `jicek-ui/nginx.conf` | ✅ v0.17.0（Docker 一键部署：宝塔检测 + 端口冲突实查 + 密钥运行时随机生成 + 4 服务编排 mysql/redis/app/ui + 多阶段构建 + /root/jicek-deploy-info.txt 权限 600） |
 
 ### 前端（jicek-ui）
 
@@ -610,6 +611,7 @@ const status = await deployApi.status()
 63. **管理员 token 独立于开发者 token**（v0.15.0）：管理员登录存 `jicek_admin_token`，开发者存 `jicek_token`，前端 `adminAxios` 独立实例注入 admin token，路由守卫按 `/admin/*` 前缀分流。后端 `@AuthRequired(role=2)` 限制管理员接口，`JwtAuthInterceptor` 拦截 `/api/admin/**`。
 64. **分润幂等与事务边界**（v0.15.0）：`PayNotifyService` 支付成功事务（订单状态+卡密发放）提交后，再调 `CommissionService.grantCommission`，分润独立事务 + try-catch。分润失败不回滚卡密（已发放不可逆）。`jicek_commission` 表 `uk_order_agent(out_trade_no, agent_id)` 唯一索引保证幂等，重复回调短路返回。代理制卡扣余额在制卡事务内先扣款再生成卡密，余额不足事务回滚。
 65. **国密 SM2/SM4 可选实现默认关闭**（v0.16.0）：`SmCryptoService` 用 `@ConditionalOnProperty(name="jicek.crypto.sm.enabled", havingValue="true")` 控制，默认 false 不启用。密钥通过 `JICEK_SM4_KEY`（16字节 hex）/ `JICEK_SM2_PRIVATE_KEY` 环境变量注入，未配置时 warn 不阻止启动。SM4 用 CBC 模式对标 SPEC 6.6，SM2 公钥由私钥派生无需单独配置。不影响现有 AES-256-GCM / RSA-2048-OAEP。
+66. **Docker 部署端口冲突检测**（v0.17.0）：install.sh 用 ss/netstat 实查端口（非假数据），检测 8080/3306/6379/80/8888/888 六端口。冲突时提示用户通过环境变量自定义端口（APP_PORT/MYSQL_PORT/REDIS_PORT/UI_PORT）。docker-compose.yml 端口映射用 ${VAR:-默认值} 环境变量注入。.env 文件权限 600 仅 root 可读。
 
 ## 12. 验证清单
 

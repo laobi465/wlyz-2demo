@@ -1,5 +1,18 @@
 # 更新日志
 
+## [0.17.0] - 2026-07-22
+
+### [新增] Docker 一键部署（宝塔面板 + Docker Compose）
+
+新增 Docker 部署能力，支持宝塔面板环境下一键安装。
+
+- **一键安装脚本**：install.sh 自动检测宝塔面板 + Docker + 端口冲突 + 生成密钥 + 部署 4 服务 + 输出配置到 /root/jicek-deploy-info.txt
+- **Docker 编排**：docker-compose.yml 编排 mysql/redis/app/ui 4 服务，健康检查 + 依赖顺序启动
+- **多阶段构建**：后端 Dockerfile（maven temurin-17 → jre-jammy + curl HEALTHCHECK），前端 Dockerfile（node:20-alpine → nginx:stable-alpine）
+- **端口冲突检测**：用 ss/netstat 实查 6 端口（8080/3306/6379/80/8888/888），识别占用进程名，无假数据
+- **密钥自动生成**：MySQL/AES/HMAC/JWT/RSA 运行时随机生成，不硬编码占位
+- **pom.xml**：新增 spring-boot-starter-actuator（HEALTHCHECK 依赖 /actuator/health）
+
 ## [0.16.0] - 2026-07-22
 
 ### [补全] 三项遗留全部完成（代理维度统计 + SDK 云函数 + 国密可选）
