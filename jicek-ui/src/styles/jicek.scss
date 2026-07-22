@@ -205,6 +205,12 @@ body {
   border: 1px solid rgba(184, 134, 11, 0.2);
 }
 
+.jicek-tag-info {
+  background: rgba(59, 126, 161, 0.1);
+  color: var(--jicek-info);
+  border: 1px solid rgba(59, 126, 161, 0.2);
+}
+
 /* ============ 布局 ============ */
 .jicek-layout {
   display: flex;

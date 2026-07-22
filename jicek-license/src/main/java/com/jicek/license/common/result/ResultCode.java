@@ -13,6 +13,7 @@ import lombok.Getter;
  *  1001-1999  卡密模块
  *  2001-2999  支付模块
  *  3001-3999  设备/心跳模块
+ *  4001-4999  代理/分润/提现模块
  */
 @Getter
 @AllArgsConstructor
@@ -65,7 +66,26 @@ public enum ResultCode {
     BIND_CODE_INVALID(3013, "换机码无效或已过期"),
     BIND_CODE_USED(3014, "换机码已使用"),
     HEARTBEAT_SIGN_FAIL(3015, "心跳签名校验失败"),
-    HEARTBEAT_NONCE_REPLAY(3016, "心跳 nonce 重复（疑似重放）");
+    HEARTBEAT_NONCE_REPLAY(3016, "心跳 nonce 重复（疑似重放）"),
+
+    /* ============ 代理/分润/提现模块 4001-4999 ============ */
+    AGENT_NOT_FOUND(4001, "代理不存在"),
+    AGENT_BANNED(4002, "代理已封禁"),
+    AGENT_USERNAME_EXISTS(4003, "代理用户名已存在"),
+    AGENT_BALANCE_INSUFFICIENT(4004, "代理余额不足"),
+    AGENT_PARENT_INVALID(4005, "上级代理无效或层级超限"),
+    AGENT_PACKAGE_NOT_FOUND(4006, "代理套餐不存在"),
+    AGENT_PRICE_INVALID(4007, "代理制卡价必须 ≤ 卡类零售价"),
+    AGENT_NOT_AUTHORIZED(4008, "代理无权操作该资源"),
+    COMMISSION_CALC_FAIL(4009, "分润计算失败"),
+    COMMISSION_REVOKE_FAIL(4010, "分润撤销失败（已撤销或订单状态非法）"),
+    WITHDRAW_NOT_FOUND(4011, "提现申请不存在"),
+    WITHDRAW_STATUS_INVALID(4012, "提现状态非法，无法操作"),
+    WITHDRAW_AMOUNT_INVALID(4013, "提现金额必须 ≥ 最低提现金额"),
+    WITHDRAW_AMOUNT_EXCEED(4014, "提现金额超出可用余额"),
+    WITHDRAW_LOCK_FAIL(4015, "提现申请处理中，请稍后"),
+    WITHDRAW_ACCOUNT_INVALID(4016, "收款账号无效"),
+    AGENT_BALANCE_LOCK_FAIL(4017, "代理余额变动处理中，请稍后");
 
     private final Integer code;
     private final String msg;

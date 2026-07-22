@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.3.1 |
+| 当前版本 | v0.4.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板） |
@@ -48,6 +48,7 @@
 | 控制台 | `dashboard/controller/DevDashboardController` | ✅ |
 | 设备模块 | `device/` (entity/mapper/dto/fingerprint/service/controller) | ✅ v0.3.0 |
 | 客户端 SDK | `sdk/` (java/python/nodejs/go/csharp/cpp/lua/shell/epl) | ✅ v0.3.1 |
+| 代理模块 | `agent/` (entity/mapper/dto/service/controller) | ✅ v0.4.0 |
 
 ### 前端（jicek-ui）
 
@@ -64,6 +65,8 @@
 | 卡密查询页 | `src/views/dev/card-key-list/` | ✅ |
 | 支付配置页 | `src/views/dev/pay-config/` | ✅ |
 | 资金流水页 | `src/views/dev/pay-order/` | ✅ |
+| 代理管理页 | `src/views/dev/agent/` | ✅ v0.4.0 |
+| 提现审核页 | `src/views/dev/withdraw/` | ✅ v0.4.0 |
 
 ## 3. 待办任务（按优先级）
 
@@ -75,21 +78,24 @@
   - 所有 SDK 实现完全一致的接口语义：签名（HMAC-SHA256）+ 心跳（动态间隔+指数退避）+ 卡密验证 + 5 维设备指纹采集
 - **设备指纹采集与绑定**：✅ 已完成 v0.3.0
 
-### P1（高，v0.3.2 计划）
+### P1（高，v0.4.0 已完成 ✅）
+- **多级代理 + 分润 + 提现**：
+  - 代理树形结构存储（parent_id + level + isDescendant 防环）
+  - 向上链式分润（直推 type=1 + 父级链 type=2，最多 10 层，同事务原子）
+  - 分润撤销（退款触发，余额不足保护）
+  - 提现审核状态机（0待审核→1已通过→3已打款 / 0→2已拒绝 / 1→4已失败）
+  - 前端代理管理页 + 提现审核页 + API/路由/菜单集成
+  - 技术决策：未引入 WarmFlow，采用简单状态机；密码用 Hutool BCrypt
+
+### P1（高，v0.5.0 计划）
 - **SDK 联调**：接入真实服务端联调测试 + 加壳工具推荐文档（VMProtect/Themida/Enigma）
 - **CardKeyService.useCard 完整流程**：DeviceService.bindDevice 接入卡密校验 + Sa-Token 鉴权 + software 表读取签名密钥/心跳间隔
+- **分润接入支付回调**：PaymentTransactionService 支付成功时触发 CommissionService.grantCommission
+- **代理制卡扣余额**：AgentService.deductBalance 接入代理制卡流程
 - **前端补全**：
-  - 软件管理页面、卡类管理页面、用户管理页面、设备管理页面、代理管理页面
+  - 软件管理页面、卡类管理页面、用户管理页面、设备管理页面
   - ECharts 数据统计图表
   - H5 终端用户页面（购卡/续费/换机/在线设备）
-
-### P1（高，v0.4.0 计划）
-- **多级代理 + 分润**：
-  - 代理树形结构存储
-  - 分润比例配置
-  - 制卡扣余额（事务）
-  - 提现申请工作流（WarmFlow）
-  - 提现审核 + 二次确认
 
 ### P2（中）
 - 云函数远程执行（沙箱：Lua/LuaJIT 或 GraalVM）
@@ -229,6 +235,20 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 支付 | POST | `/api/dev/pay/create` | 发起支付 |
 | 支付 | GET | `/api/dev/pay/order/page` | 订单分页 |
 | 支付 | POST | `/api/dev/pay/refund` | 退款 |
+| 代理 | POST | `/api/dev/agent` | 创建代理 |
+| 代理 | PUT | `/api/dev/agent` | 更新代理 |
+| 代理 | GET | `/api/dev/agent/page` | 代理分页（扁平） |
+| 代理 | GET | `/api/dev/agent/tree` | 代理树形（多级） |
+| 代理 | GET | `/api/dev/agent/{tenantId}/{agentId}` | 代理详情 |
+| 代理 | POST | `/api/dev/agent/ban` | 封禁代理 |
+| 代理 | POST | `/api/dev/agent/unban` | 解封代理 |
+| 代理 | POST | `/api/dev/agent/recharge` | 代理充值 |
+| 代理 | GET | `/api/dev/agent/commission/page` | 分润流水分页 |
+| 提现 | POST | `/api/dev/withdraw/apply` | 提现申请 |
+| 提现 | POST | `/api/dev/withdraw/audit` | 审核（approve/reject/payout/fail） |
+| 提现 | GET | `/api/dev/withdraw/page` | 提现分页 |
+| 提现 | GET | `/api/dev/withdraw/{tenantId}/{withdrawId}` | 提现详情 |
+| 提现 | GET | `/api/dev/withdraw/pending-amount` | 待审核总额 |
 
 ### 7.2 公开回调
 
@@ -246,7 +266,10 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | `jicek_card_key` | `card_cipher`（AES） + `card_hash`（SHA-256） | 卡密（加密存储） |
 | `jicek_software` | `app_key` + `sign_secret`（AES） | 软件 |
 | `jicek_device` | `device_fingerprint` | 设备（指纹哈希） |
-| `jicek_agent` | `parent_id` + `balance` | 代理（多级树形） |
+| `jicek_agent` | `parent_id` + `level` + `balance` + `frozen_balance` + `commission_rate` | 代理（多级树形 + 余额） |
+| `jicek_agent_package` | `agent_id` + `card_type_id` + `agent_price` | 代理可售卡类 + 代理价 |
+| `jicek_commission` | `agent_id` + `order_id` + `commission_rate`(快照) + `type`(1/2) + `status`(0/1) | 分润流水（不可变） |
+| `jicek_withdraw` | `amount` + `fee` + `actual_amount` + `status`(0-4) | 提现申请（5 状态机） |
 
 完整 DDL 见 `jicek_init.sql`。
 
@@ -263,14 +286,14 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 
 | 组件 | 用途 |
 |---|---|
-| `StatusTag.vue` | 状态标签（订单/卡密两种模式） |
+| `StatusTag.vue` | 状态标签（订单/卡密/提现三种模式） |
 | `AmountInput.vue` | 金额输入（decimal.js 精度） |
 | `ConfirmDialog.vue` | 二次确认弹窗（资金/卡密操作） |
 
 ### 9.3 API 调用约定
 
 ```typescript
-import { dashboardApi, cardKeyApi, cardTypeApi, payApi } from '@/api'
+import { dashboardApi, cardKeyApi, cardTypeApi, payApi, agentApi, withdrawApi } from '@/api'
 
 // 统一响应：{ code, msg, data }
 // 拦截器自动剥 data，失败自动 ElMessage.error
@@ -319,6 +342,10 @@ const data = await dashboardApi.summary(tenantId)
 5. **多租户**：所有查询必须带 `tenant_id`，不能跨租户查询。
 6. **设备指纹**：必须多维哈希融合，单维度易伪造（v0.3.0 实现）。
 7. **心跳间隔**：动态 5-300s，禁固定值（v0.3.0 实现）。
+8. **代理分润**：向上链式遍历父级（直推 type=1 + 父级 type=2），分润比例是**快照**（下单时锁定，不随后续修改变化）；退款时撤销（status=0）并扣回余额。
+9. **提现状态机**：不可逆（0→1→3 / 0→2 / 1→4），资金流必须同事务（balance↔frozenBalance↔totalWithdraw），禁伪异步。
+10. **分润撤销余额不足**：余额 < 撤销金额时，余额清零 + 累计收益扣减差额，余额永不为负。
+11. **代理密码**：使用 Hutool `cn.hutool.crypto.digest.BCrypt`（spring-security-crypto 未引入依赖）。
 
 ## 12. 验证清单
 

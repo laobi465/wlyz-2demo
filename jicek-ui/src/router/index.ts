@@ -41,6 +41,18 @@ const routes: RouteRecordRaw[] = [
         name: 'PayOrder',
         component: () => import('@/views/dev/pay-order/index.vue'),
         meta: { title: '资金流水', icon: 'Money' }
+      },
+      {
+        path: 'agent',
+        name: 'Agent',
+        component: () => import('@/views/dev/agent/index.vue'),
+        meta: { title: '代理列表', icon: 'User' }
+      },
+      {
+        path: 'withdraw',
+        name: 'Withdraw',
+        component: () => import('@/views/dev/withdraw/index.vue'),
+        meta: { title: '提现审核', icon: 'Wallet' }
       }
     ]
   }

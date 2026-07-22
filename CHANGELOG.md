@@ -125,9 +125,59 @@
 - CorsConfig：开发环境跨域
 - JicekProperties：所有敏感字段环境变量注入
 
+## [0.4.0] - 2026-07-22
+
+### [新增] 多级代理 + 分润 + 提现模块
+
+完整实现多级代理体系（树形结构 + 向上链式分润 + 提现审核状态机），覆盖后端全层 + 前端页面 + 数据库 DDL。
+
+#### 数据库
+- `jicek_agent` 表扩展至 18 字段：新增 `real_name` / `contact` / `frozen_balance` / `total_withdraw` / `commission_rate`(DECIMAL(5,2)) / `max_sub_level` / `last_login_time` / `last_login_ip` / `remark` + `UNIQUE KEY uk_tenant_username`
+- 新增 `jicek_agent_package` 表：代理可售卡类 + 代理价（agent_id=0 表示全代理默认）
+- 新增 `jicek_commission` 表：分润流水不可变快照（agent_id / order_id / source_agent_id / order_amount / commission_rate 快照 / commission_amount / type 1直推2下级3差级 / status 0已撤销1有效）
+- 新增 `jicek_withdraw` 表：提现申请（amount / fee / actual_amount / pay_type / pay_account / pay_name / status 0-4 / audit_by / audit_time / trade_no / fail_reason）
+
+#### 后端 - 实体/Mapper/DTO
+- 4 实体：`Agent` / `AgentPackage` / `Commission` / `Withdraw`（金额字段全 BigDecimal）
+- 4 Mapper：均继承 `BaseMapper<T>`
+- 5 DTO：`AgentSaveDTO`（含校验注解）/ `AgentTreeNode` / `WithdrawApplyDTO` / `WithdrawAuditDTO` / `AgentFinanceSummary`
+
+#### 后端 - Service
+- `AgentService`：创建（用户名唯一 + 父级校验 + 层级计算 + BCrypt 密码）/ 更新（含 isDescendant 防环）/ 封禁解封 / 充值 / 扣余额 / 分页 / 树形构建（一次查询 + Map 分组递归）
+- `CommissionService`：
+  - `grantCommission`：直推代理分润（type=1）+ 向上遍历父级链分润（type=2，最多 AGENT_MAX_LEVEL=10 层），同 @Transactional 原子更新余额+累计收益
+  - `revokeCommission`：退款时撤销订单所有有效分润（status=0），余额不足保护（余额清零 + 累计收益扣减差额，余额永不负）
+- `WithdrawService`：
+  - 申请：金额 ≥ WITHDRAW_MIN_AMOUNT(10) + 代理状态校验 + 余额校验 + balance→frozenBalance（同事务）
+  - 审核状态机（不可逆）：0待审核→1已通过 / 0→2已拒绝(冻结→余额) / 1→3已打款(冻结→总提现) / 1→4已失败(冻结→余额)
+  - 资金流铁律 06：所有资金变动同事务，禁伪异步
+
+#### 后端 - Controller
+- `DevAgentController`（`/api/dev/agent`）：CRUD + 树形 + 封禁/解封 + 充值 + 分润流水分页
+- `DevWithdrawController`（`/api/dev/withdraw`）：申请 + 审核(approve/reject/payout/fail) + 分页 + 详情 + 待审核总额
+
+#### 后端 - 常量/错误码
+- `JicekConstants` 新增：代理状态 / 分润类型 / 分润状态 / 提现状态 / WITHDRAW_MIN_AMOUNT / WITHDRAW_FEE_RATE / AGENT_MAX_LEVEL / Redis 锁 key
+- `ResultCode` 新增 17 个错误码（4001-4017）
+
+#### 前端
+- `StatusTag.vue` 扩展：支持 `withdraw` 类型（5 状态色映射）
+- `jicek.scss` 新增 `.jicek-tag-info` 样式类
+- 代理管理页（`views/dev/agent/index.vue`）：树形展示 + 扁平分页 + 创建/编辑/封禁/解封/充值，Decimal.js 金额格式化
+- 提现审核页（`views/dev/withdraw/index.vue`）：状态筛选 + 汇总 + 4 动作审核弹窗，资金操作用 ElNotification 持久提示
+- API 定义：新增 `agentApi`（9 方法）+ `withdrawApi`（5 方法），含 current→page 参数映射
+- 路由：新增 `/agent` + `/withdraw`
+- 侧边栏：新增「代理管理」子菜单（代理列表 + 提现审核）
+
+#### 技术决策
+- 密码哈希：使用 `cn.hutool.crypto.digest.BCrypt`（Hutool 已在依赖，spring-security-crypto 未引入）
+- 提现工作流：采用简单状态机（对标 PayOrderStateMachineService 模式），未引入 WarmFlow（保持依赖精简）
+- 分润撤销余额不足保护：余额 < 撤销金额时，余额清零 + 累计收益扣减差额，确保余额永不为负
+
 ## 待发布版本（开发中）
 
-### [未发布] v0.4.0
-- 多级代理 + 分润 + 提现工作流（WarmFlow）
-- 前端补全：软件/卡类/用户/设备/代理管理 + ECharts + H5
+### [未发布] v0.5.0
+- 前端补全：软件/卡类/用户/设备管理 + ECharts + H5
 - CardKeyService.useCard 完整流程接入 + Sa-Token 鉴权 + software 表读取签名密钥/心跳间隔
+- 代理制卡扣余额接入 AgentService.deductBalance
+- 分润发放接入 PaymentTransactionService（支付成功回调触发 grantCommission）

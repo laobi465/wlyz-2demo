@@ -15,7 +15,7 @@ import { computed } from 'vue'
 
 interface Props {
   status: number
-  type?: 'order' | 'card'
+  type?: 'order' | 'card' | 'withdraw'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,7 +38,19 @@ const cardMap: Record<number, { text: string; cls: string }> = {
   4: { text: '已过期', cls: 'jicek-tag-pending' }
 }
 
-const map = computed(() => (props.type === 'order' ? orderMap : cardMap))
+const withdrawMap: Record<number, { text: string; cls: string }> = {
+  0: { text: '待审核', cls: 'jicek-tag-warning' },
+  1: { text: '已通过', cls: 'jicek-tag-info' },
+  2: { text: '已拒绝', cls: 'jicek-tag-danger' },
+  3: { text: '已打款', cls: 'jicek-tag-success' },
+  4: { text: '打款失败', cls: 'jicek-tag-danger' }
+}
+
+const map = computed(() => {
+  if (props.type === 'order') return orderMap
+  if (props.type === 'card') return cardMap
+  return withdrawMap
+})
 const info = computed(() => map.value[props.status] || { text: '未知', cls: 'jicek-tag-pending' })
 const text = computed(() => info.value.text)
 const tagClass = computed(() => info.value.cls)

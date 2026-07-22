@@ -122,10 +122,13 @@
 - [ ] 资金流水审计
 
 ### 3.4 代理体系
-- [ ] 多级代理（树形结构）
-- [ ] 分润比例配置
-- [ ] 代理制卡（扣余额）
-- [ ] 提现审核工作流（WarmFlow）
+- [x] 多级代理（树形结构，parent_id + level + isDescendant 防环）✅ v0.4.0
+- [x] 分润比例配置（commission_rate DECIMAL(5,2)，0-100）✅ v0.4.0
+- [x] 向上链式分润（直推 type=1 + 父级链 type=2，最多 10 层，同事务原子）✅ v0.4.0
+- [x] 分润撤销（退款触发，余额不足保护）✅ v0.4.0
+- [x] 提现审核状态机（简单状态机，未引入 WarmFlow）✅ v0.4.0
+- [ ] 代理制卡扣余额（待接入 AgentService.deductBalance）
+- [ ] 分润接入支付回调（待接入 PaymentTransactionService）
 
 ### 3.5 云端数据
 - [ ] 云变量（key/value + 签名加密）
@@ -320,16 +323,89 @@ CREATE TABLE jicek_agent (
   tenant_id       BIGINT       NOT NULL COMMENT '所属开发者',
   parent_id       BIGINT       DEFAULT 0 COMMENT '上级代理ID, 0为顶级',
   username        VARCHAR(64)  NOT NULL,
-  password_hash   VARCHAR(128) NOT NULL,
-  balance         DECIMAL(10,2) DEFAULT 0 COMMENT '余额',
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 加密',
+  real_name       VARCHAR(64)  COMMENT '真实姓名（提现校验）',
+  contact         VARCHAR(128) COMMENT '联系方式（QQ/微信/手机）',
+  balance         DECIMAL(10,2) DEFAULT 0 COMMENT '可用余额',
+  frozen_balance  DECIMAL(10,2) DEFAULT 0 COMMENT '冻结余额（提现中）',
   total_earnings  DECIMAL(10,2) DEFAULT 0 COMMENT '累计收益',
+  total_withdraw  DECIMAL(10,2) DEFAULT 0 COMMENT '累计已提现',
+  commission_rate DECIMAL(5,2)  DEFAULT 0 COMMENT '分润比例（0-100，百分比）',
+  max_sub_level   INT          DEFAULT 0 COMMENT '允许发展的下级层级数，0为不可发展下级',
   status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
-  level           INT          DEFAULT 1 COMMENT '代理级别',
+  level           INT          DEFAULT 1 COMMENT '代理级别（1=顶级代理）',
+  last_login_time DATETIME,
+  last_login_ip   VARCHAR(45),
+  remark          VARCHAR(255),
   create_time     DATETIME     NOT NULL,
   update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_tenant_username (tenant_id, username),
   KEY idx_parent (tenant_id, parent_id),
   KEY idx_tenant (tenant_id)
 ) COMMENT='代理';
+```
+
+### 5.8 代理套餐表
+```sql
+CREATE TABLE jicek_agent_package (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  agent_id        BIGINT       NOT NULL COMMENT '所属代理（0表示所有代理默认套餐）',
+  software_id     BIGINT       NOT NULL,
+  card_type_id    BIGINT       NOT NULL,
+  agent_price     DECIMAL(10,2) NOT NULL COMMENT '代理制卡价（≤ 卡类零售价）',
+  enabled         TINYINT      DEFAULT 1,
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_agent_card (tenant_id, agent_id, card_type_id)
+) COMMENT='代理套餐（可售卡类+制卡价）';
+```
+
+### 5.9 分润流水表（不可变，仅审计查询）
+```sql
+CREATE TABLE jicek_commission (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  agent_id        BIGINT       NOT NULL COMMENT '受益代理',
+  order_id        BIGINT       NOT NULL COMMENT '关联支付订单',
+  out_trade_no    VARCHAR(64)  NOT NULL COMMENT '订单号（冗余，便于查询）',
+  source_agent_id BIGINT       COMMENT '来源代理（下级制卡/销售），null 表示终端用户购买',
+  card_type_id    BIGINT,
+  order_amount    DECIMAL(10,2) NOT NULL COMMENT '订单原金额',
+  commission_rate DECIMAL(5,2)  NOT NULL COMMENT '分润比例快照',
+  commission_amount DECIMAL(10,2) NOT NULL COMMENT '分润金额',
+  type            TINYINT      NOT NULL COMMENT '1直接销售 2下级分润 3制卡差价',
+  status          TINYINT      DEFAULT 1 COMMENT '0已撤销（退款连带） 1有效',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_agent (tenant_id, agent_id, create_time),
+  KEY idx_order (order_id)
+) COMMENT='分润流水（不可删除，仅审计）';
+```
+
+### 5.10 提现申请表（状态机：0待审核→1已通过→3已打款 / 0→2已拒绝 / 1→4已失败）
+```sql
+CREATE TABLE jicek_withdraw (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  agent_id        BIGINT       NOT NULL,
+  amount          DECIMAL(10,2) NOT NULL COMMENT '申请提现金额',
+  fee             DECIMAL(10,2) DEFAULT 0 COMMENT '手续费',
+  actual_amount   DECIMAL(10,2) NOT NULL COMMENT '实际到账金额',
+  pay_type        VARCHAR(20)  NOT NULL COMMENT 'alipay/wxpay/bank',
+  pay_account     VARCHAR(128) NOT NULL COMMENT '收款账号',
+  pay_name        VARCHAR(64)  COMMENT '收款人姓名',
+  status          TINYINT      DEFAULT 0 COMMENT '0待审核 1已通过 2已拒绝 3已打款 4已失败',
+  audit_by        BIGINT       COMMENT '审核人（开发者用户ID）',
+  audit_time      DATETIME,
+  audit_remark    VARCHAR(255),
+  trade_no        VARCHAR(64)  COMMENT '打款流水号',
+  fail_reason     VARCHAR(255),
+  apply_time      DATETIME     NOT NULL,
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  KEY idx_agent (tenant_id, agent_id, status),
+  KEY idx_status (tenant_id, status, create_time)
+) COMMENT='提现申请';
 ```
 
 ## 6. 使用指南（待实现后补全）
