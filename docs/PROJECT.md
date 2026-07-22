@@ -88,9 +88,15 @@
 │       │   ├── dto     # WebhookResultDTO / ManualDeployDTO / DeployStatusDTO
 │       │   ├── service # DeployService（备份→拉代码→构建→重启→健康检查→失败回滚，HMAC-SHA256 验签 + Redisson 锁 + 异步 daemon 线程）
 │       │   └── controller # DevDeployController
+│       ├── ticket     # ★ 工单模块（v0.6.0 新增，双向工单）
+│       │   ├── entity  # Ticket / TicketReply
+│       │   ├── mapper  # TicketMapper / TicketReplyMapper（回复表禁 UPDATE/DELETE）
+│       │   ├── dto     # TicketCreateDTO / TicketReplyDTO / TicketDetailDTO
+│       │   ├── service # TicketService（CRUD + 状态机 + 分类，类型字段由 Controller 设定防越权）
+│       │   └── controller # H5TicketController + DevTicketController（双角色双入口）
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理）
-    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理）
+    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
     ├── src/router      # 路由配置（11 个页面路由）
@@ -107,7 +113,8 @@
         ├── withdraw    # 提现审核（v0.4.0）
         ├── cloud-func  # ★ 云函数管理（v0.4.2 新增，双 Tab：函数列表 + 执行日志）
         ├── stats       # ★ 数据统计（v0.4.3 新增，4 Tab：验证趋势/设备热力图/收入统计/防破解事件）
-        └── deploy      # ★ 部署管理（v0.5.0 新增，3 状态卡片 + 手动触发 + 审计日志 + 状态轮询）
+        ├── deploy      # ★ 部署管理（v0.5.0 新增，3 状态卡片 + 手动触发 + 审计日志 + 状态轮询）
+        └── ticket      # ★ 工单管理（v0.6.0 新增，双 Tab：收件箱 + 已提交 + 详情对话流）
 ```
 
 ### 2.3 数据流
@@ -496,6 +503,48 @@ CREATE TABLE jicek_deploy_log (
   KEY idx_status (status, create_time),
   KEY idx_source (trigger_source, create_time)
 ) COMMENT='部署审计日志（审计，禁 UPDATE/DELETE）';
+```
+
+### 5.14 工单表（v0.6.0 新增，双向工单：终端用户→开发者 / 开发者→管理员）
+```sql
+CREATE TABLE jicek_ticket (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  ticket_no       VARCHAR(32)  NOT NULL COMMENT '工单号（TK+时间戳+随机）',
+  title           VARCHAR(128) NOT NULL,
+  content         TEXT         NOT NULL,
+  category        TINYINT      NOT NULL COMMENT '1换机申请 2充值问题 3卡密问题 4其他',
+  target          TINYINT      NOT NULL COMMENT '1开发者 2管理员',
+  status          TINYINT      DEFAULT 0 COMMENT '0待处理 1处理中 2已回复 3已关闭',
+  creator_type    TINYINT      NOT NULL COMMENT '1终端用户 2开发者',
+  creator_id      BIGINT       NOT NULL,
+  creator_name    VARCHAR(64),
+  software_id     BIGINT,
+  device_id       BIGINT,
+  handler_id      BIGINT,
+  handler_time    DATETIME,
+  close_time      DATETIME,
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_ticket_no (ticket_no),
+  KEY idx_tenant_status (tenant_id, status, create_time),
+  KEY idx_tenant_target (tenant_id, target, status),
+  KEY idx_creator (creator_type, creator_id, create_time),
+  KEY idx_handler (handler_id, status)
+) COMMENT='工单主表';
+
+CREATE TABLE jicek_ticket_reply (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  ticket_id       BIGINT       NOT NULL,
+  replier_type    TINYINT      NOT NULL COMMENT '1用户 2开发者 3管理员',
+  replier_id      BIGINT       NOT NULL,
+  replier_name    VARCHAR(64),
+  content         TEXT         NOT NULL,
+  create_time     DATETIME     NOT NULL,
+  KEY idx_ticket (tenant_id, ticket_id, create_time),
+  KEY idx_replier (replier_type, replier_id, create_time)
+) COMMENT='工单回复（审计，禁 UPDATE/DELETE）';
 ```
 
 ## 6. 使用指南（待实现后补全）

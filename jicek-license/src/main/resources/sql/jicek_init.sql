@@ -357,6 +357,53 @@ CREATE TABLE jicek_deploy_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='部署审计日志（禁 UPDATE/DELETE）';
 
 -- ============================================================
+-- 13. 工单表（v0.6.0 新增，双向工单：终端用户→开发者 / 开发者→管理员）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_ticket;
+CREATE TABLE jicek_ticket (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID',
+  ticket_no       VARCHAR(32)  NOT NULL COMMENT '工单号（TK+时间戳+随机，前端展示用）',
+  title           VARCHAR(128) NOT NULL COMMENT '标题',
+  content         TEXT         NOT NULL COMMENT '问题描述',
+  category        TINYINT      NOT NULL COMMENT '1换机申请 2充值问题 3卡密问题 4其他',
+  target          TINYINT      NOT NULL COMMENT '目标：1开发者 2管理员',
+  status          TINYINT      DEFAULT 0 COMMENT '0待处理 1处理中 2已回复 3已关闭',
+  creator_type    TINYINT      NOT NULL COMMENT '创建者类型：1终端用户 2开发者',
+  creator_id      BIGINT       NOT NULL COMMENT '创建者ID（用户ID/代理ID/开发者用户ID）',
+  creator_name    VARCHAR(64)  COMMENT '创建者名称',
+  software_id     BIGINT       COMMENT '关联软件（可选）',
+  device_id       BIGINT       COMMENT '关联设备（换机申请时用）',
+  handler_id      BIGINT       COMMENT '处理人ID',
+  handler_time    DATETIME     COMMENT '首次处理时间',
+  close_time      DATETIME     COMMENT '关闭时间',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_ticket_no (ticket_no),
+  KEY idx_tenant_status (tenant_id, status, create_time),
+  KEY idx_tenant_target (tenant_id, target, status),
+  KEY idx_creator (creator_type, creator_id, create_time),
+  KEY idx_handler (handler_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单主表';
+
+-- ============================================================
+-- 14. 工单回复表（对话记录，审计表，仅 INSERT + SELECT，禁 UPDATE/DELETE）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_ticket_reply;
+CREATE TABLE jicek_ticket_reply (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  ticket_id       BIGINT       NOT NULL COMMENT '关联工单ID',
+  replier_type    TINYINT      NOT NULL COMMENT '回复者类型：1用户 2开发者 3管理员',
+  replier_id      BIGINT       NOT NULL COMMENT '回复者ID',
+  replier_name    VARCHAR(64)  COMMENT '回复者名称',
+  content         TEXT         NOT NULL COMMENT '回复内容',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_ticket (tenant_id, ticket_id, create_time),
+  KEY idx_replier (replier_type, replier_id, create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单回复（审计，禁 UPDATE/DELETE）';
+
+-- ============================================================
 -- 完成
 -- ============================================================
 SELECT 'jicek database initialized successfully' AS message;

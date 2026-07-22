@@ -187,3 +187,42 @@ export const deployApi = {
       size: params.size || 20
     })
 }
+
+/* ============ 工单管理（开发者后台，双向工单双角色） ============ */
+export const ticketApi = {
+  // [处理者] 查询终端用户提交的工单（target=1）
+  receivePage: (params: any) =>
+    api.get('/api/dev/ticket/receive/page', {
+      tenantId: params.tenantId,
+      category: params.category,
+      status: params.status,
+      creatorType: params.creatorType,
+      current: params.current || 1,
+      size: params.size || 20
+    }),
+  // [处理者] 工单详情
+  receiveDetail: (tenantId: number, ticketId: number) =>
+    api.get(`/api/dev/ticket/receive/${tenantId}/${ticketId}`),
+  // [处理者] 回复终端用户工单
+  receiveReply: (data: any, tenantId: number, devUserId: number) =>
+    api.post('/api/dev/ticket/receive/reply', data, { params: { tenantId, devUserId } }),
+  // [处理者] 关闭工单
+  receiveClose: (tenantId: number, ticketId: number, devUserId: number) =>
+    api.post('/api/dev/ticket/receive/close', null, { params: { tenantId, ticketId, devUserId } }),
+  // [提交者] 开发者向管理员提交工单
+  submit: (data: any, devUserId: number) =>
+    api.post('/api/dev/ticket/submit', data, { params: { devUserId } }),
+  // [提交者] 查询自己提交给管理员的工单
+  submitPage: (params: any) =>
+    api.get('/api/dev/ticket/submit/page', {
+      tenantId: params.tenantId,
+      devUserId: params.devUserId,
+      category: params.category,
+      status: params.status,
+      current: params.current || 1,
+      size: params.size || 20
+    }),
+  // [提交者] 提交工单详情
+  submitDetail: (tenantId: number, ticketId: number) =>
+    api.get(`/api/dev/ticket/submit/${tenantId}/${ticketId}`)
+}

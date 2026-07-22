@@ -17,6 +17,7 @@ import lombok.Getter;
  *  5001-5999  云函数模块
  *  6001-6999  数据统计模块
  *  7001-7999  部署模块
+ *  8001-8999  工单模块
  */
 @Getter
 @AllArgsConstructor
@@ -120,7 +121,19 @@ public enum ResultCode {
     DEPLOY_RESTART_FAIL(7007, "重启失败"),
     DEPLOY_HEALTH_CHECK_FAIL(7008, "健康检查失败"),
     DEPLOY_ROLLBACK_FAIL(7009, "回滚失败"),
-    DEPLOY_PARAM_INVALID(7010, "部署参数非法");
+    DEPLOY_PARAM_INVALID(7010, "部署参数非法"),
+
+    /* ============ 工单模块 8001-8999 ============ */
+    TICKET_NOT_FOUND(8001, "工单不存在"),
+    TICKET_STATUS_INVALID(8002, "工单状态非法，无法操作"),
+    TICKET_ALREADY_CLOSED(8003, "工单已关闭，无法回复"),
+    TICKET_PERMISSION_DENIED(8004, "无权操作该工单"),
+    TICKET_TARGET_INVALID(8005, "工单目标非法（仅支持 1开发者 2管理员）"),
+    TICKET_CATEGORY_INVALID(8006, "工单分类非法"),
+    TICKET_CONTENT_TOO_LONG(8007, "工单内容超过长度限制"),
+    TICKET_REPLY_EMPTY(8008, "回复内容不能为空"),
+    TICKET_CREATOR_TYPE_INVALID(8009, "创建者类型非法"),
+    TICKET_PARAM_INVALID(8010, "工单参数非法");
 
     private final Integer code;
     private final String msg;
