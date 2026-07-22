@@ -89,6 +89,8 @@
 | 软件管理页 | `src/views/dev/software/` | ✅ v0.8.0（CRUD + 密钥展示弹窗 + 轮换二次确认） |
 | 公告管理页 | `src/views/dev/announcement/` | ✅ v0.10.0（CRUD + 发布/下线状态机 + 软件下拉筛选 + 只读查看） |
 | 更新包管理页 | `src/views/dev/update-package/` | ✅ v0.11.0（文件上传进度 + CRUD + 发布/下线 + SHA-256 展示 + 强制更新开关） |
+| SDK 代码生成弹窗 | `src/views/dev/software/SdkCodeGenDialog.vue` | ✅ v0.12.0（9 语言一键生成 + 自动填入 appKey/RSA公钥 + 复制） |
+| 对接文档页 | `src/views/dev/integration-doc/` | ✅ v0.12.0（接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引） |
 
 ## 3. 待办任务（按优先级）
 

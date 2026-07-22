@@ -118,6 +118,12 @@ const routes: RouteRecordRaw[] = [
         name: 'UpdatePackage',
         component: () => import('@/views/dev/update-package/index.vue'),
         meta: { title: '更新包', icon: 'Upload' }
+      },
+      {
+        path: 'integration-doc',
+        name: 'IntegrationDoc',
+        component: () => import('@/views/dev/integration-doc/index.vue'),
+        meta: { title: '对接文档', icon: 'Document' }
       }
     ]
   }

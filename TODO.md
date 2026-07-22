@@ -159,6 +159,17 @@
   - [x] Storage 配置类（storage.root / downloadBaseUrl / updateSubDir，环境变量注入）
   - [x] 前端更新包管理页（上传进度条 + CRUD + 发布/下线 + 查看 + 删除）+ 路由 + 菜单
 
+### [已完成] SDK 代码生成器 + 对接文档 ✅
+- 优先级：P2
+- 完成版本：v0.12.0
+- 完成项：
+  - [x] 9 语言代码模板生成器（Python/C#/C++/Go/Java/Node.js/Lua/Shell/易语言）
+  - [x] 代码生成弹窗（语言 Tab + 复制 + 自动填入 appKey/RSA公钥）
+  - [x] 软件管理页新增「接入代码」按钮
+  - [x] 对接文档页（接入流程 + 凭证 + 请求头 + 签名算法 + RSA + API + 错误码 + SDK 索引）
+  - [x] 路由 /integration-doc + 系统设置子菜单
+- 备注：signSecret 脱敏无法自动填入，模板留占位符；覆盖 card/login + heartbeat + announcement + update/check 四接口
+
 ### [已完成] UI 设计规范 ✅
 - 优先级：P2
 - 完成版本：v0.1.0（文档）/ v0.2.0（前端骨架）

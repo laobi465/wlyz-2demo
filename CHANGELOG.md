@@ -1,5 +1,26 @@
 # 更新日志
 
+## [0.12.0] - 2026-07-22
+
+### [新增] SDK 代码生成器 + 对接文档（一键接入开发者软件）
+
+开发者在软件管理页点「接入代码」，一键生成 9 种语言的快速接入代码（已填入 appKey + RSA 公钥），复制即用。
+
+- **SDK 代码生成器**（纯前端，无后端接口）：
+  - `src/utils/sdk-code-templates.ts`：9 语言模板生成器（Python / C# / C++ / Go / Java / Node.js / Lua / Shell / 易语言）
+  - 输入 appKey + rsaPublicKey + serverUrl + softwareName，输出各语言「单文件快速接入」代码
+  - 每语言含：初始化配置 + 签名工具 + HTTP 调用 + 卡密登录 + 心跳 + 公告拉取 + 更新检查
+  - signSecret 为脱敏字段，模板中留占位符由开发者手动填入
+- **代码生成弹窗** `src/views/dev/software/SdkCodeGenDialog.vue`：
+  - 9 语言 Tab 切换 + 代码展示（深色主题）+ 复制按钮
+  - 自动拉取软件 detail 获取 appKey / rsaPublicKey，支持 serverUrl 编辑
+- **对接文档页** `src/views/dev/integration-doc/index.vue`：
+  - 接入流程 + 凭证说明 + 请求头规范 + 签名算法 + RSA 加密 + API 列表 + 错误码表 + SDK 索引
+- **软件管理页**新增「接入代码」按钮（操作列，绿色 link）
+- **路由** `/integration-doc` + DevLayout「系统设置」子菜单新增「对接文档」入口
+- **覆盖接口**：POST /api/sdk/card/login、POST /api/sdk/device/heartbeat、GET /api/sdk/announcement、GET /api/sdk/update/check
+- **签名规范**：METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256，HMAC-SHA256 → Base64
+
 ## [0.11.0] - 2026-07-22
 
 ### [新增] 自动更新模块（多格式 exe/sh/win/lua/zip/7z，SDK 检查更新）

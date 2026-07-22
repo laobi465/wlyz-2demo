@@ -74,9 +74,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" min-width="160" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="350" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="success" size="small" @click="handleCodeGen(row)">接入代码</el-button>
             <el-dropdown trigger="click" style="margin: 0 8px" @command="(cmd: string) => handleKeyCommand(cmd, row)">
               <el-button link type="warning" size="small">
                 密钥<el-icon class="el-icon--right"><ArrowDown /></el-icon>
@@ -179,6 +180,13 @@
         <el-button type="primary" @click="confirmSecretSaved">我已保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- SDK 代码生成弹窗（v0.12.0 一键接入） -->
+    <SdkCodeGenDialog
+      v-model="codeGenDialogVisible"
+      :software-id="codeGenSoftwareId"
+      :software-name="codeGenSoftwareName"
+    />
   </div>
 </template>
 
@@ -186,6 +194,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { softwareApi } from '@/api'
+import SdkCodeGenDialog from './SdkCodeGenDialog.vue'
 
 interface SoftwareRow {
   id: number
@@ -437,6 +446,17 @@ async function handleDelete(row: SoftwareRow) {
   } catch {
     // 拦截器已提示
   }
+}
+
+/* ============ SDK 代码生成（v0.12.0 一键接入） ============ */
+const codeGenDialogVisible = ref(false)
+const codeGenSoftwareId = ref(0)
+const codeGenSoftwareName = ref('')
+
+function handleCodeGen(row: SoftwareRow) {
+  codeGenSoftwareId.value = row.id
+  codeGenSoftwareName.value = row.name
+  codeGenDialogVisible.value = true
 }
 </script>
 

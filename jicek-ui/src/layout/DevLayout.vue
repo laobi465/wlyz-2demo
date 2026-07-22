@@ -81,6 +81,7 @@
           </template>
           <el-menu-item index="/deploy">部署管理</el-menu-item>
           <el-menu-item index="/ticket">工单管理</el-menu-item>
+          <el-menu-item index="/integration-doc">对接文档</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </aside>
