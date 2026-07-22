@@ -20,69 +20,70 @@
       <el-menu :default-active="activeMenu" router>
         <el-menu-item index="/dashboard">
           <el-icon><Odometer /></el-icon>
-          <span>控制台</span>
+          <span>{{ t('menu.dashboard') }}</span>
         </el-menu-item>
         <el-menu-item index="/software">
           <el-icon><Cpu /></el-icon>
-          <span>软件管理</span>
+          <span>{{ t('menu.software') }}</span>
         </el-menu-item>
         <el-sub-menu index="card">
           <template #title>
             <el-icon><Key /></el-icon>
-            <span>卡密管理</span>
+            <span>{{ t('menu.cardKey') }}</span>
           </template>
-          <el-menu-item index="/card-type">卡类管理</el-menu-item>
-          <el-menu-item index="/card-key-gen">卡密生成</el-menu-item>
-          <el-menu-item index="/card-key-list">卡密查询</el-menu-item>
+          <el-menu-item index="/card-type">{{ t('menu.cardType') }}</el-menu-item>
+          <el-menu-item index="/card-key-gen">{{ t('menu.cardKeyGen') }}</el-menu-item>
+          <el-menu-item index="/card-key-list">{{ t('menu.cardKeyList') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="user">
           <template #title>
             <el-icon><Monitor /></el-icon>
-            <span>用户管理</span>
+            <span>{{ t('menu.userManage') }}</span>
           </template>
-          <el-menu-item index="/device">设备管理</el-menu-item>
+          <el-menu-item index="/device">{{ t('menu.device') }}</el-menu-item>
+          <el-menu-item index="/end-user">{{ t('menu.endUser') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="pay">
           <template #title>
             <el-icon><Money /></el-icon>
-            <span>支付管理</span>
+            <span>{{ t('menu.pay') }}</span>
           </template>
-          <el-menu-item index="/pay-config">支付配置</el-menu-item>
-          <el-menu-item index="/pay-order">资金流水</el-menu-item>
-          <el-menu-item index="/shop">内嵌卡网</el-menu-item>
+          <el-menu-item index="/pay-config">{{ t('menu.payConfig') }}</el-menu-item>
+          <el-menu-item index="/pay-order">{{ t('menu.payOrder') }}</el-menu-item>
+          <el-menu-item index="/shop">{{ t('menu.shop') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="agent">
           <template #title>
             <el-icon><User /></el-icon>
-            <span>代理管理</span>
+            <span>{{ t('menu.agent') }}</span>
           </template>
-          <el-menu-item index="/agent">代理列表</el-menu-item>
-          <el-menu-item index="/withdraw">提现审核</el-menu-item>
+          <el-menu-item index="/agent">{{ t('menu.agentList') }}</el-menu-item>
+          <el-menu-item index="/withdraw">{{ t('menu.withdraw') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="cloud">
           <template #title>
             <el-icon><Cpu /></el-icon>
-            <span>云端数据</span>
+            <span>{{ t('menu.cloudData') }}</span>
           </template>
-          <el-menu-item index="/cloud-func">云函数</el-menu-item>
-          <el-menu-item index="/announcement">远程公告</el-menu-item>
-          <el-menu-item index="/update-package">更新包</el-menu-item>
+          <el-menu-item index="/cloud-func">{{ t('menu.cloudFunc') }}</el-menu-item>
+          <el-menu-item index="/announcement">{{ t('menu.announcement') }}</el-menu-item>
+          <el-menu-item index="/update-package">{{ t('menu.updatePackage') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="stats">
           <template #title>
             <el-icon><TrendCharts /></el-icon>
-            <span>数据统计</span>
+            <span>{{ t('menu.stats') }}</span>
           </template>
-          <el-menu-item index="/stats">数据统计</el-menu-item>
+          <el-menu-item index="/stats">{{ t('menu.stats') }}</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="system">
           <template #title>
             <el-icon><Setting /></el-icon>
-            <span>系统设置</span>
+            <span>{{ t('menu.system') }}</span>
           </template>
-          <el-menu-item index="/deploy">部署管理</el-menu-item>
-          <el-menu-item index="/ticket">工单管理</el-menu-item>
-          <el-menu-item index="/integration-doc">对接文档</el-menu-item>
+          <el-menu-item index="/deploy">{{ t('menu.deploy') }}</el-menu-item>
+          <el-menu-item index="/ticket">{{ t('menu.ticket') }}</el-menu-item>
+          <el-menu-item index="/integration-doc">{{ t('menu.integrationDoc') }}</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </aside>
@@ -95,6 +96,7 @@
           <span class="page-title">{{ pageTitle }}</span>
         </div>
         <div class="header-right">
+          <LangSwitch class="header-lang" />
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-avatar :size="32">{{ avatarText }}</el-avatar>
@@ -103,8 +105,8 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                <el-dropdown-item command="changePassword">{{ t('topbar.changePassword') }}</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>{{ t('topbar.logout') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -123,7 +125,7 @@
     <!-- 修改密码弹窗 -->
     <el-dialog
       v-model="pwdDialogVisible"
-      title="修改密码"
+      :title="t('topbar.changePassword')"
       width="420px"
       :close-on-click-modal="false"
     >
@@ -133,35 +135,35 @@
         :rules="pwdRules"
         label-width="90px"
       >
-        <el-form-item label="原密码" prop="oldPassword">
+        <el-form-item :label="t('topbar.oldPassword')" prop="oldPassword">
           <el-input
             v-model="pwdForm.oldPassword"
             type="password"
             show-password
-            placeholder="请输入原密码"
+            :placeholder="t('topbar.oldPassword')"
           />
         </el-form-item>
-        <el-form-item label="新密码" prop="newPassword">
+        <el-form-item :label="t('topbar.newPassword')" prop="newPassword">
           <el-input
             v-model="pwdForm.newPassword"
             type="password"
             show-password
-            placeholder="至少 8 位"
+            :placeholder="t('topbar.passwordTooShort')"
           />
         </el-form-item>
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item :label="t('topbar.confirmPassword')" prop="confirmPassword">
           <el-input
             v-model="pwdForm.confirmPassword"
             type="password"
             show-password
-            placeholder="请再次输入新密码"
+            :placeholder="t('topbar.confirmPassword')"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="pwdDialogVisible = false">取消</el-button>
+        <el-button @click="pwdDialogVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="pwdLoading" @click="submitChangePassword">
-          确认修改
+          {{ t('common.confirm') }}
         </el-button>
       </template>
     </el-dialog>
@@ -171,10 +173,13 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { authApi } from '@/api'
 import { TOKEN_KEY, USER_KEY } from '@/api/request'
+import LangSwitch from '@/components/LangSwitch.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -247,9 +252,9 @@ async function handleCommand(cmd: string) {
 
 async function handleLogout() {
   try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '退出确认', {
-      confirmButtonText: '退出',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('topbar.logoutConfirm'), t('topbar.logout'), {
+      confirmButtonText: t('topbar.logout'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning'
     })
   } catch {
@@ -257,7 +262,7 @@ async function handleLogout() {
   }
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
-  ElMessage.success('已退出登录')
+  ElMessage.success(t('topbar.logout'))
   router.push('/login')
 }
 
@@ -272,17 +277,17 @@ const pwdForm = reactive({
 })
 
 const pwdRules: FormRules = {
-  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  oldPassword: [{ required: true, message: t('topbar.oldPassword'), trigger: 'blur' }],
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 8, max: 64, message: '密码长度 8-64 字符', trigger: 'blur' }
+    { required: true, message: t('topbar.newPassword'), trigger: 'blur' },
+    { min: 8, max: 64, message: t('topbar.passwordTooShort'), trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    { required: true, message: t('topbar.confirmPassword'), trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== pwdForm.newPassword) {
-          callback(new Error('两次输入的新密码不一致'))
+          callback(new Error(t('topbar.passwordMismatch')))
         } else {
           callback()
         }
@@ -309,7 +314,7 @@ async function submitChangePassword() {
         oldPassword: pwdForm.oldPassword,
         newPassword: pwdForm.newPassword
       })
-      ElMessage.success('密码修改成功，请重新登录')
+      ElMessage.success(t('topbar.changePassword'))
       pwdDialogVisible.value = false
       // 修改密码后强制重新登录
       localStorage.removeItem(TOKEN_KEY)
@@ -363,6 +368,12 @@ async function submitChangePassword() {
     font-weight: 600;
     color: var(--jicek-text-primary);
   }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .user-info {

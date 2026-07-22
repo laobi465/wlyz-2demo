@@ -2,7 +2,7 @@
 
 > 面向开发者的多租户卡密验证 SaaS 平台 · 基于 RuoYi-Vue-Plus 技术栈 · 国产开源可私有部署
 
-[![Version](https://img.shields.io/badge/version-0.13.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.14.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.6-green)](https://spring.io/projects/spring-boot)
@@ -18,7 +18,7 @@
 - **8 语言 SDK 全覆盖**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
 - **最前沿加密**：AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4）
 
-## 当前版本（v0.13.0）
+## 当前版本（v0.14.0）
 
 ### 已完成 ✅
 
@@ -39,18 +39,16 @@
 | v0.10.0 | 公告模块 | CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配 |
 | v0.11.0 | 自动更新包 | 文件上传 + CRUD + 发布/下线 + 多格式 exe/sh/win/lua/zip/7z |
 | v0.12.0 | SDK 代码生成器 + 对接文档 | 9 语言模板一键生成 + 对接文档页（纯前端） |
-| **v0.13.0** | **H5 验证界面 + 代理邀请码注册 + 内嵌卡网系统** | 详见下方 |
+| v0.13.0 | H5 验证界面 + 代理邀请码注册 + 内嵌卡网系统 | 详见 CHANGELOG.md |
+| **v0.14.0** | **终端用户账号体系 + 多语言国际化** | 详见下方 |
 
-#### v0.13.0 新增（3 项功能）
+#### v0.14.0 新增（2 项功能）
 
-- **H5 验证界面**：`h5/` 后端模块（H5Session + UUID token 24h + DB/Redis 双写 + H5AuthInterceptor 拦 `X-H5-Token` 头）+ `views/h5/` 前端 7 页（H5Layout + login + my-card + announcement + agent/register + shop + shop/order）。卡密校验复用 `Md5SignService.sha256Hex()` 与 SDK 同源，明文传输依赖 HTTPS。
-- **代理邀请码注册**：Agent 表新增 `invite_code`/`invited_by` 字段 + `uk_invite` 唯一索引；8 位 SecureRandom 邀请码（去易混淆字符 I/O/0/1）；公开接口 `POST /api/h5/agent/register`，新代理继承邀请人 commissionRate/level+1/maxSubLevel-1。
-- **内嵌卡网系统**：`shop/` 后端模块（`jicek_shop` 店铺 + `jicek_shop_product` 商品，可覆盖卡类售价）+ DevShopController 11 接口（店铺/商品 CRUD + 开关）+ H5 公开查询店铺 + H5 需 token 下单写 `jicek_pay_order`。
+- **终端用户账号体系**：`enduser/` 后端模块（`jicek_end_user` 表 + (tenantId, softwareId, username) 三元唯一 + BCrypt 密码哈希）+ 后台 DevEndUserController 8 接口（CRUD + ban/unban + reset-password，JWT 鉴权）+ H5 公开接口 `POST /api/h5/end-user/login`（账号密码登录复用 H5Session，cardKeyId 与 userId 互斥）+ 错误码 1053-1057。
+- **多语言国际化**：vue-i18n 9.x（Composition API 模式，legacy: false）+ 语言包 `src/i18n/locales/{zh-CN,en-US}.ts`（六模块 common/lang/topbar/menu/login/endUser）+ LangSwitch 顶栏组件（localStorage `jicek_locale` 持久化，切换后 location.reload 同步 Element Plus locale）+ 渐进式改造（登录页 + DevLayout + 终端用户页全量 i18n，其余保留硬编码）。
 
-### 待实现（v0.14.0+）
+### 待实现（v0.15.0+）
 
-- 多语言国际化（P3，待开始）
-- 用户管理页（待后端 DevUserController）
 - 代理制卡扣余额接入（AgentService.deductBalance）
 - 分润接入支付回调（PaymentTransactionService 触发 grantCommission）
 - 管理员端 Controller（工单处理 + 租户管理）
@@ -113,14 +111,22 @@ wlyz-2demo/
 │       │   ├── dto                   # Shop/ShopProduct Save/Detail/H5 DTO
 │       │   ├── service               # ShopService(店铺/商品 CRUD + H5 下单)
 │       │   └── controller            # DevShopController(11 接口) + H5ShopController
+│       ├── enduser/                  # ★ 终端用户账号模块（v0.14.0 新增）
+│       │   ├── entity                # EndUser
+│       │   ├── mapper                # EndUserMapper
+│       │   ├── dto                   # EndUserSaveDTO / H5EndUserLoginDTO
+│       │   ├── service               # EndUserService(CRUD + ban/unban + reset-password + 账号登录复用 H5Session)
+│       │   └── controller            # DevEndUserController(8 接口 JWT) + H5EndUserController(登录公开)
 │       └── agent/                    # ★ 代理模块（v0.4.0 + v0.13.0 扩展 invite_code/invited_by）
 │           └── util                  # InviteCodeGenerator(8 位 SecureRandom)
 ├── jicek-ui/                         # 前端 - Vue3 + TS + Element Plus
 │   └── src/
-│       ├── api/                      # API 客户端 + 接口定义（h5Api + shopApi v0.13.0 新增）
+│       ├── api/                      # API 客户端 + 接口定义（h5Api + shopApi v0.13.0 + endUserApi v0.14.0）
 │       ├── components/jicek/         # 公共组件（StatusTag/AmountInput/ConfirmDialog）
+│       ├── components/LangSwitch.vue # ★ 多语言切换组件（v0.14.0，顶栏下拉 + localStorage 持久化）
+│       ├── i18n/                     # ★ 多语言国际化（v0.14.0，vue-i18n 9.x + locales/{zh-CN,en-US}）
 │       ├── layout/                   # DevLayout (220px 侧栏 + 60px 顶栏)
-│       ├── router/                   # 路由配置（/h5/* 7 个 public 子路由 v0.13.0）
+│       ├── router/                   # 路由配置（/h5/* 7 个 public 子路由 v0.13.0 + /end-user v0.14.0）
 │       ├── styles/                   # jicek.scss (CSS 变量系统)
 │       ├── utils/sdk-code-templates.ts # ★ 9 语言代码模板生成器（v0.12.0）
 │       └── views/
@@ -132,7 +138,8 @@ wlyz-2demo/
 │           │   ├── pay-order/        # 资金流水
 │           │   ├── software/         # ★ 含 SdkCodeGenDialog.vue（v0.12.0 接入代码生成）
 │           │   ├── integration-doc/ # ★ 对接文档页（v0.12.0 新增）
-│           │   └── shop/             # ★ 内嵌卡网管理（v0.13.0，店铺+商品双层弹窗）
+│           │   ├── shop/             # ★ 内嵌卡网管理（v0.13.0，店铺+商品双层弹窗）
+│           │   └── end-user/         # ★ 终端用户管理（v0.14.0，CRUD + 封禁 + 重置密码）
 │           └── h5/                   # ★ H5 终端用户页（v0.13.0 新增，7 页）
 │               ├── H5Layout.vue      # 44px 顶导 + 56px 底部 4-Tab + 480px 居中
 │               ├── login/            # 卡密登录（appKey + cardKey）
@@ -419,6 +426,16 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 
 11 接口：店铺 CRUD + 开关 + 商品 CRUD + 商品列表，详见 [PROMPT.md](PROMPT.md) 7.5 节。
 
+### Dev End User API（`/api/dev/end-user/**`，@AuthRequired JWT，v0.14.0）
+
+8 接口：`POST /` 创建、`PUT /` 更新、`DELETE /{id}`、`GET /page` 分页、`GET /{id}` 详情、`POST /{id}/ban` 封禁、`POST /{id}/unban` 解封、`POST /reset-password` 重置密码。
+
+### H5 End User API（v0.14.0）
+
+| 端点 | 鉴权 | 说明 |
+|---|---|---|
+| `POST /api/h5/end-user/login` | 公开 | 终端用户账号密码登录（appKey + username + password），返回 X-H5-Token |
+
 ## 数据库表（核心）
 
 | 表名 | 说明 |
@@ -431,6 +448,7 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 | `jicek_h5_session` | H5 会话（h5_token UUID + cardKeyId + 24h 过期，Redis 加速） |
 | `jicek_shop` | 内嵌卡网店铺（tenantId + path 唯一 + status 开关） |
 | `jicek_shop_product` | 卡网商品（shopId + cardTypeId 唯一 + price 覆盖卡类售价） |
+| `jicek_end_user` | 终端用户（v0.14.0，tenantId + softwareId + username 三元唯一 + BCrypt 密码哈希） |
 | `jicek_device` | 设备（指纹哈希 + 在线状态） |
 | `jicek_agent` | 代理（多级树形结构 + 余额 + 分润） |
 

@@ -104,6 +104,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '设备管理', icon: 'Monitor' }
       },
       {
+        path: 'end-user',
+        name: 'EndUser',
+        component: () => import('@/views/dev/end-user/index.vue'),
+        meta: { title: '终端用户', icon: 'UserFilled' }
+      },
+      {
         path: 'pay-config',
         name: 'PayConfig',
         component: () => import('@/views/dev/pay-config/index.vue'),

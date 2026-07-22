@@ -90,6 +90,13 @@ public enum ResultCode {
     H5_SHOP_DISABLED(1051, "店铺已关闭"),
     H5_PRODUCT_NOT_FOUND(1052, "商品不存在"),
 
+    /* ============ 终端用户账号（v0.14.0） ============ */
+    END_USER_NOT_FOUND(1053, "终端用户不存在"),
+    END_USER_USERNAME_EXISTS(1054, "用户名已存在"),
+    END_USER_BANNED(1055, "终端用户已封禁"),
+    END_USER_PASSWORD_ERROR(1056, "用户名或密码错误"),
+    END_USER_SOFTWARE_INVALID(1057, "软件无效或无权操作"),
+
     /* ============ 支付模块 2001-2999 ============ */
     PAY_CONFIG_NOT_FOUND(2001, "支付配置不存在"),
     PAY_MERCHANT_KEY_ERROR(2002, "商户密钥错误"),

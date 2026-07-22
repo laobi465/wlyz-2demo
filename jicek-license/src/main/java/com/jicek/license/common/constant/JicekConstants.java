@@ -365,4 +365,18 @@ public final class JicekConstants {
     public static final int SHOP_PRODUCT_ON_SHELF = 1;
     /** 单笔订单最大购买数量 */
     public static final int SHOP_ORDER_MAX_QUANTITY = 99;
+
+    /* ============ 终端用户（v0.14.0） ============ */
+    /** 终端用户状态：封禁 */
+    public static final int END_USER_STATUS_BANNED = 0;
+    /** 终端用户状态：正常 */
+    public static final int END_USER_STATUS_NORMAL = 1;
+    /** 终端用户名最小长度 */
+    public static final int END_USER_USERNAME_MIN_LEN = 3;
+    /** 终端用户名最大长度 */
+    public static final int END_USER_USERNAME_MAX_LEN = 64;
+    /** 终端用户密码最小长度 */
+    public static final int END_USER_PASSWORD_MIN_LEN = 6;
+    /** 终端用户密码最大长度 */
+    public static final int END_USER_PASSWORD_MAX_LEN = 64;
 }

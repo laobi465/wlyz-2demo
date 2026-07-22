@@ -473,3 +473,56 @@ export const shopApi = {
   removeProduct: (shopId: number, productId: number) =>
     api.delete(`/api/dev/shop/product/${shopId}/${productId}`)
 }
+
+/* ============ 终端用户管理（v0.14.0，独立账号体系） ============ */
+export const endUserApi = {
+  // 分页查询（tenantId 由后端从 AuthContext 获取，前端禁传）
+  page: (params: {
+    current?: number
+    size?: number
+    softwareId?: number
+    username?: string
+    status?: number
+  }) =>
+    api.get('/api/dev/end-user/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      softwareId: params.softwareId,
+      username: params.username,
+      status: params.status
+    }),
+  // 详情
+  get: (id: number) => api.get(`/api/dev/end-user/${id}`),
+  // 创建（创建时 password 必填）
+  create: (data: {
+    softwareId: number
+    username: string
+    password: string
+    nickname?: string
+    email?: string
+    phone?: string
+    status?: number
+    remark?: string
+  }) => api.post('/api/dev/end-user', data),
+  // 更新（password 留空表示不修改）
+  update: (data: {
+    id: number
+    softwareId: number
+    username: string
+    password?: string
+    nickname?: string
+    email?: string
+    phone?: string
+    status?: number
+    remark?: string
+  }) => api.put('/api/dev/end-user', data),
+  // 删除
+  delete: (id: number) => api.delete(`/api/dev/end-user/${id}`),
+  // 封禁
+  ban: (id: number) => api.post(`/api/dev/end-user/${id}/ban`),
+  // 解封
+  unban: (id: number) => api.post(`/api/dev/end-user/${id}/unban`),
+  // 重置密码（开发者后台调用，无需原密码）
+  resetPassword: (data: { id: number; newPassword: string }) =>
+    api.post('/api/dev/end-user/reset-password', data)
+}

@@ -94,13 +94,13 @@
   - [x] 前端代理管理页 + 提现审核页 + API/路由/菜单集成
 - 备注：未引入 WarmFlow，采用简单状态机模式（对标 PayOrderStateMachineService）；待接入 PaymentTransactionService 在支付成功回调触发 grantCommission
 
-### [基本完成] 前端补全
+### [已完成] 前端补全 ✅
 - 优先级：P1
-- 状态：仅「用户管理页」待后端 DevUserController 实现后补全
+- 状态：全部完成
 - 子项：
   - [x] 软件管理页面 ✅ v0.8.0（CRUD + 密钥轮换 + 关联校验）
   - [x] 卡类管理页面 ✅ v0.4.1（CRUD + 4 种类型联动表单）
-  - [ ] 用户管理页面（待后端 DevUserController 实现）
+  - [x] 终端用户管理页面 ✅ v0.14.0（CRUD + 封禁 + 重置密码，views/dev/end-user/）
   - [x] 设备管理页面 ✅ v0.4.1（分页 + 详情 + 封禁/解封 + 指纹脱敏）
   - [x] 代理管理页面 ✅ v0.4.0（代理列表 + 提现审核）
   - [x] 数据统计图表 ✅ v0.4.1 + v0.4.3（Dashboard 饼图/柱状图 + 数据统计页 4 Tab）
@@ -116,7 +116,7 @@
   - [x] StatusTag.vue 扩展：新增 device 类型，支持 4 种状态语义
   - [x] deviceApi 新增（page/get/ban/unban），含 current→page 参数映射
   - [x] 路由新增 /card-type + /device；侧边栏新增卡类管理 + 用户管理子菜单
-- 技术约束：依据铁律 06（防幻觉），仅实现后端 Controller 已存在的页面；H5 已于 v0.13.0 实现，仅用户管理页待后端
+- 技术约束：依据铁律 06（防幻觉），仅实现后端 Controller 已存在的页面；H5 已于 v0.13.0 实现，终端用户管理页已于 v0.14.0 实现
 
 ## P2（中）
 
@@ -251,7 +251,24 @@
   - [x] 内嵌卡网系统：`shop/` 后端模块（店铺 + 商品，可覆盖卡类售价）+ DevShopController 11 接口 + H5 公开查询 + H5 需 token 下单
 - 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.13.0 条目；5 份核心文档已同步
 
-### [待开始] 多语言国际化
+### [已完成] v0.14.0 新增功能 ✅
+- 优先级：P1（终端用户账号体系）+ P3（多语言国际化）
+- 完成版本：v0.14.0
+- 完成项：
+  - [x] 终端用户账号体系：`enduser/` 后端模块（jicek_end_user 表 + 三元唯一 + BCrypt）+ DevEndUserController 8 接口（CRUD + ban/unban + reset-password）+ H5 公开登录接口复用 H5Session + 错误码 1053-1057
+  - [x] 多语言国际化：vue-i18n 9.x（Composition API）+ 中英文语言包（六模块）+ LangSwitch 顶栏组件 + 渐进式改造（登录页 + DevLayout + 终端用户页全量 i18n）
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.14.0 条目；5 份核心文档已同步
+
+### [已完成] 多语言国际化 ✅
 - 优先级：P3
-- 预计版本：v0.14.0+
-- 备注：先支持中文，后续扩展英文
+- 完成版本：v0.14.0
+- 备注：vue-i18n 9.x 中英文 + 渐进式改造，详见 v0.14.0 新增功能条目
+
+## 待实现清单
+
+核心功能已全部完成，后续按需迭代。剩余增强项（非阻塞）：
+
+- 代理制卡扣余额接入（AgentService.deductBalance）
+- 分润接入支付回调（PaymentTransactionService 触发 grantCommission）
+- 管理员端 Controller（工单处理 + 租户管理）
+- 多语言国际化剩余页面逐步替换（当前登录页 + DevLayout + 终端用户页已全量 i18n）

@@ -137,12 +137,20 @@
 │       │   ├── dto     # ShopSaveDTO / ShopProductSaveDTO / ShopDetailDTO / ShopProductDTO / H5ShopViewDTO / H5CreateOrderDTO / H5CreateOrderResultDTO
 │       │   ├── service # ShopService（店铺 CRUD + 商品 CRUD + H5 下单写 jicek_pay_order）
 │       │   └── controller # DevShopController（/api/dev/shop/* 11 接口） + H5ShopController（/api/h5/shop/info 公开 + /api/h5/shop/order 需 X-H5-Token）
+│       ├── enduser    # ★ 终端用户账号模块（v0.14.0 新增，H5 账号密码登录复用 H5Session）
+│       │   ├── entity  # EndUser
+│       │   ├── mapper  # EndUserMapper
+│       │   ├── dto     # EndUserSaveDTO / H5EndUserLoginDTO / EndUserDetailDTO
+│       │   ├── service # EndUserService（CRUD + ban/unban + reset-password + 账号登录自建 H5Session）
+│       │   └── controller # DevEndUserController（/api/dev/end-user/* 8 接口 JWT） + H5EndUserController（/api/h5/end-user/login 公开）
 │       └── sdk-gen     # ★ SDK 代码生成器（v0.12.0 前端实现，9 语言模板，无后端）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网）
-    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 新增）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网，v0.14.0 新增终端用户管理 + 多语言国际化）
+    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 + endUserApi v0.14.0 新增）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
+    ├── src/components/LangSwitch.vue # ★ 多语言切换组件（v0.14.0，顶栏下拉 + localStorage 持久化）
+    ├── src/i18n        # ★ 多语言国际化（v0.14.0，index.ts 注册 vue-i18n 9.x + locales/{zh-CN,en-US}.ts 六模块）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置（11 个页面路由 + /h5/* 7 个 public 子路由 v0.13.0 + /shop 后台路由）
+    ├── src/router      # 路由配置（11 个页面路由 + /h5/* 7 个 public 子路由 v0.13.0 + /shop 后台路由 + /end-user v0.14.0）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     ├── src/utils       # ★ sdk-code-templates.ts（v0.12.0，9 语言代码模板生成器）
     ├── src/views/dev   # 开发者页面
@@ -162,7 +170,8 @@
         ├── login       # ★ 登录页（v0.7.0 新增，租户ID+用户名+密码 + 表单校验）
         ├── software    # ★ 软件管理（v0.8.0，CRUD + 密钥展示弹窗 + 轮换二次确认）+ v0.12.0 SdkCodeGenDialog.vue（接入代码生成弹窗）
         ├── integration-doc # ★ 对接文档页（v0.12.0 新增，接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引）
-        └── shop        # ★ 内嵌卡网管理（v0.13.0 新增，店铺 + 商品双层弹窗）
+        ├── shop        # ★ 内嵌卡网管理（v0.13.0 新增，店铺 + 商品双层弹窗）
+        └── end-user    # ★ 终端用户管理（v0.14.0 新增，CRUD + 封禁 + 重置密码）
     └── src/views/h5    # ★ H5 终端用户页（v0.13.0 新增，7 页：H5Layout + login + my-card + announcement + agent/register + shop + shop/order）
 ```
 
@@ -262,6 +271,10 @@
 - [x] H5 终端用户界面 ✅ v0.13.0（卡密登录 + 我的卡密 + 公告 + 7 页前端）
 - [x] 代理邀请码注册 ✅ v0.13.0（8 位 SecureRandom + 继承邀请人配置）
 - [x] 内嵌卡网系统 ✅ v0.13.0（店铺 + 商品 + H5 下单写 jicek_pay_order）
+
+### 3.9 v0.14.0 新增功能（已完成）
+- [x] 终端用户账号体系 ✅ v0.14.0（jicek_end_user 表 + 后台 8 接口 CRUD/封禁/重置密码 + H5 账号密码登录复用 H5Session）
+- [x] 多语言国际化 ✅ v0.14.0（vue-i18n 9.x 中英文 + LangSwitch 组件 + 渐进式改造）
 
 ## 4. 角色权限体系
 
