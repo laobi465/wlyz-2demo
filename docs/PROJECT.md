@@ -124,14 +124,28 @@
 │       │   ├── dto     # UpdatePackageSaveDTO / UpdatePackageDetailDTO / SdkUpdateCheckResultDTO / UploadResultDTO
 │       │   ├── service # UpdatePackageService（文件上传 + CRUD + 发布/下线 + SDK 检查更新 + SHA-256 + 路径穿越防御）
 │       │   └── controller # DevUpdatePackageController（/api/dev/update-package/* 8 接口） + SdkUpdateController（/api/sdk/update/check）
-│       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理）
-    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi）
+│       ├── h5          # ★ H5 模块（v0.13.0 新增，终端用户验证界面，X-H5-Token 鉴权 + Redisson 会话）
+│       │   ├── entity  # H5Session
+│       │   ├── mapper  # H5SessionMapper
+│       │   ├── dto     # H5LoginRequestDTO / H5LoginResultDTO / H5CardDetailDTO
+│       │   ├── auth    # H5AuthContext(ThreadLocal) + H5AuthInterceptor(X-H5-Token 头)
+│       │   ├── service # H5AuthService(login/my-card/logout，复用 Md5SignService.sha256Hex 校验卡密)
+│       │   └── controller # H5AuthController + H5AnnouncementController + H5AgentController
+│       ├── shop       # ★ 内嵌卡网模块（v0.13.0 新增，店铺 + 商品 + H5 下单）
+│       │   ├── entity  # Shop / ShopProduct
+│       │   ├── mapper  # ShopMapper / ShopProductMapper
+│       │   ├── dto     # ShopSaveDTO / ShopProductSaveDTO / ShopDetailDTO / ShopProductDTO / H5ShopViewDTO / H5CreateOrderDTO / H5CreateOrderResultDTO
+│       │   ├── service # ShopService（店铺 CRUD + 商品 CRUD + H5 下单写 jicek_pay_order）
+│       │   └── controller # DevShopController（/api/dev/shop/* 11 接口） + H5ShopController（/api/h5/shop/info 公开 + /api/h5/shop/order 需 X-H5-Token）
+│       └── sdk-gen     # ★ SDK 代码生成器（v0.12.0 前端实现，9 语言模板，无后端）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网）
+    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 新增）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置（11 个页面路由）
+    ├── src/router      # 路由配置（11 个页面路由 + /h5/* 7 个 public 子路由 v0.13.0 + /shop 后台路由）
     ├── src/styles      # jicek.scss (CSS 变量系统)
-    └── src/views/dev   # 开发者页面
+    ├── src/utils       # ★ sdk-code-templates.ts（v0.12.0，9 语言代码模板生成器）
+    ├── src/views/dev   # 开发者页面
         ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
         ├── card-key-gen # 卡密生成
         ├── card-key-list # 卡密查询
@@ -144,9 +158,12 @@
         ├── cloud-func  # ★ 云函数管理（v0.4.2 新增，双 Tab：函数列表 + 执行日志）
         ├── stats       # ★ 数据统计（v0.4.3 新增，4 Tab：验证趋势/设备热力图/收入统计/防破解事件）
         ├── deploy      # ★ 部署管理（v0.5.0 新增，3 状态卡片 + 手动触发 + 审计日志 + 状态轮询）
-        └── ticket      # ★ 工单管理（v0.6.0 新增，双 Tab：收件箱 + 已提交 + 详情对话流）
-        └── login       # ★ 登录页（v0.7.0 新增，租户ID+用户名+密码 + 表单校验）
-        └── software    # ★ 软件管理（v0.8.0 新增，CRUD + 密钥展示弹窗 + 轮换二次确认）
+        ├── ticket      # ★ 工单管理（v0.6.0 新增，双 Tab：收件箱 + 已提交 + 详情对话流）
+        ├── login       # ★ 登录页（v0.7.0 新增，租户ID+用户名+密码 + 表单校验）
+        ├── software    # ★ 软件管理（v0.8.0，CRUD + 密钥展示弹窗 + 轮换二次确认）+ v0.12.0 SdkCodeGenDialog.vue（接入代码生成弹窗）
+        ├── integration-doc # ★ 对接文档页（v0.12.0 新增，接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引）
+        └── shop        # ★ 内嵌卡网管理（v0.13.0 新增，店铺 + 商品双层弹窗）
+    └── src/views/h5    # ★ H5 终端用户页（v0.13.0 新增，7 页：H5Layout + login + my-card + announcement + agent/register + shop + shop/order）
 ```
 
 ### 2.3 数据流
@@ -160,6 +177,30 @@
 [用户 H5] ──→ [购卡] ──→ [订单生成] ──→ [彩虹易支付]
                                           ↓ 异步回调
                                     [验签+幂等+发卡]
+```
+
+#### H5 购卡数据流（v0.13.0 新增）
+```
+[H5 终端用户]
+   │
+   │ 1. GET /api/h5/shop/info?path=xxx（公开，查 jicek_shop + jicek_shop_product）
+   ▼
+[店铺列表 + 商品列表]
+   │
+   │ 2. POST /api/h5/shop/order（X-H5-Token，写 jicek_pay_order status=0）
+   ▼
+[彩虹易支付 V1 跳转]
+   │
+   │ 3. 异步回调 /pay/notify/{tenantId}
+   ▼
+[PayNotifyService：Redisson 锁 + MD5 验签 + 幂等]
+   │
+   ▼
+[PaymentTransactionService.processPaymentSuccess]
+   │  ├─ 订单 status 0→1
+   │  └─ 卡密发放（按 quantity 生成 N 张 jicek_card_key，AES-256-GCM 加密入库）
+   ▼
+[返回纯字符串 success]
 ```
 
 ## 3. 功能清单（已设计，待实现）
@@ -196,24 +237,31 @@
 ### 3.5 云端数据
 - [ ] 云变量（key/value + 签名加密）
 - [x] 云函数（远程执行，抗破解终极方案）✅ v0.4.2（LuaJ 3.0.6 沙箱 + 全局表裁剪 + 超时中断 + 输出截断 + 审计日志不可篡改）
-- [ ] 远程公告（按软件/版本下发）
+- [x] 远程公告（按软件/版本下发）✅ v0.10.0（CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配）
 
 ### 3.6 客户端 SDK
-- [ ] Java SDK
-- [ ] C# SDK
-- [ ] Python SDK
-- [ ] Go SDK
-- [ ] Node.js SDK
-- [ ] C++ SDK
-- [ ] 易语言模块
-- [ ] Lua SDK
-- [ ] Shell SDK
+- [x] Java SDK ✅ v0.3.1
+- [x] C# SDK ✅ v0.3.1
+- [x] Python SDK ✅ v0.3.1
+- [x] Go SDK ✅ v0.3.1
+- [x] Node.js SDK ✅ v0.3.1
+- [x] C++ SDK ✅ v0.3.1
+- [x] 易语言模块 ✅ v0.3.1
+- [x] Lua SDK ✅ v0.3.1
+- [x] Shell SDK ✅ v0.3.1
 
 ### 3.7 安全防护
 - [ ] IP 黑名单 / 设备黑名单
 - [ ] 频率限制（Redisson 分布式限流）
 - [ ] 防爆破（连续失败 N 次封禁 IP）
 - [ ] 一次一密封包（防重放）
+
+### 3.8 v0.12.0 + v0.13.0 新增功能（已完成）
+- [x] SDK 代码生成器 ✅ v0.12.0（前端纯实现，9 语言模板一键生成 + 对接文档页）
+- [x] 自动更新模块 ✅ v0.11.0（更新包上传 + 多格式 + 强制更新 + SDK 检查更新）
+- [x] H5 终端用户界面 ✅ v0.13.0（卡密登录 + 我的卡密 + 公告 + 7 页前端）
+- [x] 代理邀请码注册 ✅ v0.13.0（8 位 SecureRandom + 继承邀请人配置）
+- [x] 内嵌卡网系统 ✅ v0.13.0（店铺 + 商品 + H5 下单写 jicek_pay_order）
 
 ## 4. 角色权限体系
 

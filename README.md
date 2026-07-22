@@ -2,7 +2,7 @@
 
 > 面向开发者的多租户卡密验证 SaaS 平台 · 基于 RuoYi-Vue-Plus 技术栈 · 国产开源可私有部署
 
-[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.13.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.6-green)](https://spring.io/projects/spring-boot)
@@ -18,66 +18,42 @@
 - **8 语言 SDK 全覆盖**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
 - **最前沿加密**：AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4）
 
-## 当前版本（v0.3.1）
+## 当前版本（v0.13.0）
 
 ### 已完成 ✅
 
-#### 8 语言客户端 SDK（v0.3.1 新增）
-统一契约规范见 [sdk/README.md](sdk/README.md)，所有 SDK 实现完全一致的接口语义：
-
-| 语言 | 目录 | 依赖特点 |
+| 版本 | 主题 | 摘要 |
 |---|---|---|
-| Java | [sdk/java/](sdk/java/) | JDK 17+ HttpClient + 自研 JSON 解析器，零第三方依赖 |
-| Python | [sdk/python/](sdk/python/) | stdlib + cryptography（RSA） |
-| Node.js | [sdk/nodejs/](sdk/nodejs/) | crypto + https，零依赖 |
-| Go | [sdk/go/](sdk/go/) | stdlib，零依赖 |
-| C# | [sdk/csharp/](sdk/csharp/) | BCL，.NET 6+ |
-| C++ | [sdk/cpp/](sdk/cpp/) | OpenSSL + libcurl |
-| Lua | [sdk/lua/](sdk/lua/) | luaossl/luasocket 可选，回退 openssl/curl CLI |
-| Shell | [sdk/shell/](sdk/shell/) | bash 4+ + curl + openssl，jq 可选 |
-| 易语言 | [sdk/epl/](sdk/epl/) | 精易模块（原生）/ jicek.dll（DLL 方案） |
+| v0.2.0 | 后端核心模块 | 加密层 + 卡密 + 支付适配 + 资金一致性 + 多租户拦截器 |
+| v0.3.0 | 设备指纹与绑定 | 5 维 SHA-256 融合 + 换机码 + 心跳保活 + nonce 防重放 |
+| v0.3.1 | 8 语言客户端 SDK | Java/Python/Node.js/Go/C#/C++/Lua/Shell + 易语言，统一契约见 [sdk/README.md](sdk/README.md) |
+| v0.4.0 | 多级代理 + 分润 + 提现 | 树形代理 + 链式分润 + 提现状态机（未引入 WarmFlow） |
+| v0.4.1 | 前端补全第一批 | 卡类/设备管理 + Dashboard ECharts + StatusTag 扩展 |
+| v0.4.2 | 云函数远程执行 | LuaJ 3.0.6 沙箱 + 审计日志不可篡改 |
+| v0.4.3 | 数据统计与可视化 | 4 Tab（验证量/设备热力/收入/防破解） |
+| v0.5.0 | GitHub 自动更新部署 | Webhook 验签 + Redisson 锁 + 备份回滚 + 健康检查 |
+| v0.6.0 / v0.6.1 | 工单系统 | 单向工单（开发者→管理员）+ 状态机 + 审计表 |
+| v0.7.0 | 鉴权框架 | JWT（JJWT 0.12.6 HMAC-SHA256）+ @AuthRequired 渐进式 + AuthContext |
+| v0.8.0 | 软件模块 | CRUD + 密钥生成/轮换 + 关联校验 |
+| v0.9.0 | SDK 模块 | SdkAuthFilter 签名鉴权 + 卡密登录 + SoftwareContext |
+| v0.10.0 | 公告模块 | CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配 |
+| v0.11.0 | 自动更新包 | 文件上传 + CRUD + 发布/下线 + 多格式 exe/sh/win/lua/zip/7z |
+| v0.12.0 | SDK 代码生成器 + 对接文档 | 9 语言模板一键生成 + 对接文档页（纯前端） |
+| **v0.13.0** | **H5 验证界面 + 代理邀请码注册 + 内嵌卡网系统** | 详见下方 |
 
-核心契约：
-- **统一签名**：`METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256` → HMAC-SHA256 → Base64
-- **5 维设备指纹**：CPU/主板/硬盘/网卡/BIOS 各自 SHA-256 → 拼接 → SHA-256，VM/容器补充维度
-- **RSA-2048-OAEP**：卡密 + 5 维哈希 JSON 加密传输
-- **动态心跳**：服务端控制 5-300s 间隔 + 客户端指数退避（1/2/4/8/max 30s）+ 5 次失败断开
+#### v0.13.0 新增（3 项功能）
 
-#### 设备指纹与绑定模块（v0.3.0）
-- 5 维 SHA-256 融合指纹（CPU+主板+硬盘+网卡+BIOS）
-- VM/容器补充维度（VM UUID / 容器 ID）
-- RSA 加密传输 + 服务端独立计算（防篡改）+ 常量时间比对（防时序攻击）
-- 设备绑定/换机/封禁/解封（@Transactional 保证原子性）
-- 16 位换机码（SecureRandom，24h 有效）
-- 心跳保活（动态间隔 5-300s，服务端控制）+ nonce Redis 防重放 + HMAC-SHA256 签名
-- 超时设备自动置离线（3×interval 阈值）
+- **H5 验证界面**：`h5/` 后端模块（H5Session + UUID token 24h + DB/Redis 双写 + H5AuthInterceptor 拦 `X-H5-Token` 头）+ `views/h5/` 前端 7 页（H5Layout + login + my-card + announcement + agent/register + shop + shop/order）。卡密校验复用 `Md5SignService.sha256Hex()` 与 SDK 同源，明文传输依赖 HTTPS。
+- **代理邀请码注册**：Agent 表新增 `invite_code`/`invited_by` 字段 + `uk_invite` 唯一索引；8 位 SecureRandom 邀请码（去易混淆字符 I/O/0/1）；公开接口 `POST /api/h5/agent/register`，新代理继承邀请人 commissionRate/level+1/maxSubLevel-1。
+- **内嵌卡网系统**：`shop/` 后端模块（`jicek_shop` 店铺 + `jicek_shop_product` 商品，可覆盖卡类售价）+ DevShopController 11 接口（店铺/商品 CRUD + 开关）+ H5 公开查询店铺 + H5 需 token 下单写 `jicek_pay_order`。
 
-#### 后端核心模块（v0.2.0）
-- **加密层**：AES-256-GCM（存储）/ RSA-2048-OAEP（传输）/ HMAC-SHA256（签名）/ MD5（V1 兼容）
-- **卡密模块**：SecureRandom 生成 + AES-256-GCM 加密入库 + SHA-256 哈希索引 + 明文仅展示一次
-- **支付适配层**：彩虹易支付 V1 完整实现（支付/查询/退款/异步回调）
-- **订单状态机**：5 状态不可逆流转（0待支付→1已支付→2失败→3已退款→4已关闭）
-- **异步回调**：Redisson 分布式锁 + MD5 验签 + 幂等 + 返回纯字符串 `success`
-- **资金一致性**：`@Transactional` 保证「订单状态流转 + 卡密发放」原子性
-- **多租户拦截器**：MyBatis-Plus TenantLineInnerInterceptor
-- **RESTful API**：5 个开发者 Controller 全部就位
+### 待实现（v0.14.0+）
 
-#### 前端 Vue3 骨架
-- Vite 5 + TypeScript 严格模式 + Element Plus 2.9.8 + Pinia
-- 全局样式：极策蓝 `#1A4D8F` 主色 + CSS 变量系统（遵循现代简约 UI 规范）
-- 路由：5 个核心页面
-- API 客户端：axios 拦截器 + 统一响应处理 + decimal.js 金额精度
-- 公共组件：StatusTag / AmountInput / ConfirmDialog
-- Layout：220px 左侧导航 + 60px 顶栏 + 主内容区
-- 5 个核心页面：控制台 / 卡密生成 / 卡密查询 / 支付配置 / 资金流水
-
-### 待实现（v0.4.0+）
-
-- 多级代理 + 分润 + 提现工作流（WarmFlow）
-- 前端补全（软件/卡类/用户/设备/代理管理 + ECharts + H5）
-- CardKeyService.useCard 完整流程接入 + Sa-Token 鉴权
-- 云变量 / 云函数（沙箱）/ 远程公告
-- GitHub Webhook 自动更新部署
+- 多语言国际化（P3，待开始）
+- 用户管理页（待后端 DevUserController）
+- 代理制卡扣余额接入（AgentService.deductBalance）
+- 分润接入支付回调（PaymentTransactionService 触发 grantCommission）
+- 管理员端 Controller（工单处理 + 租户管理）
 
 详见 [TODO.md](TODO.md)。
 
@@ -86,7 +62,7 @@
 | 层级 | 选型 | 版本 |
 |---|---|---|
 | 后端框架 | Spring Boot | 3.4.6 |
-| 权限认证 | Sa-Token | 1.42.0 |
+| 权限认证 | JJWT（HMAC-SHA256） | 0.12.6 |
 | ORM | MyBatis-Plus | 3.5.12 |
 | 缓存/锁 | Redisson | 7.x |
 | 数据库 | MySQL | 8.0.42 |
@@ -122,21 +98,48 @@ wlyz-2demo/
 │       │   └── controller            # PayNotifyController / DevPayController
 │       ├── transaction/              # ★ 资金一致性事务
 │       │   └── PaymentTransactionService
-│       └── dashboard/                # 控制台
-│           └── controller            # DevDashboardController
+│       ├── dashboard/                # 控制台
+│       │   └── controller            # DevDashboardController
+│       ├── h5/                       # ★ H5 终端用户模块（v0.13.0 新增）
+│       │   ├── entity                # H5Session
+│       │   ├── mapper                # H5SessionMapper
+│       │   ├── dto                   # H5LoginRequestDTO / H5LoginResultDTO / H5CardDetailDTO
+│       │   ├── auth                  # H5AuthContext(ThreadLocal) + H5AuthInterceptor(X-H5-Token)
+│       │   ├── service               # H5AuthService(login/my-card/logout)
+│       │   └── controller            # H5AuthController + H5AnnouncementController + H5AgentController
+│       ├── shop/                     # ★ 内嵌卡网模块（v0.13.0 新增）
+│       │   ├── entity                # Shop / ShopProduct
+│       │   ├── mapper                # ShopMapper / ShopProductMapper
+│       │   ├── dto                   # Shop/ShopProduct Save/Detail/H5 DTO
+│       │   ├── service               # ShopService(店铺/商品 CRUD + H5 下单)
+│       │   └── controller            # DevShopController(11 接口) + H5ShopController
+│       └── agent/                    # ★ 代理模块（v0.4.0 + v0.13.0 扩展 invite_code/invited_by）
+│           └── util                  # InviteCodeGenerator(8 位 SecureRandom)
 ├── jicek-ui/                         # 前端 - Vue3 + TS + Element Plus
 │   └── src/
-│       ├── api/                      # API 客户端 + 接口定义
+│       ├── api/                      # API 客户端 + 接口定义（h5Api + shopApi v0.13.0 新增）
 │       ├── components/jicek/         # 公共组件（StatusTag/AmountInput/ConfirmDialog）
 │       ├── layout/                   # DevLayout (220px 侧栏 + 60px 顶栏)
-│       ├── router/                   # 路由配置
+│       ├── router/                   # 路由配置（/h5/* 7 个 public 子路由 v0.13.0）
 │       ├── styles/                   # jicek.scss (CSS 变量系统)
-│       └── views/dev/                # 开发者页面
-│           ├── dashboard/            # 控制台
-│           ├── card-key-gen/         # 卡密生成
-│           ├── card-key-list/        # 卡密查询
-│           ├── pay-config/           # 支付配置
-│           └── pay-order/            # 资金流水
+│       ├── utils/sdk-code-templates.ts # ★ 9 语言代码模板生成器（v0.12.0）
+│       └── views/
+│           ├── dev/                  # 开发者页面
+│           │   ├── dashboard/        # 控制台
+│           │   ├── card-key-gen/     # 卡密生成
+│           │   ├── card-key-list/    # 卡密查询
+│           │   ├── pay-config/       # 支付配置
+│           │   ├── pay-order/        # 资金流水
+│           │   ├── software/         # ★ 含 SdkCodeGenDialog.vue（v0.12.0 接入代码生成）
+│           │   ├── integration-doc/ # ★ 对接文档页（v0.12.0 新增）
+│           │   └── shop/             # ★ 内嵌卡网管理（v0.13.0，店铺+商品双层弹窗）
+│           └── h5/                   # ★ H5 终端用户页（v0.13.0 新增，7 页）
+│               ├── H5Layout.vue      # 44px 顶导 + 56px 底部 4-Tab + 480px 居中
+│               ├── login/            # 卡密登录（appKey + cardKey）
+│               ├── my-card/          # 我的卡密（按 cardType 渲染）
+│               ├── announcement/     # 公告列表
+│               ├── agent/register.vue # 代理注册（邀请码）
+│               └── shop/             # 店铺列表 + 订单确认
 ├── docs/                             # 核心文档
 │   ├── PROJECT.md                    # 项目文档
 │   ├── SPEC.md                       # 规范文档
@@ -155,6 +158,149 @@ wlyz-2demo/
 ├── CHANGELOG.md                      # 更新日志
 ├── TODO.md                           # 任务清单
 └── README.md                         # 本文件
+```
+
+## 架构图（Mermaid）
+
+### 架构总览
+
+```mermaid
+graph TD
+    subgraph 客户端
+        A1[客户端 SDK<br/>8 语言 + 易语言]
+        A2[H5 终端用户<br/>移动端]
+    end
+    A1 -->|HTTPS + HMAC-SHA256 签名| N[Nginx]
+    A2 -->|HTTPS + X-H5-Token| N
+    N -->|反向代理| S[Spring Boot<br/>jicek-license]
+    S -->|MyBatis-Plus| M[(MySQL 8.0<br/>多租户隔离)]
+    S -->|Redisson 分布式锁/缓存| R[(Redis 7.x)]
+    S -->|V1 接口 MD5 验签| P[彩虹易支付<br/>独立部署]
+    P -->|异步回调 success| S
+```
+
+### 鉴权分层
+
+```mermaid
+graph LR
+    subgraph 后台
+        D[开发者/管理员<br/>JWT Bearer]
+        D -.->|JJWT 0.12.6<br/>HMAC-SHA256 24h| DC[DevController<br/>AuthContext]
+    end
+    subgraph H5
+        H[H5 终端用户<br/>X-H5-Token 头]
+        H -.->|UUID 24h<br/>DB+Redis 双写| HC[H5Controller<br/>H5AuthContext]
+    end
+    subgraph SDK
+        K[客户端 SDK<br/>HMAC-SHA256 签名]
+        K -.->|每软件独立 signSecret| SC[SdkController<br/>SoftwareContext]
+    end
+    DC --- E[三套独立鉴权<br/>互不依赖]
+    HC --- E
+    SC --- E
+```
+
+### 资金数据流
+
+```mermaid
+sequenceDiagram
+    participant U as 终端用户 H5
+    participant S as ShopController
+    participant O as jicek_pay_order
+    participant P as 彩虹易支付
+    participant N as PayNotifyService
+    participant T as PaymentTransactionService
+    participant C as jicek_card_key
+    participant A as CommissionService
+    U->>S: POST /api/h5/shop/order（X-H5-Token）
+    S->>O: 写入订单 status=0 待支付
+    S-->>U: 返回支付链接
+    U->>P: 跳转支付
+    P->>N: 异步回调（GET/POST /pay/notify/{tenantId}）
+    N->>N: Redisson 锁 + MD5 验签 + 幂等校验
+    N->>T: processPaymentSuccess(order)
+    T->>O: 流转 status 0→1 已支付
+    T->>C: 生成 N 张卡密（AES-256-GCM 加密入库）
+    T->>A: 触发分润 grantCommission（待接入）
+    N-->>P: 返回纯字符串 success
+    N-->>U: 卡密发放完成
+```
+
+### 核心表 ER 图
+
+```mermaid
+erDiagram
+    jicek_software ||--o{ jicek_card_type : "1:N"
+    jicek_software ||--o{ jicek_device : "1:N"
+    jicek_card_type ||--o{ jicek_card_key : "1:N"
+    jicek_card_type ||--o{ jicek_shop_product : "1:N"
+    jicek_card_type ||--o{ jicek_agent_package : "1:N"
+    jicek_pay_order }o--|| jicek_card_type : "购买卡类"
+    jicek_agent ||--o{ jicek_agent : "parent_id 自关联"
+    jicek_agent ||--o{ jicek_commission : "受益"
+    jicek_agent ||--o{ jicek_withdraw : "提现"
+    jicek_shop ||--o{ jicek_shop_product : "1:N"
+    jicek_software {
+        BIGINT id PK
+        BIGINT tenant_id FK
+        VARCHAR app_key
+        VARCHAR sign_secret "AES 加密"
+    }
+    jicek_card_type {
+        BIGINT id PK
+        BIGINT software_id FK
+        TINYINT type "1时长2次数3功能4永久"
+        DECIMAL price
+    }
+    jicek_card_key {
+        BIGINT id PK
+        BIGINT card_type_id FK
+        VARCHAR card_cipher "AES-256-GCM"
+        VARCHAR card_hash "SHA-256 索引"
+        TINYINT status "0未用1已用2封禁3退款4过期"
+    }
+    jicek_pay_order {
+        BIGINT id PK
+        VARCHAR out_trade_no
+        BIGINT card_type_id FK
+        DECIMAL amount
+        TINYINT status "0待付1已付2失败3退款4关闭"
+    }
+    jicek_agent {
+        BIGINT id PK
+        BIGINT parent_id "自关联"
+        INT level
+        DECIMAL balance
+        VARCHAR invite_code "v0.13.0"
+    }
+    jicek_shop {
+        BIGINT id PK
+        BIGINT tenant_id FK
+        VARCHAR path "uk_tenant_path"
+        TINYINT status "0关闭1开启"
+    }
+    jicek_shop_product {
+        BIGINT id PK
+        BIGINT shop_id FK
+        BIGINT card_type_id FK
+        DECIMAL price "覆盖卡类售价"
+        TINYINT status "0下架1上架"
+    }
+```
+
+### 卡密状态机
+
+```mermaid
+stateDiagram-v2
+    [*] --> 未使用: 生成（AES 加密入库）
+    未使用 --> 已使用: 首次登录验证
+    已使用 --> 已封禁: 管理员封禁
+    已使用 --> 已退款: 退款（同事务失效）
+    已使用 --> 已过期: 到期/次数耗尽
+    未使用 --> 已封禁: 管理员封禁
+    已封禁 --> [*]
+    已退款 --> [*]
+    已过期 --> [*]
 ```
 
 ## 快速开始
@@ -257,6 +403,22 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 
 返回纯字符串 `success`（无 BOM、无空格、无 JSON 包裹）。
 
+### H5 API（`/api/h5/**`，X-H5-Token 鉴权独立于 JWT，v0.13.0）
+
+| 端点 | 鉴权 | 说明 |
+|---|---|---|
+| `POST /api/h5/auth/login` | 公开 | 卡密登录（appKey + cardKey），返回 X-H5-Token |
+| `GET /api/h5/auth/my-card` | 需 X-H5-Token | 我的卡密（按 cardType 渲染） |
+| `POST /api/h5/auth/logout` | 需 X-H5-Token | 退出登录（清 Redis+DB） |
+| `GET /api/h5/announcement` | 需 X-H5-Token | H5 公告列表（复用 AnnouncementService H5 重载） |
+| `POST /api/h5/agent/register` | 公开 | 代理邀请码注册（appKey + inviteCode） |
+| `GET /api/h5/shop/info?path=xxx` | 公开 | H5 店铺信息（路径模式查询） |
+| `POST /api/h5/shop/order` | 需 X-H5-Token | H5 下单（写 jicek_pay_order status=0） |
+
+### Dev Shop API（`/api/dev/shop/**`，@AuthRequired JWT，v0.13.0）
+
+11 接口：店铺 CRUD + 开关 + 商品 CRUD + 商品列表，详见 [PROMPT.md](PROMPT.md) 7.5 节。
+
 ## 数据库表（核心）
 
 | 表名 | 说明 |
@@ -266,6 +428,9 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 | `jicek_card_type` | 卡类（时长/次数/功能/永久 四种） |
 | `jicek_card_key` | 卡密（AES-256-GCM 加密 + SHA-256 哈希索引） |
 | `jicek_software` | 软件（AppKey + 签名密钥 + RSA 密钥对） |
+| `jicek_h5_session` | H5 会话（h5_token UUID + cardKeyId + 24h 过期，Redis 加速） |
+| `jicek_shop` | 内嵌卡网店铺（tenantId + path 唯一 + status 开关） |
+| `jicek_shop_product` | 卡网商品（shopId + cardTypeId 唯一 + price 覆盖卡类售价） |
 | `jicek_device` | 设备（指纹哈希 + 在线状态） |
 | `jicek_agent` | 代理（多级树形结构 + 余额 + 分润） |
 

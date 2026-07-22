@@ -403,6 +403,27 @@
 | 离线 | ● 离线 | 灰色 `#9CA3AF` |
 | 封禁 | 已封禁 | 红色 `#B23A3A` |
 
+### 8.4 H5 移动端布局（v0.13.0）
+- 设计稿 375px（iPhone 标准），实际容器 max-width 480px 居中（兼容 PC 浏览）
+- 顶部导航 44px（返回按钮 + 标题 + 右侧占位）
+- 底部 Tab 栏 56px（4 Tab：我的卡密 / 公告 / 购卡 / 退出，当前路由高亮 `#1A4D8F`）
+- 内容区内边距 16px，`overflow-y: auto`
+- 字号比 PC 略大：标题 18px，正文 15px，辅助 13px
+- 触控目标最小 44×44px（iOS HIG）
+
+### 8.5 内嵌卡网管理页面（v0.13.0）
+- 开发者后台：店铺表格 + 商品管理双层弹窗（店铺弹窗内嵌商品列表弹窗）
+- 店铺状态切换：开启/关闭用 `el-switch` 直接切换（无需弹窗）
+- 商品价格输入：AmountInput 组件（decimal.js 精度），可覆盖卡类售价
+- H5 店铺页：店铺卡片 + 商品卡片纵向列表，商品卡片右侧「立即购买」按钮
+- H5 订单页：数量选择器（`el-input-number` min=1 max=99）+ 支付方式 radio + 金额合计 + 确认按钮
+
+### 8.6 H5 鉴权跳转（v0.13.0）
+- H5 token 存 localStorage（key: `jicek_h5_token`），独立于开发者 JWT（key: `jicek_token`）
+- 未登录访问需鉴权页面 → 跳 `/h5/login?redirect=xxx`
+- `H5Layout.vue` onMounted 检查 token，无 token 跳登录
+- 退出登录：调 `h5Api.logout` 后清理 localStorage + 跳 `/h5/login`
+
 ## 9. 交互规范
 
 ### 9.1 加载状态
