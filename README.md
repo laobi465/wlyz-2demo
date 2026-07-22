@@ -2,7 +2,7 @@
 
 > 面向开发者的多租户卡密验证 SaaS 平台 · 基于 RuoYi-Vue-Plus 技术栈 · 国产开源可私有部署
 
-[![Version](https://img.shields.io/badge/version-0.3.0--SNAPSHOT-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.6-green)](https://spring.io/projects/spring-boot)
@@ -18,11 +18,32 @@
 - **8 语言 SDK 全覆盖**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
 - **最前沿加密**：AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4）
 
-## 当前版本（v0.3.0）
+## 当前版本（v0.3.1）
 
 ### 已完成 ✅
 
-#### 设备指纹与绑定模块（v0.3.0 新增）
+#### 8 语言客户端 SDK（v0.3.1 新增）
+统一契约规范见 [sdk/README.md](sdk/README.md)，所有 SDK 实现完全一致的接口语义：
+
+| 语言 | 目录 | 依赖特点 |
+|---|---|---|
+| Java | [sdk/java/](sdk/java/) | JDK 17+ HttpClient + 自研 JSON 解析器，零第三方依赖 |
+| Python | [sdk/python/](sdk/python/) | stdlib + cryptography（RSA） |
+| Node.js | [sdk/nodejs/](sdk/nodejs/) | crypto + https，零依赖 |
+| Go | [sdk/go/](sdk/go/) | stdlib，零依赖 |
+| C# | [sdk/csharp/](sdk/csharp/) | BCL，.NET 6+ |
+| C++ | [sdk/cpp/](sdk/cpp/) | OpenSSL + libcurl |
+| Lua | [sdk/lua/](sdk/lua/) | luaossl/luasocket 可选，回退 openssl/curl CLI |
+| Shell | [sdk/shell/](sdk/shell/) | bash 4+ + curl + openssl，jq 可选 |
+| 易语言 | [sdk/epl/](sdk/epl/) | 精易模块（原生）/ jicek.dll（DLL 方案） |
+
+核心契约：
+- **统一签名**：`METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256` → HMAC-SHA256 → Base64
+- **5 维设备指纹**：CPU/主板/硬盘/网卡/BIOS 各自 SHA-256 → 拼接 → SHA-256，VM/容器补充维度
+- **RSA-2048-OAEP**：卡密 + 5 维哈希 JSON 加密传输
+- **动态心跳**：服务端控制 5-300s 间隔 + 客户端指数退避（1/2/4/8/max 30s）+ 5 次失败断开
+
+#### 设备指纹与绑定模块（v0.3.0）
 - 5 维 SHA-256 融合指纹（CPU+主板+硬盘+网卡+BIOS）
 - VM/容器补充维度（VM UUID / 容器 ID）
 - RSA 加密传输 + 服务端独立计算（防篡改）+ 常量时间比对（防时序攻击）
@@ -50,12 +71,11 @@
 - Layout：220px 左侧导航 + 60px 顶栏 + 主内容区
 - 5 个核心页面：控制台 / 卡密生成 / 卡密查询 / 支付配置 / 资金流水
 
-### 待实现（v0.3.0+）
+### 待实现（v0.4.0+）
 
-- 8 语言客户端 SDK
-- 设备指纹采集与绑定（CPU/主板/硬盘/网卡/BIOS）
 - 多级代理 + 分润 + 提现工作流（WarmFlow）
 - 前端补全（软件/卡类/用户/设备/代理管理 + ECharts + H5）
+- CardKeyService.useCard 完整流程接入 + Sa-Token 鉴权
 - 云变量 / 云函数（沙箱）/ 远程公告
 - GitHub Webhook 自动更新部署
 
@@ -121,6 +141,17 @@ wlyz-2demo/
 │   ├── PROJECT.md                    # 项目文档
 │   ├── SPEC.md                       # 规范文档
 │   └── UI-DESIGN.md                  # UI 设计规范
+├── sdk/                              # ★ 8 语言客户端 SDK（v0.3.1）
+│   ├── README.md                     # 统一契约规范
+│   ├── java/                         # Java SDK（参考实现）
+│   ├── python/                       # Python SDK
+│   ├── nodejs/                       # Node.js SDK
+│   ├── go/                           # Go SDK
+│   ├── csharp/                       # C# SDK
+│   ├── cpp/                          # C++ SDK
+│   ├── lua/                          # Lua SDK
+│   ├── shell/                        # Shell SDK
+│   └── epl/                          # 易语言模块
 ├── CHANGELOG.md                      # 更新日志
 ├── TODO.md                           # 任务清单
 └── README.md                         # 本文件

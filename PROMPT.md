@@ -24,12 +24,13 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.3.0-SNAPSHOT |
+| 当前版本 | v0.3.1 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板） |
 | 支付 | 彩虹易支付 V1（独立部署，仅 V1，无 V2） |
 | 加密 | AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4） |
+| SDK | 8 语言（Java/Python/Node.js/Go/C#/C++/Lua/Shell + 易语言），统一契约见 sdk/README.md |
 
 ## 2. 已完成模块（v0.2.0）
 
@@ -46,6 +47,7 @@
 | 资金事务 | `transaction/PaymentTransactionService` | ✅ |
 | 控制台 | `dashboard/controller/DevDashboardController` | ✅ |
 | 设备模块 | `device/` (entity/mapper/dto/fingerprint/service/controller) | ✅ v0.3.0 |
+| 客户端 SDK | `sdk/` (java/python/nodejs/go/csharp/cpp/lua/shell/epl) | ✅ v0.3.1 |
 
 ### 前端（jicek-ui）
 
@@ -67,11 +69,15 @@
 
 详见 [TODO.md](TODO.md)，摘要：
 
-### P1（高，v0.3.0 计划）
-- **8 语言客户端 SDK**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
-  - 每个 SDK 必须有三件套：签名（HMAC-SHA256）+ 心跳（动态间隔）+ 卡密验证
-  - 每个 SDK 必须实现设备指纹采集（5 维 + VM 检测）
+### P1（高，v0.3.1 已完成 ✅）
+- **8 语言客户端 SDK**：Java / Python / Node.js / Go / C# / C++ / Lua / Shell + 易语言
+  - 统一契约规范：[sdk/README.md](sdk/README.md)
+  - 所有 SDK 实现完全一致的接口语义：签名（HMAC-SHA256）+ 心跳（动态间隔+指数退避）+ 卡密验证 + 5 维设备指纹采集
 - **设备指纹采集与绑定**：✅ 已完成 v0.3.0
+
+### P1（高，v0.3.2 计划）
+- **SDK 联调**：接入真实服务端联调测试 + 加壳工具推荐文档（VMProtect/Themida/Enigma）
+- **CardKeyService.useCard 完整流程**：DeviceService.bindDevice 接入卡密校验 + Sa-Token 鉴权 + software 表读取签名密钥/心跳间隔
 - **前端补全**：
   - 软件管理页面、卡类管理页面、用户管理页面、设备管理页面、代理管理页面
   - ECharts 数据统计图表

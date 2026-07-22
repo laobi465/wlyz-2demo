@@ -64,20 +64,21 @@
 
 ## P1（高）
 
-### [待开始] 客户端 SDK 8 语言实现
+### [已完成] 客户端 SDK 8 语言实现 ✅
 - 优先级：P1
-- 预计版本：v0.3.1
-- 子项：
-  - [ ] Java SDK
-  - [ ] C# SDK
-  - [ ] Python SDK
-  - [ ] Go SDK
-  - [ ] Node.js SDK
-  - [ ] C++ SDK
-  - [ ] 易语言模块
-  - [ ] Lua SDK
-  - [ ] Shell SDK
-- 备注：每个 SDK 必须有签名 + 心跳 + 卡密验证三件套，且需实现设备指纹采集（5 维 + VM 检测）
+- 完成版本：v0.3.1
+- 完成项：
+  - [x] Java SDK（12 文件，零第三方依赖，自研 JSON 解析器）
+  - [x] Python SDK（stdlib + cryptography）
+  - [x] Node.js SDK（crypto + https，零依赖）
+  - [x] Go SDK（stdlib，零依赖）
+  - [x] C# SDK（BCL，.NET 6+）
+  - [x] C++ SDK（OpenSSL + libcurl）
+  - [x] Lua SDK（luaossl/luasocket 可选，回退 openssl/curl CLI）
+  - [x] Shell SDK（bash 4+ + curl + openssl，jq 可选）
+  - [x] 易语言模块（精易模块原生方案 + C++ DLL 方案）
+- 统一契约规范：[sdk/README.md](sdk/README.md)
+- 备注：v0.3.2 待接入真实服务端联调测试 + 加壳工具推荐文档
 
 ### [待开始] 多级代理 + 分润
 - 优先级：P1

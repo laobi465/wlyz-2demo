@@ -1,5 +1,29 @@
 # 更新日志
 
+## [0.3.1] - 2026-07-22
+
+### [新增] 8 语言客户端 SDK 完整实现
+统一契约规范见 [sdk/README.md](sdk/README.md)，所有 SDK 实现完全一致的接口语义（签名 / 心跳 / 卡密验证 / 设备指纹采集）。
+
+| 语言 | 目录 | 关键依赖 | 文件数 |
+|---|---|---|---|
+| Java | `sdk/java/` | JDK 17+ HttpClient + 自研 JSON 解析器（零第三方依赖） | 12 |
+| Python | `sdk/python/` | stdlib + cryptography（RSA） | 3 |
+| Node.js | `sdk/nodejs/` | crypto + https（零依赖） | 3 |
+| Go | `sdk/go/` | stdlib（零依赖） | 4 |
+| C# | `sdk/csharp/` | BCL（.NET 6+） | 5 |
+| C++ | `sdk/cpp/` | OpenSSL + libcurl | 5 |
+| Lua | `sdk/lua/` | luaossl/luasocket 可选，回退 openssl/curl CLI | 3 |
+| Shell | `sdk/shell/` | bash 4+ + curl + openssl（jq 可选） | 3 |
+| 易语言 | `sdk/epl/` | 精易模块（原生方案）/ jicek.dll（DLL 方案） | 3 |
+
+核心特性：
+- **统一签名**：`METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256` → HMAC-SHA256 → Base64
+- **5 维设备指纹**：CPU/主板/硬盘/网卡/BIOS 各自 SHA-256 → 拼接 → SHA-256，VM/容器补充维度
+- **RSA-2048-OAEP**：卡密 + 5 维哈希 JSON 加密传输
+- **动态心跳**：服务端控制 5-300s 间隔 + 客户端指数退避（1/2/4/8/max 30s）+ 5 次失败断开
+- **跨平台指纹采集**：Windows (wmic) / Linux (/proc + dmidecode) / macOS (sysctl + ioreg)
+
 ## [0.3.0] - 2026-07-21
 
 ### [新增] 设备指纹采集与绑定模块
@@ -103,7 +127,7 @@
 
 ## 待发布版本（开发中）
 
-### [未发布] v0.3.0
-- 8 语言客户端 SDK（Java/C#/Python/Go/Node/C++/易语言/Lua/Shell）
-- 设备指纹采集与绑定
-- 数据统计图表（ECharts）
+### [未发布] v0.4.0
+- 多级代理 + 分润 + 提现工作流（WarmFlow）
+- 前端补全：软件/卡类/用户/设备/代理管理 + ECharts + H5
+- CardKeyService.useCard 完整流程接入 + Sa-Token 鉴权 + software 表读取签名密钥/心跳间隔
