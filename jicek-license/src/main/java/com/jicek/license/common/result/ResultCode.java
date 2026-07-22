@@ -42,6 +42,16 @@ public enum ResultCode {
     CARD_GEN_FAIL(1010, "卡密生成失败"),
     CARD_QUERY_RATE_LIMIT(1011, "卡密查询频率超限"),
 
+    /* ============ 软件模块 1012-1020 ============ */
+    SOFTWARE_NOT_FOUND(1012, "软件不存在"),
+    SOFTWARE_NAME_EXISTS(1013, "同租户下软件名称已存在"),
+    SOFTWARE_HAS_CARD_TYPE(1014, "软件下存在卡类，无法删除"),
+    SOFTWARE_HAS_DEVICE(1015, "软件下存在设备，无法删除"),
+    SOFTWARE_HAS_CLOUD_FUNC(1016, "软件下存在云函数，无法删除"),
+    SOFTWARE_DISABLED(1017, "软件已禁用"),
+    SOFTWARE_PARAM_INVALID(1018, "软件参数非法"),
+    SOFTWARE_PERMISSION_DENIED(1019, "无权操作该软件"),
+
     /* ============ 支付模块 2001-2999 ============ */
     PAY_CONFIG_NOT_FOUND(2001, "支付配置不存在"),
     PAY_MERCHANT_KEY_ERROR(2002, "商户密钥错误"),

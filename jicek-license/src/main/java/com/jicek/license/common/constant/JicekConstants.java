@@ -285,4 +285,24 @@ public final class JicekConstants {
     public static final String JWT_HEADER_PREFIX = "Bearer ";
     /** Authorization 头名 */
     public static final String AUTH_HEADER = "Authorization";
+
+    /* ============ 软件模块（v0.8.0） ============ */
+    /** appKey 长度（32 字符，大写字母+数字） */
+    public static final int SOFTWARE_APP_KEY_LENGTH = 32;
+    /** signSecret 长度（32 字节，Base64 编码后 44 字符） */
+    public static final int SOFTWARE_SIGN_SECRET_BYTES = 32;
+    /** RSA 密钥长度（2048 位） */
+    public static final int SOFTWARE_RSA_KEY_SIZE = 2048;
+    /** 软件状态：禁用 */
+    public static final int SOFTWARE_DISABLED = 0;
+    /** 软件状态：启用 */
+    public static final int SOFTWARE_ENABLED = 1;
+    /** 心跳间隔下限（秒） */
+    public static final int SOFTWARE_HEARTBEAT_MIN = 5;
+    /** 心跳间隔上限（秒） */
+    public static final int SOFTWARE_HEARTBEAT_MAX = 300;
+    /** 最大并发会话下限 */
+    public static final int SOFTWARE_MAX_CONCURRENT_MIN = 1;
+    /** signSecret 脱敏展示前缀长度 */
+    public static final int SOFTWARE_SECRET_MASK_PREFIX = 4;
 }

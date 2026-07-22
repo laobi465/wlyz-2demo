@@ -22,6 +22,10 @@
           <el-icon><Odometer /></el-icon>
           <span>控制台</span>
         </el-menu-item>
+        <el-menu-item index="/software">
+          <el-icon><Cpu /></el-icon>
+          <span>软件管理</span>
+        </el-menu-item>
         <el-sub-menu index="card">
           <template #title>
             <el-icon><Key /></el-icon>

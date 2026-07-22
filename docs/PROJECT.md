@@ -101,9 +101,15 @@
 │       │   ├── service # JwtService（HMAC-SHA256） + AuthService（登录/当前用户/改密）
 │       │   ├── interceptor # AuthContext（ThreadLocal） + @AuthRequired 注解 + JwtAuthInterceptor
 │       │   └── controller # AuthController（/api/auth/* 4 接口）
+│       ├── software   # ★ 软件模块（v0.8.0 新增，CRUD + 密钥生成/轮换 + 关联校验）
+│       │   ├── entity  # Software
+│       │   ├── mapper  # SoftwareMapper
+│       │   ├── dto     # SoftwareSaveDTO / SoftwareDetailDTO / SoftwareCreateResultDTO
+│       │   ├── service # SoftwareService（CRUD + 密钥生成 + 轮换 + 关联校验）
+│       │   └── controller # DevSoftwareController（/api/dev/software/* 7 接口）
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架）
-    ├── src/api         # API 客户端 + 接口定义（authApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理）
+    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
     ├── src/router      # 路由配置（11 个页面路由）
@@ -123,6 +129,7 @@
         ├── deploy      # ★ 部署管理（v0.5.0 新增，3 状态卡片 + 手动触发 + 审计日志 + 状态轮询）
         └── ticket      # ★ 工单管理（v0.6.0 新增，双 Tab：收件箱 + 已提交 + 详情对话流）
         └── login       # ★ 登录页（v0.7.0 新增，租户ID+用户名+密码 + 表单校验）
+        └── software    # ★ 软件管理（v0.8.0 新增，CRUD + 密钥展示弹窗 + 轮换二次确认）
 ```
 
 ### 2.3 数据流

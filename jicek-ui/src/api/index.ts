@@ -24,6 +24,47 @@ export const dashboardApi = {
   summary: (tenantId: number) => api.get('/api/dev/dashboard/summary', { tenantId })
 }
 
+/* ============ 软件管理（v0.8.0，tenantId 由后端从 AuthContext 获取） ============ */
+export const softwareApi = {
+  // 分页查询（name 模糊匹配，enabled 状态过滤）
+  page: (params: { current?: number; size?: number; name?: string; enabled?: number }) =>
+    api.get('/api/dev/software/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      name: params.name,
+      enabled: params.enabled
+    }),
+  // 详情（signSecret 脱敏，无 rsaPrivateKey）
+  get: (id: number) => api.get(`/api/dev/software/${id}`),
+  // 创建（返回含 signSecret + rsaPrivateKey 明文，仅此一次）
+  create: (data: {
+    name: string
+    version?: string
+    minVersion?: string
+    heartbeatInterval?: number
+    maxConcurrent?: number
+    enabled?: number
+  }) => api.post('/api/dev/software', data),
+  // 更新（仅非敏感字段，id 必填）
+  update: (data: {
+    id: number
+    name: string
+    version?: string
+    minVersion?: string
+    heartbeatInterval?: number
+    maxConcurrent?: number
+    enabled?: number
+  }) => api.put('/api/dev/software', data),
+  // 删除（关联卡类/设备/云函数时拒绝）
+  delete: (id: number) => api.delete(`/api/dev/software/${id}`),
+  // 轮换签名密钥（返回新明文，仅此一次）
+  regenerateSignSecret: (id: number) =>
+    api.post(`/api/dev/software/${id}/regenerate-sign-secret`),
+  // 轮换 RSA 密钥对（返回新公钥 + 私钥明文，仅此一次）
+  regenerateRsaKey: (id: number) =>
+    api.post(`/api/dev/software/${id}/regenerate-rsa-key`)
+}
+
 /* ============ 卡密 ============ */
 export const cardKeyApi = {
   generate: (data: any) => api.post('/api/dev/card/generate', data),

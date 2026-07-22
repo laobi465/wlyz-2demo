@@ -30,6 +30,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '控制台', icon: 'Odometer' }
       },
       {
+        path: 'software',
+        name: 'Software',
+        component: () => import('@/views/dev/software/index.vue'),
+        meta: { title: '软件管理', icon: 'Cpu' }
+      },
+      {
         path: 'card-key-gen',
         name: 'CardKeyGen',
         component: () => import('@/views/dev/card-key-gen/index.vue'),

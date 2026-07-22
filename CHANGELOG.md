@@ -1,5 +1,30 @@
 # 更新日志
 
+## [0.8.0] - 2026-07-22
+
+### [新增] 软件管理模块（卡密/设备/云函数的父实体，接入鉴权框架）
+
+软件表 `jicek_software` 早已存在但后端无模块，本次补全垂直切片。所有接口 `@AuthRequired(role=ROLE_DEV)`，tenantId 从 AuthContext 获取，前端禁传（防越权）。
+
+- **后端**：`software/` 模块（entity/mapper/dto/service/controller）
+  - `Software` entity + `SoftwareMapper`
+  - 3 DTO：`SoftwareSaveDTO`（JSR-303 校验）/ `SoftwareDetailDTO`（signSecret 脱敏，无 rsaPrivateKey）/ `SoftwareCreateResultDTO`（明文一次性返回）
+  - `SoftwareService`：create/update/page/get/delete/regenerateSignSecret/regenerateRsaKey
+  - `DevSoftwareController`：7 接口，类级 `@AuthRequired(role=ROLE_DEV)`
+- **密钥自动生成**：
+  - appKey：SecureRandom 32 字符（大写字母+数字），全局唯一查重（最多 5 次重试）
+  - signSecret：SecureRandom 32 字节 → Base64，AES-256-GCM 加密存储
+  - RSA-2048 密钥对：公钥明文 + 私钥 AES-256-GCM 加密存储
+- **密钥轮换**：`POST /{id}/regenerate-sign-secret` + `POST /{id}/regenerate-rsa-key`，返回新明文（仅此一次）
+- **删除关联校验**：关联卡类/设备/云函数时拒绝删除（错误码 1014/1015/1016）
+- **安全铁律**：signSecret 查询返回脱敏（前 4 字符 + ****）；rsaPrivateKey 永不返回；所有操作校验 `software.tenantId == AuthContext.currentTenantId()`
+- **错误码**：1012-1019 共 8 个（SOFTWARE_NOT_FOUND/NAME_EXISTS/HAS_CARD_TYPE/HAS_DEVICE/HAS_CLOUD_FUNC/DISABLED/PARAM_INVALID/PERMISSION_DENIED）
+- **前端**：
+  - `softwareApi` 7 方法
+  - `views/dev/software/index.vue` 软件管理页（列表 + 创建/编辑弹窗 + 密钥展示弹窗 + 轮换二次确认 + 复制按钮）
+  - 密钥展示弹窗：`show-close=false` + `close-on-click-modal=false` + 警告「仅此一次展示」
+  - 路由 `/software` + DevLayout 菜单「软件管理」入口
+
 ## [0.7.0] - 2026-07-22
 
 ### [新增] 鉴权框架（JWT + BCrypt + @AuthRequired 渐进式鉴权）

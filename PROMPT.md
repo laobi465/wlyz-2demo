@@ -54,6 +54,7 @@
 | 部署模块 | `deploy/` (entity/mapper/dto/service/controller) | ✅ v0.5.0 |
 | 工单模块 | `ticket/` (entity/mapper/dto/service/controller) | ✅ v0.6.1（单向：开发者→管理员） |
 | 鉴权模块 | `auth/` (entity/mapper/dto/service/interceptor/controller) | ✅ v0.7.0（JWT + @AuthRequired 渐进式） |
+| 软件模块 | `software/` (entity/mapper/dto/service/controller) | ✅ v0.8.0（CRUD + 密钥生成/轮换 + 关联校验 + @AuthRequired） |
 
 ### 前端（jicek-ui）
 
@@ -82,6 +83,7 @@
 | 路由守卫 | `src/router/index.ts` beforeEach | ✅ v0.7.0（无 token 跳 /login） |
 | 拦截器鉴权 | `src/api/request.ts` | ✅ v0.7.0（自动注入 Bearer + 401/9001/9002/9003 跳登录） |
 | 布局鉴权 | `src/layout/DevLayout.vue` | ✅ v0.7.0（用户昵称头像 + 退出 + 修改密码弹窗） |
+| 软件管理页 | `src/views/dev/software/` | ✅ v0.8.0（CRUD + 密钥展示弹窗 + 轮换二次确认） |
 
 ## 3. 待办任务（按优先级）
 
@@ -325,6 +327,18 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | GET | `/api/auth/me` | 获取当前登录用户信息（@AuthRequired） |
 | POST | `/api/auth/change-password` | 修改密码（@AuthRequired，body: oldPassword/newPassword，新密码 ≥ 8 位） |
 
+### 7.2.1 软件 API（`/api/dev/software/*`，全部 @AuthRequired(role=ROLE_DEV)，tenantId 从 AuthContext 获取）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/dev/software` | 创建软件（自动生成 appKey/signSecret/RSA，返回明文仅此一次） |
+| PUT | `/api/dev/software` | 更新软件（仅非敏感字段：name/version/minVersion/heartbeatInterval/maxConcurrent/enabled） |
+| GET | `/api/dev/software/page` | 分页查询（params: current/size/name/enabled） |
+| GET | `/api/dev/software/{id}` | 详情（signSecret 脱敏，无 rsaPrivateKey） |
+| DELETE | `/api/dev/software/{id}` | 删除（关联卡类/设备/云函数时拒绝） |
+| POST | `/api/dev/software/{id}/regenerate-sign-secret` | 轮换签名密钥（返回新明文仅此一次） |
+| POST | `/api/dev/software/{id}/regenerate-rsa-key` | 轮换 RSA 密钥对（返回新公钥+私钥明文仅此一次） |
+
 ### 7.3 公开回调
 
 | 方法 | 路径 | 返回 |
@@ -471,6 +485,12 @@ const status = await deployApi.status()
 43. **JWT claims 不可信**（v0.7.0）：JWT 仅证明「未被篡改」不证明「用户仍有效」。`/api/auth/me` 与所有 @AuthRequired 接口如需保证用户当前状态，应从数据库查询 `jicek_dev_user`/`jicek_admin_user` 校验 status=1（AuthService.currentUser 已实现，新接口从 AuthContext 取身份后视需要二次查库）。
 44. **密钥未配置的容错**（v0.7.0）：生产环境必须配置 `JICEK_JWT_SECRET`；开发环境若未配置，应用可启动但所有鉴权接口返回 9002，便于本地开发快速发现问题而不阻塞启动。
 45. **前端 token 失效跳转防重复**（v0.7.0）：`clearAuthAndRedirect()` 检查 `window.location.pathname` 是否已为 `/login`，避免在登录页因 401 响应触发死循环跳转。localStorage key：`jicek_token`（token）+ `jicek_user`（JSON 序列化的用户信息）。
+46. **软件密钥明文仅此一次**（v0.8.0）：`SoftwareCreateResultDTO` 含 signSecret + rsaPrivateKey 明文，**仅在创建/轮换接口返回**。查询接口（`get`/`page`）返回 `SoftwareDetailDTO`，signSecret 脱敏（前 4 字符 + ****），rsaPrivateKey 永不返回。前端密钥展示弹窗 `show-close=false` + `close-on-click-modal=false`，强制用户点击「我已保存」。
+47. **软件 tenantId 从 AuthContext 获取**（v0.8.0）：`SoftwareService.requireCurrentTenantId()` 从 ThreadLocal 取租户身份，前端禁传 tenantId（防越权）。`requireOwnedSoftware(id, tenantId)` 校验 `software.tenantId == AuthContext.currentTenantId()`，不匹配抛 `SOFTWARE_PERMISSION_DENIED`(1019)。
+48. **软件密钥入库必须 AES 加密**（v0.8.0）：`signSecret` 和 `rsaPrivateKey` 入库前必须 `aesCryptoService.encrypt()`，查询时 `decrypt()` 后脱敏展示。明文禁入库（铁律 04 禁硬编码扩展：禁明文存储敏感密钥）。`appKey` 和 `rsaPublicKey` 可明文存储（客户端可见）。
+49. **软件删除关联校验**（v0.8.0）：`SoftwareService.delete()` 删除前必须校验关联卡类/设备/云函数，存在则抛 `SOFTWARE_HAS_CARD_TYPE`(1014) / `SOFTWARE_HAS_DEVICE`(1015) / `SOFTWARE_HAS_CLOUD_FUNC`(1016)。防止删除软件后子实体成为孤儿数据。
+50. **appKey 全局唯一查重**（v0.8.0）：`generateUniqueAppKey()` 生成后查 `jicek_software.app_key` 是否冲突，最多重试 5 次。虽 32 字符随机冲突概率极低（36^32 ≈ 2^165），但铁律要求健壮性。冲突超限抛 `FAIL`。
+51. **密钥轮换影响范围**（v0.8.0）：轮换 signSecret 后所有客户端 SDK 需更新配置（HMAC-SHA256 签名失效）；轮换 RSA 密钥对后所有客户端加密的卡密将无法解密（需重新发放或更新客户端）。前端轮换操作必须二次确认 + 警告提示。
 
 ## 12. 验证清单
 
