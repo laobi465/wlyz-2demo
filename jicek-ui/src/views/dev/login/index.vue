@@ -11,8 +11,8 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <div class="logo-text">极策k</div>
-        <div class="logo-sub">网络验证 · 开发者后台</div>
+        <div class="logo-text">{{ t('login.title') }}</div>
+        <div class="logo-sub">{{ t('login.subtitle') }}</div>
       </div>
 
       <el-form
@@ -23,28 +23,28 @@
         size="large"
         @submit.prevent="handleLogin"
       >
-        <el-form-item label="租户ID" prop="tenantId">
+        <el-form-item :label="t('login.tenantId')" prop="tenantId">
           <el-input
             v-model.number="form.tenantId"
-            placeholder="请输入租户ID（数字）"
+            :placeholder="t('login.tenantIdPlaceholder')"
             type="number"
             clearable
           />
         </el-form-item>
 
-        <el-form-item label="用户名" prop="username">
+        <el-form-item :label="t('login.username')" prop="username">
           <el-input
             v-model="form.username"
-            placeholder="请输入用户名"
+            :placeholder="t('login.usernamePlaceholder')"
             clearable
           />
         </el-form-item>
 
-        <el-form-item label="密码" prop="password">
+        <el-form-item :label="t('login.password')" prop="password">
           <el-input
             v-model="form.password"
             type="password"
-            placeholder="请输入密码（至少 8 位）"
+            :placeholder="t('login.passwordPlaceholder')"
             show-password
             clearable
             @keyup.enter="handleLogin"
@@ -58,7 +58,7 @@
             :loading="loading"
             @click="handleLogin"
           >
-            登 录
+            {{ loading ? t('login.logging') : t('login.login') }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -73,10 +73,12 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { authApi } from '@/api'
 import { TOKEN_KEY, USER_KEY } from '@/api/request'
 
+const { t } = useI18n()
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -89,11 +91,11 @@ const form = reactive({
 
 const rules: FormRules = {
   tenantId: [
-    { required: true, message: '请输入租户ID', trigger: 'blur' },
+    { required: true, message: t('login.tenantIdRequired'), trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (!Number.isInteger(Number(value)) || Number(value) <= 0) {
-          callback(new Error('租户ID必须为正整数'))
+          callback(new Error(t('login.tenantIdInvalid')))
         } else {
           callback()
         }
@@ -102,12 +104,12 @@ const rules: FormRules = {
     }
   ],
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 64, message: '用户名长度 3-64 字符', trigger: 'blur' }
+    { required: true, message: t('login.usernameRequired'), trigger: 'blur' },
+    { min: 3, max: 64, message: t('login.usernameLength'), trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 8, max: 64, message: '密码长度 8-64 字符', trigger: 'blur' }
+    { required: true, message: t('login.passwordRequired'), trigger: 'blur' },
+    { min: 8, max: 64, message: t('login.passwordLength'), trigger: 'blur' }
   ]
 }
 
@@ -134,7 +136,7 @@ async function handleLogin() {
           nickname: result.nickname
         })
       )
-      ElMessage.success('登录成功')
+      ElMessage.success(t('login.loginSuccess'))
       router.push('/dashboard')
     } catch (e) {
       // 响应拦截器已统一提示

@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.13.0 |
+| 当前版本 | v0.14.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
@@ -61,6 +61,7 @@
 | h5/ | `h5/` (entity/mapper/dto/auth/service/controller) | ✅ v0.13.0（H5 终端用户验证界面，X-H5-Token 鉴权 + Redisson 会话） |
 | shop/ | `shop/` (entity/mapper/dto/service/controller) | ✅ v0.13.0（内嵌卡网：店铺 + 商品 + H5 下单） |
 | agent/ 扩展 | `agent/` (util/InviteCodeGenerator + dto/AgentRegisterDTO) | ✅ v0.13.0（invite_code/invited_by 字段 + H5 公开注册接口 + 邀请码生成器） |
+| enduser/ | `enduser/` (entity/mapper/dto/service/controller) | ✅ v0.14.0（终端用户账号体系，H5 账号密码登录复用 H5Session） |
 
 ### 前端（jicek-ui）
 
@@ -96,6 +97,8 @@
 | 对接文档页 | `src/views/dev/integration-doc/` | ✅ v0.12.0（接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引） |
 | H5 终端用户页（7 个） | `src/views/h5/*` | ✅ v0.13.0（H5Layout + login + my-card + announcement + agent/register + shop + shop/order） |
 | 内嵌卡网管理页 | `src/views/dev/shop/` | ✅ v0.13.0（店铺 CRUD + 商品双层弹窗 + 状态开关） |
+| 终端用户管理页 | `src/views/dev/end-user/` | ✅ v0.14.0（CRUD + 封禁 + 重置密码） |
+| 多语言国际化 | `src/i18n/` + `src/components/LangSwitch.vue` | ✅ v0.14.0（vue-i18n 9.x 中英文，渐进式改造） |
 
 ## 3. 待办任务（按优先级）
 
@@ -161,7 +164,7 @@
   - 前端部署管理页（3 状态卡片 + 手动触发 + 日志表格 + 状态轮询）+ 路由 /deploy + 侧边栏「系统设置」子菜单
 ### P3（低，v0.6.0 已完成工单系统 ✅）
 - **工单系统**：双向工单（终端用户→开发者 + 开发者→管理员）+ 状态机 + 分类 + 双 Controller + 前端双 Tab 页面。H5 前端 + 管理员端 Controller 待对应框架就绪后补全
-- 待开始：多语言国际化
+- ✅ 多语言国际化（v0.14.0 已完成，vue-i18n 9.x 中英文 + 渐进式改造）
 
 ## 4. 编码铁律（HARD，违反即重写）
 
@@ -391,6 +394,27 @@ SDK 请求头规范（所有 `/api/sdk/**` 必填）：
 
 11 接口：店铺 CRUD（save/page/get/update/delete）+ 店铺开关（toggle-status）+ 商品 CRUD（product-save/product-page/product-get/product-update/product-delete）+ 重新生成邀请码（POST `/api/dev/agent/{tenantId}/{agentId}/regenerate-invite-code`）。
 
+### 7.6 Dev End User API（`/api/dev/end-user/**`，@AuthRequired JWT，v0.14.0）
+
+8 接口：
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/dev/end-user` | 创建终端用户（tenantId + softwareId + username 三元唯一 + BCrypt 密码哈希） |
+| PUT | `/api/dev/end-user` | 更新终端用户（密码可空表示不改） |
+| DELETE | `/api/dev/end-user/{id}` | 删除终端用户 |
+| GET | `/api/dev/end-user/page` | 分页查询 |
+| GET | `/api/dev/end-user/{id}` | 详情 |
+| POST | `/api/dev/end-user/{id}/ban` | 封禁 |
+| POST | `/api/dev/end-user/{id}/unban` | 解封 |
+| POST | `/api/dev/end-user/reset-password` | 重置密码 |
+
+### 7.7 H5 End User API（v0.14.0）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/h5/end-user/login` | 终端用户账号密码登录（公开，appKey + username + password），返回 X-H5-Token |
+
 ## 8. 数据库表（核心）
 
 | 表名 | 关键字段 | 说明 |
@@ -413,6 +437,7 @@ SDK 请求头规范（所有 `/api/sdk/**` 必填）：
 | `jicek_h5_session` | `h5_token`(UUID) + `cardKeyId` + `tenantId` + `softwareId` + `expireTime` | H5 会话（v0.13.0，Redis 缓存加速 + DB 持久化） |
 | `jicek_shop` | `tenantId` + `softwareId` + `name` + `path`(uk_tenant_path 唯一) + `status` | 内嵌卡网店铺（v0.13.0） |
 | `jicek_shop_product` | `shopId` + `cardTypeId`(唯一) + `price`(覆盖卡类售价) + `sortOrder` + `status` | 卡网商品（v0.13.0） |
+| `jicek_end_user` | `tenantId` + `softwareId` + `username`(uk_tenant_software_username 三元唯一) + `passwordHash`(BCrypt) + `nickname` + `email` + `phone` + `status` | 终端用户（v0.14.0，与 jicek_dev_user 结构类似但绑定 softwareId） |
 
 完整 DDL 见 `jicek_init.sql`。
 
@@ -549,6 +574,8 @@ const status = await deployApi.status()
 58. **H5 鉴权独立于 JWT**（v0.13.0）：`/api/h5/**` 走 `X-H5-Token` 头（UUID，24h，DB+Redis 双写），H5AuthInterceptor 拦截，公开接口（login/agent-register/shop-info）需在 `WebMvcConfig.excludePathPatterns` 显式放行。`H5AuthContext` ThreadLocal 必须在 `afterCompletion` 清理，与 AuthContext/SoftwareContext 同理防串号。
 59. **H5 卡密校验复用 SDK 同源算法**（v0.13.0）：`H5AuthService.login()` 用 `Md5SignService.sha256Hex(cardKey)` 计算哈希后查 `jicek_card_key.card_hash` 索引，与 `SdkAuthService` 同源。但 H5 用明文卡密传输（依赖 HTTPS），SDK 用 RSA-2048-OAEP 加密传输。
 60. **代理邀请码注册继承规则**（v0.13.0）：新代理 `parentId=inviter.id` / `level=inviter.level+1` / `maxSubLevel=inviter.maxSubLevel-1` / `commissionRate=inviter.commissionRate`（继承）。邀请码 8 位 SecureRandom，字符集 `INVITE_CODE_CHARSET` 去易混淆字符 I/O/0/1。注册接口 `POST /api/h5/agent/register` 公开，无需 JWT 也无需 X-H5-Token。
+61. **终端用户账号登录复用 H5Session**（v0.14.0）：H5Session 表 `user_id` 字段（可空）与 `card_key_id`（可空）互斥——卡密登录填 cardKeyId/userId=null，账号登录填 userId/cardKeyId=null。EndUserService 自行生成 H5Session（不修改 H5AuthService），login 流程：appKey→查 Software→查 EndUser by (tenantId, softwareId, username)→BCrypt.checkpw 校验→生成 UUID token→存 H5Session。
+62. **多语言国际化渐进式改造**（v0.14.0）：vue-i18n 9.x Composition API 模式（legacy: false），useI18n() 在 setup 获取 t 函数。语言包按模块组织（common/lang/topbar/menu/login/endUser），新增页面应优先用 t() 而非硬编码中文。LangSwitch 切换后 location.reload() 同步 Element Plus 语言包（因 main.ts 仅初始化时按 localStorage 决定 EP locale）。localStorage key: `jicek_locale`。
 
 ## 12. 验证清单
 

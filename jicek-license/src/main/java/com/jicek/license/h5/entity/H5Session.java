@@ -17,7 +17,10 @@ public class H5Session {
     private Long id;
     private Long tenantId;
     private Long softwareId;
+    /** 卡密ID（卡密登录时填，账号登录时为 null） */
     private Long cardKeyId;
+    /** 终端用户ID（账号登录时填，卡密登录时为 null） */
+    private Long userId;
     private String cardNoMasked;
     private String h5Token;
     private String deviceInfo;

@@ -424,6 +424,20 @@
 - `H5Layout.vue` onMounted 检查 token，无 token 跳登录
 - 退出登录：调 `h5Api.logout` 后清理 localStorage + 跳 `/h5/login`
 
+### 8.7 多语言切换组件（v0.14.0）
+- 顶栏右侧下拉（el-dropdown trigger=click），与用户头像/退出按钮同区域
+- 触发器：图标 + 当前语言标签（简体中文 / English），hover 态用 --jicek-primary + --jicek-bg-secondary
+- 选项：简体中文 / English，当前语言 disabled
+- 切换后 location.reload() 同步 Element Plus 语言包（简化方案，避免响应式 EP locale 复杂度）
+- localStorage key: `jicek_locale`，持久化用户选择
+
+### 8.8 终端用户管理页面（v0.14.0）
+- 开发者后台：筛选区（软件下拉 + 用户名模糊 + 状态下拉）+ 表格 + 分页
+- 表格列：用户名 / 昵称 / 软件名 / 邮箱 / 手机号 / 状态（el-tag 正常绿色/封禁红色）/ 最后登录时间 / 创建时间 / 操作
+- 操作列：编辑 / 封禁-解封切换（el-button text）/ 重置密码（弹窗）/ 删除（ElMessageBox.confirm 二次确认）
+- 新建/编辑弹窗：EndUserSaveDTO 表单（软件下拉 + 用户名 + 密码 + 昵称 + 邮箱 + 手机号 + 状态 + 备注），编辑时密码可空表示不改
+- 重置密码弹窗：单字段（新密码）+ 确认按钮
+
 ## 9. 交互规范
 
 ### 9.1 加载状态

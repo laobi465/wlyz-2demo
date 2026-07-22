@@ -525,7 +525,8 @@ CREATE TABLE jicek_h5_session (
   id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
   tenant_id       BIGINT       NOT NULL COMMENT '所属开发者租户',
   software_id     BIGINT       NOT NULL COMMENT '所属软件',
-  card_key_id     BIGINT       NOT NULL COMMENT '关联卡密ID',
+  card_key_id     BIGINT       COMMENT '卡密ID（卡密登录时填，账号登录时为 null）',
+  user_id         BIGINT       COMMENT '终端用户ID（账号登录时填，卡密登录时为 null）',
   card_no_masked  VARCHAR(32)  COMMENT '卡号脱敏（展示用）',
   h5_token        VARCHAR(128) NOT NULL COMMENT 'H5 会话令牌（UUID）',
   device_info     VARCHAR(255) COMMENT '设备信息（User-Agent 等）',
@@ -535,6 +536,7 @@ CREATE TABLE jicek_h5_session (
   update_time     DATETIME     NOT NULL,
   UNIQUE KEY uk_token (h5_token),
   KEY idx_card (tenant_id, card_key_id),
+  KEY idx_user (tenant_id, user_id),
   KEY idx_expire (expire_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='H5 终端用户会话';
 
@@ -574,6 +576,30 @@ CREATE TABLE jicek_shop_product (
   UNIQUE KEY uk_shop_card (shop_id, card_type_id),
   KEY idx_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='内嵌卡网-店铺商品';
+
+-- ============================================================
+-- 19. 终端用户表（v0.14.0，独立账号体系，与卡密登录并存）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_end_user;
+CREATE TABLE jicek_end_user (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID（开发者隔离）',
+  software_id     BIGINT       NOT NULL COMMENT '关联软件（终端用户绑定到具体软件）',
+  username        VARCHAR(64)  NOT NULL COMMENT '登录用户名',
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 密码哈希',
+  nickname        VARCHAR(64)  COMMENT '昵称',
+  email           VARCHAR(128) COMMENT '邮箱',
+  phone           VARCHAR(20)  COMMENT '手机号',
+  status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
+  last_login_time DATETIME     COMMENT '最后登录时间',
+  last_login_ip   VARCHAR(45)  COMMENT '最后登录 IP',
+  remark          VARCHAR(255),
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_tenant_software_username (tenant_id, software_id, username),
+  KEY idx_software (tenant_id, software_id),
+  KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='终端用户（独立账号体系）';
 
 -- ============================================================
 -- 完成

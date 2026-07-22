@@ -51,7 +51,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/h5/auth/login",            // 卡密登录（公开接口，无需 X-H5-Token）
                         "/api/h5/agent/register",        // 代理注册（邀请码注册，公开接口）
-                        "/api/h5/shop/info"              // 店铺信息查询（公开，无需 X-H5-Token；下单 /api/h5/shop/order 仍需鉴权）
+                        "/api/h5/shop/info",             // 店铺信息查询（公开，无需 X-H5-Token；下单 /api/h5/shop/order 仍需鉴权）
+                        "/api/h5/end-user/login"         // 终端用户账号登录（v0.14.0，公开接口）
                 );
     }
 }

@@ -1,5 +1,24 @@
 # 更新日志
 
+## [0.14.0] - 2026-07-22
+
+### [新增] 终端用户账号体系 + 多语言国际化
+
+终端用户可凭账号密码登录 H5（与卡密登录并存）；前端接入 vue-i18n 中英文切换。
+
+- **终端用户管理**（`enduser/` 后端模块 + `views/dev/end-user/` 前端）：
+  - `jicek_end_user` 表（tenantId + softwareId + username 三元唯一 + BCrypt 密码哈希）
+  - 后端 8 接口：`/api/dev/end-user/*`（CRUD + 封禁/解封 + 重置密码，JWT 鉴权）
+  - H5 账号密码登录：`POST /api/h5/end-user/login`（公开），复用 H5Session 机制（cardKeyId=null + userId 填充）
+  - H5Session 表扩展 `user_id` 字段（cardKeyId 改可空，支持账号登录场景）
+  - 错误码 1053-1057（END_USER_NOT_FOUND/USERNAME_EXISTS/BANNED/PASSWORD_ERROR/SOFTWARE_INVALID）
+  - 前端：终端用户管理页（筛选 + 表格 + 新建/编辑/重置密码弹窗 + 封禁/解封/删除二次确认）
+- **多语言国际化**（`i18n/` 前端模块）：
+  - vue-i18n 9.x（Composition API 模式）+ 中英文语言包（common/menu/login/endUser/topbar/lang 六模块）
+  - LangSwitch 组件（顶栏下拉切换，localStorage `jicek_locale` 持久化，切换后刷新同步 Element Plus 语言包）
+  - 渐进式改造：登录页 + DevLayout（菜单 + 顶栏 + 修改密码弹窗）+ 终端用户页全量 i18n，其余页面保留硬编码待后续替换
+- **基础设施修复**：pom.xml 显式声明 Lombok annotationProcessorPaths（修复 JDK 25 环境下 Lombok 1.18.38 注解处理失效问题）
+
 ## [0.13.0] - 2026-07-22
 
 ### [新增] H5 终端用户界面 + 代理邀请码注册 + 内嵌卡网系统
