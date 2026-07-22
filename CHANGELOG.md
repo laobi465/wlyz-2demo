@@ -1,5 +1,37 @@
 # 更新日志
 
+## [0.11.0] - 2026-07-22
+
+### [新增] 自动更新模块（多格式 exe/sh/win/lua/zip/7z，SDK 检查更新）
+
+开发者上传更新包文件 → 创建草稿 → 发布 → 终端用户客户端通过 SDK 检查更新并下载。
+
+- **后端**（`update/` 模块）：
+  - `UpdatePackage` entity + `UpdatePackageMapper`
+  - 4 DTO：`UpdatePackageSaveDTO` / `UpdatePackageDetailDTO` / `SdkUpdateCheckResultDTO` / `UploadResultDTO`
+  - `UpdatePackageService`：文件上传（multipart + SHA-256 + 路径穿越防御）+ CRUD + 发布/下线状态机 + SDK 检查更新
+  - `DevUpdatePackageController`：8 接口（upload + CRUD + publish + offline），类级 `@AuthRequired(role=ROLE_DEV)`
+  - `SdkUpdateController`：`GET /api/sdk/update/check`，SdkAuthFilter 鉴权
+  - 新增 `Storage` 配置类（storage.root / downloadBaseUrl / updateSubDir），环境变量注入
+- **状态机**：草稿(0) → 已发布(1) → 已下线(2)，不可逆
+  - 仅草稿可编辑（仅改 releaseNotes/版本范围/强制更新，文件不可改）
+- **多格式支持**：exe/sh/win/lua/zip/7z，客户端按 file_type 处理
+- **双通道**：1稳定版 2内测版，SDK 可按通道拉取
+- **强制更新**：forceUpdate=1 时旧版客户端拒绝运行
+- **版本范围匹配**：minClientVersion/maxClientVersion，语义化版本比较
+- **SHA-256 完整性校验**：上传时计算入库，客户端下载后校验
+- **安全铁律**：
+  - file_path 存相对路径（相对 storage.root），禁存绝对路径
+  - 文件名 UUID 化存储（防路径穿越），原始文件名单独存 file_name 字段
+  - 防路径穿越：`fullPath.startsWith(rootPath)` 校验
+  - 文件类型白名单 + 大小校验（≤500MB）
+  - 删除时同步删物理文件
+- **错误码**：1031-1042 共 12 个
+- **前端**：
+  - `updatePackageApi` 8 方法（含上传进度回调）
+  - `views/dev/update-package/index.vue` 更新包管理页（列表 + 上传进度条 + 创建/编辑弹窗 + 发布/下线二次确认 + 只读查看 + 删除）
+  - 路由 `/update-package` + DevLayout「云端数据」子菜单
+
 ## [0.10.0] - 2026-07-22
 
 ### [新增] 远程公告模块（开发者按软件/版本下发，SDK 拉取展示）

@@ -321,4 +321,20 @@ public final class JicekConstants {
     public static final int ANNOUNCEMENT_STATUS_OFFLINE = 2;
     /** SDK 单次拉取公告最大条数 */
     public static final int ANNOUNCEMENT_SDK_FETCH_LIMIT = 20;
+
+    /* ============ 更新包模块（v0.11.0） ============ */
+    /** 更新包通道：稳定版 */
+    public static final int UPDATE_CHANNEL_STABLE = 1;
+    /** 更新包通道：内测版 */
+    public static final int UPDATE_CHANNEL_BETA = 2;
+    /** 更新包状态：草稿 */
+    public static final int UPDATE_STATUS_DRAFT = 0;
+    /** 更新包状态：已发布 */
+    public static final int UPDATE_STATUS_PUBLISHED = 1;
+    /** 更新包状态：已下线 */
+    public static final int UPDATE_STATUS_OFFLINE = 2;
+    /** 更新包最大文件大小（500MB） */
+    public static final long UPDATE_MAX_FILE_SIZE = 500L * 1024 * 1024;
+    /** 支持的文件类型 */
+    public static final String[] UPDATE_FILE_TYPES = {"exe", "sh", "win", "lua", "zip", "7z"};
 }

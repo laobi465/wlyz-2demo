@@ -97,6 +97,15 @@ jicek:
     # JWT 签发者
     jwt-issuer: jicek-license
 
+  # 存储配置（v0.11.0 更新包等文件存储）
+  storage:
+    # 文件存储根目录（环境变量注入，禁硬编码，铁律 04）
+    root: ${JICEK_STORAGE_ROOT:/data/jicek/storage}
+    # 下载基础 URL（SDK 下载用，末尾不带斜杠）
+    download-base-url: ${JICEK_STORAGE_DOWNLOAD_BASE_URL:}
+    # 更新包子目录（相对 root）
+    update-sub-dir: updates
+
 logging:
   level:
     com.jicek: debug

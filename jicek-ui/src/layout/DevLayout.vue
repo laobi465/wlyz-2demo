@@ -65,6 +65,7 @@
           </template>
           <el-menu-item index="/cloud-func">云函数</el-menu-item>
           <el-menu-item index="/announcement">远程公告</el-menu-item>
+          <el-menu-item index="/update-package">更新包</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="stats">
           <template #title>

@@ -144,6 +144,21 @@
   - [x] viewCount 拉取次数累加
   - [x] 前端公告管理页 + 路由 + 菜单
 
+### [已完成] 自动更新模块 ✅
+- 优先级：P1
+- 完成版本：v0.11.0
+- 完成项：
+  - [x] 更新包表 jicek_update_package（19 字段 + 2 索引）
+  - [x] 文件上传（multipart + SHA-256 + 路径穿越防御 + UUID 文件名）
+  - [x] 开发者后台 CRUD + 发布/下线状态机（草稿→已发布→已下线，不可逆）
+  - [x] 多格式支持（exe/sh/win/lua/zip/7z）
+  - [x] 双通道（1稳定版 2内测版，SDK 按通道拉取）
+  - [x] 强制更新（forceUpdate=1 旧版拒绝运行）
+  - [x] 客户端版本范围匹配（minClientVersion/maxClientVersion）
+  - [x] SDK 检查更新（GET /api/sdk/update/check，返回 hasUpdate/forceUpdate/downloadUrl/sha256）
+  - [x] Storage 配置类（storage.root / downloadBaseUrl / updateSubDir，环境变量注入）
+  - [x] 前端更新包管理页（上传进度条 + CRUD + 发布/下线 + 查看 + 删除）+ 路由 + 菜单
+
 ### [已完成] UI 设计规范 ✅
 - 优先级：P2
 - 完成版本：v0.1.0（文档）/ v0.2.0（前端骨架）

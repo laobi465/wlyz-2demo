@@ -118,6 +118,12 @@
 │       │   ├── dto     # AnnouncementSaveDTO / AnnouncementDetailDTO / SdkAnnouncementDTO
 │       │   ├── service # AnnouncementService（CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配）
 │       │   └── controller # DevAnnouncementController（/api/dev/announcement/* 7 接口） + SdkAnnouncementController（/api/sdk/announcement）
+│       ├── update      # ★ 更新包模块（v0.11.0 新增，多格式 exe/sh/win/lua/zip/7z，SDK 检查更新）
+│       │   ├── entity  # UpdatePackage
+│       │   ├── mapper  # UpdatePackageMapper
+│       │   ├── dto     # UpdatePackageSaveDTO / UpdatePackageDetailDTO / SdkUpdateCheckResultDTO / UploadResultDTO
+│       │   ├── service # UpdatePackageService（文件上传 + CRUD + 发布/下线 + SDK 检查更新 + SHA-256 + 路径穿越防御）
+│       │   └── controller # DevUpdatePackageController（/api/dev/update-package/* 8 接口） + SdkUpdateController（/api/sdk/update/check）
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
 └── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理）
     ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi）

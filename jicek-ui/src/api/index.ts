@@ -318,3 +318,76 @@ export const announcementApi = {
   // 下线（已发布 → 已下线）
   offline: (id: number) => api.post(`/api/dev/announcement/${id}/offline`)
 }
+
+/* ============ 更新包管理（v0.11.0，多格式 exe/sh/win/lua，SDK 检查更新） ============ */
+export const updatePackageApi = {
+  // 上传文件（multipart）
+  upload: (file: File, onProgress?: (percent: number) => void) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/api/dev/update-package/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded * 100) / e.total))
+        }
+      }
+    })
+  },
+  // 分页查询
+  page: (params: {
+    current?: number
+    size?: number
+    softwareId?: number
+    status?: number
+    channel?: number
+    version?: string
+  }) =>
+    api.get('/api/dev/update-package/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      softwareId: params.softwareId,
+      status: params.status,
+      channel: params.channel,
+      version: params.version
+    }),
+  // 详情
+  get: (id: number) => api.get(`/api/dev/update-package/${id}`),
+  // 创建（草稿）
+  create: (data: {
+    softwareId: number
+    version: string
+    channel: number
+    filePath: string
+    fileName: string
+    fileSize: number
+    fileSha256: string
+    fileType: string
+    releaseNotes?: string
+    minClientVersion?: string
+    maxClientVersion?: string
+    forceUpdate?: number
+  }) => api.post('/api/dev/update-package', data),
+  // 编辑（仅草稿，仅改 releaseNotes/版本范围/强制更新）
+  update: (data: {
+    id: number
+    softwareId: number
+    version: string
+    channel: number
+    filePath: string
+    fileName: string
+    fileSize: number
+    fileSha256: string
+    fileType: string
+    releaseNotes?: string
+    minClientVersion?: string
+    maxClientVersion?: string
+    forceUpdate?: number
+  }) => api.put('/api/dev/update-package', data),
+  // 删除（同时删物理文件）
+  delete: (id: number) => api.delete(`/api/dev/update-package/${id}`),
+  // 发布（草稿 → 已发布）
+  publish: (id: number) => api.post(`/api/dev/update-package/${id}/publish`),
+  // 下线（已发布 → 已下线）
+  offline: (id: number) => api.post(`/api/dev/update-package/${id}/offline`)
+}

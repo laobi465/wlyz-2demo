@@ -112,6 +112,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Announcement',
         component: () => import('@/views/dev/announcement/index.vue'),
         meta: { title: '远程公告', icon: 'Bell' }
+      },
+      {
+        path: 'update-package',
+        name: 'UpdatePackage',
+        component: () => import('@/views/dev/update-package/index.vue'),
+        meta: { title: '更新包', icon: 'Upload' }
       }
     ]
   }

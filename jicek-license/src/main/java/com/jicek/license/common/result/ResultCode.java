@@ -63,6 +63,20 @@ public enum ResultCode {
     ANNOUNCEMENT_ALREADY_OFFLINE(1028, "公告已下线"),
     ANNOUNCEMENT_NOT_PUBLISHED(1029, "公告未发布，不能下线"),
 
+    /* ============ 更新包模块 1031-1040 ============ */
+    UPDATE_PACKAGE_NOT_FOUND(1031, "更新包不存在"),
+    UPDATE_PACKAGE_VERSION_REQUIRED(1032, "版本号不能为空"),
+    UPDATE_PACKAGE_FILE_TYPE_INVALID(1033, "文件类型不支持（仅支持 exe/sh/win/lua/zip/7z）"),
+    UPDATE_PACKAGE_FILE_TOO_LARGE(1034, "文件大小超过限制（500MB）"),
+    UPDATE_PACKAGE_FILE_EMPTY(1035, "上传文件为空"),
+    UPDATE_PACKAGE_SOFTWARE_INVALID(1036, "更新包所属软件无效或无权操作"),
+    UPDATE_PACKAGE_VERSION_DUPLICATE(1037, "同软件同通道版本号已存在"),
+    UPDATE_PACKAGE_STATUS_INVALID(1038, "更新包状态非法"),
+    UPDATE_PACKAGE_ALREADY_PUBLISHED(1039, "更新包已发布，不能重复发布"),
+    UPDATE_PACKAGE_ALREADY_OFFLINE(1040, "更新包已下线"),
+    UPDATE_PACKAGE_NOT_PUBLISHED(1041, "更新包未发布，不能下线"),
+    UPDATE_PACKAGE_HASH_MISMATCH(1042, "文件 SHA-256 校验失败（文件可能损坏）"),
+
     /* ============ 支付模块 2001-2999 ============ */
     PAY_CONFIG_NOT_FOUND(2001, "支付配置不存在"),
     PAY_MERCHANT_KEY_ERROR(2002, "商户密钥错误"),
