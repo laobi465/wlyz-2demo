@@ -255,6 +255,46 @@ check_and_install_docker() {
             exit 1
         fi
     fi
+
+    # 配置 Docker Hub 镜像加速（解决国内服务器拉取 Docker Hub 镜像慢/超时问题）
+    configure_docker_registry_mirror
+}
+
+# 配置 Docker Hub 镜像加速（国内服务器必备）
+configure_docker_registry_mirror() {
+    local daemon_json="/etc/docker/daemon.json"
+    # 检测是否已配置镜像加速
+    if [[ -f "$daemon_json" ]] && grep -q "registry-mirrors" "$daemon_json" 2>/dev/null; then
+        log_info "Docker 镜像加速已配置（跳过）"
+        return 0
+    fi
+
+    log_info "配置 Docker Hub 镜像加速（国内镜像源）..."
+    mkdir -p /etc/docker
+    cat > "$daemon_json" <<'EOF'
+{
+  "registry-mirrors": [
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me",
+    "https://docker.m.daocloud.io",
+    "https://dockerproxy.com"
+  ],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m",
+    "max-file": "3"
+  }
+}
+EOF
+
+    # 重新加载 Docker 配置
+    if systemctl is-active docker >/dev/null 2>&1; then
+        systemctl daemon-reload 2>/dev/null || true
+        systemctl restart docker 2>/dev/null || true
+        log_info "Docker 镜像加速配置完成，已重启 Docker 服务"
+    else
+        log_info "Docker 镜像加速配置完成（Docker 服务未运行，将在启动时生效）"
+    fi
 }
 
 # 从指定端口起 +1 递增，返回第一个空闲端口（最多尝试 100 次）
@@ -492,19 +532,27 @@ EOF
 
     # 构建并启动
     log_info "开始构建并启动 Docker 服务（首次构建需下载依赖，约 5-15 分钟）..."
+    log_info "已配置国内镜像源加速（Maven 阿里云 / npm 淘宝 / Docker Hub 镜像）"
     cd "$SCRIPT_DIR"
 
     log_info "执行：docker compose build"
-    if ! docker compose build 2>&1 | tee -a "$LOG_FILE"; then
+    # 构建失败时输出详细诊断信息
+    if ! docker compose build --progress=plain 2>&1 | tee -a "$LOG_FILE"; then
         log_error "Docker 镜像构建失败"
-        log_error "常见原因：网络问题导致 Maven/npm 依赖下载失败"
-        log_error "解决方案：检查网络，重试 docker compose build"
+        log_error "========== 诊断信息 =========="
+        log_error "1. 检查网络连接：ping -c 3 maven.aliyun.com"
+        log_error "2. 检查 Docker 状态：systemctl status docker"
+        log_error "3. 查看完整构建日志：tail -100 $LOG_FILE"
+        log_error "4. 手动重试构建：cd $SCRIPT_DIR && docker compose build --no-cache"
+        log_error "5. 如仍失败，检查磁盘空间：df -h"
+        log_error "=============================="
         exit 1
     fi
 
     log_info "执行：docker compose up -d"
     if ! docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
         log_error "Docker 服务启动失败"
+        log_error "查看日志：cd $SCRIPT_DIR && docker compose logs"
         exit 1
     fi
 
