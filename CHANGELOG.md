@@ -1,5 +1,17 @@
 # 更新日志
 
+## [0.6.1] - 2026-07-22
+
+### [调整] 工单系统简化为单向（开发者→管理员）
+
+取消终端用户→开发者方向，仅保留开发者→管理员，移除 H5TicketController 与收件箱功能。
+
+- 删除 `H5TicketController`，移除 `DevTicketController` 的 receive 系列接口
+- `TicketService.page` 简化签名，强制查询 creatorType=2/target=2 的工单
+- 移除终端用户相关常量（TICKET_TARGET_DEV / TICKET_CREATOR_USER / TICKET_REPLIER_USER）
+- 前端移除收件箱 Tab，只保留「已提交」+ 新建工单 + 补充回复
+- SQL `target`/`creator_type` 字段注释标注恒为 2
+
 ## [0.6.0] - 2026-07-22
 
 ### [新增] 工单系统（双向工单）

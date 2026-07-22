@@ -225,9 +225,7 @@ public final class JicekConstants {
     /** 工单状态：已关闭 */
     public static final int TICKET_STATUS_CLOSED = 3;
 
-    /** 工单目标：开发者（终端用户→开发者） */
-    public static final int TICKET_TARGET_DEV = 1;
-    /** 工单目标：管理员（开发者→管理员） */
+    /** 工单目标：管理员（开发者→管理员，v0.6.1 简化为单向） */
     public static final int TICKET_TARGET_ADMIN = 2;
 
     /** 工单分类：换机申请 */
@@ -239,16 +237,12 @@ public final class JicekConstants {
     /** 工单分类：其他 */
     public static final int TICKET_CATEGORY_OTHER = 4;
 
-    /** 创建者类型：终端用户 */
-    public static final int TICKET_CREATOR_USER = 1;
-    /** 创建者类型：开发者 */
+    /** 创建者类型：开发者（v0.6.1 简化为单向，仅开发者可创建） */
     public static final int TICKET_CREATOR_DEV = 2;
 
-    /** 回复者类型：用户 */
-    public static final int TICKET_REPLIER_USER = 1;
-    /** 回复者类型：开发者 */
+    /** 回复者类型：开发者（补充信息） */
     public static final int TICKET_REPLIER_DEV = 2;
-    /** 回复者类型：管理员 */
+    /** 回复者类型：管理员（处理回复，待管理员 Controller 实现） */
     public static final int TICKET_REPLIER_ADMIN = 3;
 
     /** 工单号前缀 */

@@ -52,7 +52,7 @@
 | 云函数模块 | `cloudfunc/` (entity/mapper/dto/sandbox/service/controller) | ✅ v0.4.2 |
 | 数据统计模块 | `stats/` (dto/service/controller) | ✅ v0.4.3 |
 | 部署模块 | `deploy/` (entity/mapper/dto/service/controller) | ✅ v0.5.0 |
-| 工单模块 | `ticket/` (entity/mapper/dto/service/controller) | ✅ v0.6.0 |
+| 工单模块 | `ticket/` (entity/mapper/dto/service/controller) | ✅ v0.6.1（单向：开发者→管理员） |
 
 ### 前端（jicek-ui）
 
@@ -306,15 +306,10 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 部署 | POST | `/api/dev/deploy/manual` | 手动触发部署（body: tenantId/branch） |
 | 部署 | GET | `/api/dev/deploy/status` | 当前状态（enabled/deploying/lastDeploy） |
 | 部署 | GET | `/api/dev/deploy/log/page` | 部署审计日志分页（参数：tenantId/status/triggerSource/current/size） |
-| 工单 | POST | `/api/h5/ticket` | H5 终端用户提交工单（target=1开发者，body: tenantId/title/content/category） |
-| 工单 | GET | `/api/h5/ticket/page` | H5 用户工单列表（参数：tenantId/userId/category/status） |
-| 工单 | GET | `/api/h5/ticket/{tenantId}/{ticketId}` | H5 工单详情（含回复列表） |
-| 工单 | POST | `/api/h5/ticket/reply` | H5 用户回复工单（replierType=1） |
-| 工单 | GET | `/api/dev/ticket/receive/page` | Dev 收件箱分页（target=1，终端用户工单） |
-| 工单 | POST | `/api/dev/ticket/receive/reply` | Dev 回复终端用户工单（replierType=2） |
-| 工单 | POST | `/api/dev/ticket/receive/close` | Dev 关闭工单 |
-| 工单 | POST | `/api/dev/ticket/submit` | Dev 向管理员提交工单（target=2，creatorType=2） |
-| 工单 | GET | `/api/dev/ticket/submit/page` | Dev 提交工单分页 |
+| 工单 | POST | `/api/dev/ticket/submit` | Dev 向管理员提交工单（target=2, creatorType=2，body: tenantId/title/content/category） |
+| 工单 | GET | `/api/dev/ticket/submit/page` | Dev 提交工单分页（参数：tenantId/devUserId/category/status） |
+| 工单 | GET | `/api/dev/ticket/submit/{tenantId}/{ticketId}` | Dev 工单详情（含回复列表） |
+| 工单 | POST | `/api/dev/ticket/submit/reply` | Dev 补充回复（replierType=2，状态→处理中） |
 
 ### 7.2 公开回调
 
@@ -452,9 +447,9 @@ const status = await deployApi.status()
 33. **部署回滚机制**（v0.5.0）：备份 jar + dist 到 `.jicek-backup/{timestamp}/`，保留最近 3 个（`DEPLOY_BACKUP_KEEP_COUNT`）。任一步骤失败（git pull / build / restart / healthCheck）触发 `rollback()`：还原最近备份 → restart → 标记 status=3(ROLLED_BACK)。
 34. **部署健康检查**（v0.5.0）：轮询 `{health-check-base-url}/actuator/health`，超时 60s（`DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS`），间隔 3s（`DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS`）。超时未恢复抛 `DEPLOY_HEALTH_CHECK_FAIL`(7008) 并触发回滚。
 35. **部署 StatusTag 不扩展**（v0.5.0）：StatusTag 组件仅支持 order/card/withdraw/device 四类业务状态，部署状态（0-3）用 `el-tag` + `deployTagType()` / `deployStatusText()` 函数直接渲染，保持组件纯净性，避免为单一场景污染公共组件。
-36. **工单类型字段由 Controller 设定**（v0.6.0）：creatorType / target / replierType 三个字段由 Controller 按入口（H5/Dev）固定设定，前端不传这些字段（防越权提单）。H5 端固定 target=1开发者+creatorType=1用户，Dev 提单固定 target=2管理员+creatorType=2开发者。
-37. **工单状态机受控流转**（v0.6.0）：0待处理→1处理中→2已回复→3已关闭。用户回复→状态变「处理中」（用户补充信息），开发者/管理员回复→状态变「已回复」。任意状态可关闭，已关闭禁回复（抛 TICKET_ALREADY_CLOSED 8003）。
-38. **工单回复表审计不可变**（v0.6.0）：`jicek_ticket_reply` 仅 INSERT + SELECT，禁 UPDATE/DELETE。工单主表 `jicek_ticket` 仅受控 UPDATE（status/handlerId/handlerTime/closeTime/updateTime），其余字段不可变。
+36. **工单类型字段由 Controller 设定**（v0.6.1 单向）：creatorType / target / replierType 三个字段由 Controller 固定设定，前端不传这些字段（防越权提单）。Dev 端固定 target=2管理员 + creatorType=2开发者 + replierType=2开发者。
+37. **工单状态机受控流转**（v0.6.1 单向）：0待处理→1处理中→2已回复→3已关闭。开发者补充回复→状态变「处理中」（提醒管理员有新信息），管理员回复→状态变「已回复」（待管理员 Controller 实现）。任意状态可关闭，已关闭禁回复（抛 TICKET_ALREADY_CLOSED 8003）。
+38. **工单回复表审计不可变**（v0.6.1）：`jicek_ticket_reply` 仅 INSERT + SELECT，禁 UPDATE/DELETE。工单主表 `jicek_ticket` 仅受控 UPDATE（status/handlerId/handlerTime/closeTime/updateTime），其余字段不可变。
 
 ## 12. 验证清单
 

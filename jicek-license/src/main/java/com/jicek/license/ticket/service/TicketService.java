@@ -23,20 +23,21 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 工单服务
+ * 工单服务（单向工单：开发者→管理员）
  * 作者: 极策k  日期: 2026-07-22
  *
- * 双向工单核心逻辑：
- *  - createTicket：创建工单（creatorType/target 由 Controller 按入口设定，防越权）
- *  - reply：回复工单（受控状态流转 + 回复审计）
- *  - close：关闭工单（任意状态可关闭）
- *  - page：分页查询（支持按 creator/target/category/status 筛选）
+ * v0.6.1 简化：取消终端用户→开发者方向，仅保留开发者→管理员。
+ *
+ * 核心逻辑：
+ *  - createTicket：开发者向管理员创建工单（creatorType=2, target=2）
+ *  - reply：开发者补充信息（replierType=2，状态→处理中）/ 管理员回复（replierType=3，状态→已回复，待管理员 Controller 实现）
+ *  - page：分页查询（开发者查自己提交的工单）
  *  - detail：工单详情 + 回复列表（按时间升序）
  *
  * 状态机（受控流转，铁律 06）：
- *  0待处理 →[回复]→ 1处理中 →[回复]→ 2已回复 →[关闭]→ 3已关闭
+ *  0待处理 →[开发者补充]→ 1处理中 →[管理员回复]→ 2已回复 →[关闭]→ 3已关闭
  *  任意状态可 →[关闭]→ 3已关闭
- *  已关闭状态禁回复（TICKET_ALREADY_CLOSED）
+ *  已关闭禁回复（TICKET_ALREADY_CLOSED）
  *
  * 审计铁律：
  *  - jicek_ticket_reply 仅 INSERT + SELECT，禁 UPDATE/DELETE
@@ -55,12 +56,12 @@ public class TicketService {
     }
 
     /**
-     * 创建工单
+     * 创建工单（开发者→管理员）
      *
      * @param dto         创建参数
-     * @param creatorType 创建者类型（1终端用户 2开发者，由 Controller 设定）
-     * @param creatorId   创建者 ID
-     * @param target      工单目标（1开发者 2管理员，由 Controller 设定）
+     * @param creatorType 创建者类型（由 Controller 设定，当前固定为 TICKET_CREATOR_DEV）
+     * @param creatorId   创建者 ID（开发者用户 ID）
+     * @param target      工单目标（由 Controller 设定，当前固定为 TICKET_TARGET_ADMIN）
      */
     @Transactional(rollbackFor = Exception.class)
     public Long createTicket(TicketCreateDTO dto, int creatorType, Long creatorId, int target) {
@@ -93,8 +94,8 @@ public class TicketService {
         ticket.setUpdateTime(now);
 
         ticketMapper.insert(ticket);
-        log.info("工单创建成功: ticketNo={}, tenantId={}, creatorType={}, target={}",
-                ticket.getTicketNo(), ticket.getTenantId(), creatorType, target);
+        log.info("工单创建成功: ticketNo={}, tenantId={}, creatorId={}, target={}",
+                ticket.getTicketNo(), ticket.getTenantId(), creatorId, target);
         return ticket.getId();
     }
 
@@ -103,7 +104,7 @@ public class TicketService {
      *
      * @param dto         回复参数
      * @param tenantId    租户 ID
-     * @param replierType 回复者类型（1用户 2开发者 3管理员，由 Controller 设定）
+     * @param replierType 回复者类型（2开发者 3管理员，由 Controller 设定）
      * @param replierId   回复者 ID
      */
     @Transactional(rollbackFor = Exception.class)
@@ -130,7 +131,7 @@ public class TicketService {
         ticketReplyMapper.insert(reply);
 
         // 受控更新工单状态
-        int newStatus = decideStatusAfterReply(ticket, replierType);
+        int newStatus = decideStatusAfterReply(replierType);
         updateTicketStatusOnReply(ticket, newStatus, replierId);
 
         log.info("工单回复成功: ticketId={}, replierType={}, replierId={}, newStatus={}",
@@ -139,49 +140,23 @@ public class TicketService {
     }
 
     /**
-     * 关闭工单（任意状态可关闭）
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void close(Long ticketId, Long tenantId, Long handlerId) {
-        Ticket ticket = getTicketOrThrow(ticketId, tenantId);
-        if (ticket.getStatus() == JicekConstants.TICKET_STATUS_CLOSED) {
-            throw new ServiceException(ResultCode.TICKET_ALREADY_CLOSED);
-        }
-
-        LambdaUpdateWrapper<Ticket> uw = new LambdaUpdateWrapper<>();
-        uw.eq(Ticket::getId, ticketId)
-                .eq(Ticket::getTenantId, tenantId)
-                .set(Ticket::getStatus, JicekConstants.TICKET_STATUS_CLOSED)
-                .set(Ticket::getCloseTime, LocalDateTime.now())
-                .set(Ticket::getUpdateTime, LocalDateTime.now());
-        if (ticket.getHandlerId() == null) {
-            uw.set(Ticket::getHandlerId, handlerId);
-            uw.set(Ticket::getHandlerTime, LocalDateTime.now());
-        }
-        ticketMapper.update(null, uw);
-        log.info("工单关闭: ticketId={}, handlerId={}", ticketId, handlerId);
-    }
-
-    /**
-     * 分页查询工单
+     * 分页查询工单（开发者查询自己提交的工单）
      *
-     * @param tenantId    租户 ID
-     * @param creatorType 创建者类型（可选筛选）
-     * @param creatorId   创建者 ID（可选，用户查自己的工单）
-     * @param target      工单目标（可选，开发者查 target=1，管理员查 target=2）
-     * @param category    分类（可选）
-     * @param status      状态（可选）
-     * @param current     当前页
-     * @param size        每页条数
+     * @param tenantId   租户 ID
+     * @param creatorId  创建者 ID（开发者用户 ID）
+     * @param category   分类（可选）
+     * @param status     状态（可选）
+     * @param current    当前页
+     * @param size       每页条数
      */
-    public Page<Ticket> page(Long tenantId, Integer creatorType, Long creatorId,
-                              Integer target, Integer category, Integer status,
+    public Page<Ticket> page(Long tenantId, Long creatorId,
+                              Integer category, Integer status,
                               int current, int size) {
         LambdaQueryWrapper<Ticket> qw = new LambdaQueryWrapper<>();
         qw.eq(Ticket::getTenantId, tenantId)
-                .eq(creatorType != null, Ticket::getCreatorType, creatorType)
-                .eq(creatorId != null, Ticket::getCreatorId, creatorId)
-                .eq(target != null, Ticket::getTarget, target)
+                .eq(Ticket::getCreatorId, creatorId)
+                .eq(Ticket::getCreatorType, JicekConstants.TICKET_CREATOR_DEV)
+                .eq(Ticket::getTarget, JicekConstants.TICKET_TARGET_ADMIN)
                 .eq(category != null, Ticket::getCategory, category)
                 .eq(status != null, Ticket::getStatus, status)
                 .orderByDesc(Ticket::getCreateTime);
@@ -220,11 +195,11 @@ public class TicketService {
 
     /**
      * 根据回复者类型决定工单新状态：
-     *  - 用户回复（replierType=1）：工单回到「处理中」（用户补充信息）
-     *  - 开发者/管理员回复（replierType=2/3）：工单变为「已回复」
+     *  - 开发者回复（replierType=2，补充信息）：工单回到「处理中」（提醒管理员有新信息）
+     *  - 管理员回复（replierType=3，处理回复）：工单变为「已回复」
      */
-    private int decideStatusAfterReply(Ticket ticket, int replierType) {
-        if (replierType == JicekConstants.TICKET_REPLIER_USER) {
+    private int decideStatusAfterReply(int replierType) {
+        if (replierType == JicekConstants.TICKET_REPLIER_DEV) {
             return JicekConstants.TICKET_STATUS_PROCESSING;
         }
         return JicekConstants.TICKET_STATUS_REPLIED;
@@ -268,15 +243,13 @@ public class TicketService {
     }
 
     private void validateTarget(int target) {
-        if (target != JicekConstants.TICKET_TARGET_DEV
-                && target != JicekConstants.TICKET_TARGET_ADMIN) {
+        if (target != JicekConstants.TICKET_TARGET_ADMIN) {
             throw new ServiceException(ResultCode.TICKET_TARGET_INVALID);
         }
     }
 
     private void validateCreatorType(int creatorType) {
-        if (creatorType != JicekConstants.TICKET_CREATOR_USER
-                && creatorType != JicekConstants.TICKET_CREATOR_DEV) {
+        if (creatorType != JicekConstants.TICKET_CREATOR_DEV) {
             throw new ServiceException(ResultCode.TICKET_CREATOR_TYPE_INVALID);
         }
     }
