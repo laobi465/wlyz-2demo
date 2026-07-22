@@ -214,3 +214,41 @@ public final class JicekConstants {
     public static final String DEPLOY_WEBHOOK_EVENT_PUSH = "push";
     /** Webhook 签名前缀 */
     public static final String DEPLOY_WEBHOOK_SIGNATURE_PREFIX = "sha256=";
+
+    /* ============ 工单模块 ============ */
+    /** 工单状态：待处理 */
+    public static final int TICKET_STATUS_PENDING = 0;
+    /** 工单状态：处理中 */
+    public static final int TICKET_STATUS_PROCESSING = 1;
+    /** 工单状态：已回复 */
+    public static final int TICKET_STATUS_REPLIED = 2;
+    /** 工单状态：已关闭 */
+    public static final int TICKET_STATUS_CLOSED = 3;
+
+    /** 工单目标：管理员（开发者→管理员，v0.6.1 简化为单向） */
+    public static final int TICKET_TARGET_ADMIN = 2;
+
+    /** 工单分类：换机申请 */
+    public static final int TICKET_CATEGORY_CHANGE_DEVICE = 1;
+    /** 工单分类：充值问题 */
+    public static final int TICKET_CATEGORY_RECHARGE = 2;
+    /** 工单分类：卡密问题 */
+    public static final int TICKET_CATEGORY_CARD = 3;
+    /** 工单分类：其他 */
+    public static final int TICKET_CATEGORY_OTHER = 4;
+
+    /** 创建者类型：开发者（v0.6.1 简化为单向，仅开发者可创建） */
+    public static final int TICKET_CREATOR_DEV = 2;
+
+    /** 回复者类型：开发者（补充信息） */
+    public static final int TICKET_REPLIER_DEV = 2;
+    /** 回复者类型：管理员（处理回复，待管理员 Controller 实现） */
+    public static final int TICKET_REPLIER_ADMIN = 3;
+
+    /** 工单号前缀 */
+    public static final String TICKET_NO_PREFIX = "TK";
+    /** 工单标题最大长度 */
+    public static final int TICKET_TITLE_MAX_LENGTH = 128;
+    /** 工单内容最大长度 */
+    public static final int TICKET_CONTENT_MAX_LENGTH = 4096;
+}

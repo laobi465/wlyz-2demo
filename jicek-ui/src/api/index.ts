@@ -187,3 +187,26 @@ export const deployApi = {
       size: params.size || 20
     })
 }
+
+/* ============ 工单管理（开发者后台，单向：开发者→管理员） ============ */
+export const ticketApi = {
+  // 开发者向管理员提交工单
+  submit: (data: any, devUserId: number) =>
+    api.post('/api/dev/ticket/submit', data, { params: { devUserId } }),
+  // 查询自己提交给管理员的工单
+  submitPage: (params: any) =>
+    api.get('/api/dev/ticket/submit/page', {
+      tenantId: params.tenantId,
+      devUserId: params.devUserId,
+      category: params.category,
+      status: params.status,
+      current: params.current || 1,
+      size: params.size || 20
+    }),
+  // 提交工单详情（含回复列表）
+  submitDetail: (tenantId: number, ticketId: number) =>
+    api.get(`/api/dev/ticket/submit/${tenantId}/${ticketId}`),
+  // 开发者补充回复
+  submitReply: (data: any, tenantId: number, devUserId: number) =>
+    api.post('/api/dev/ticket/submit/reply', data, { params: { tenantId, devUserId } })
+}

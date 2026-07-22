@@ -70,6 +70,7 @@
             <span>系统设置</span>
           </template>
           <el-menu-item index="/deploy">部署管理</el-menu-item>
+          <el-menu-item index="/ticket">工单管理</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </aside>

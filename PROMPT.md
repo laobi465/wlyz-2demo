@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.5.0 |
+| 当前版本 | v0.6.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
@@ -52,6 +52,7 @@
 | 云函数模块 | `cloudfunc/` (entity/mapper/dto/sandbox/service/controller) | ✅ v0.4.2 |
 | 数据统计模块 | `stats/` (dto/service/controller) | ✅ v0.4.3 |
 | 部署模块 | `deploy/` (entity/mapper/dto/service/controller) | ✅ v0.5.0 |
+| 工单模块 | `ticket/` (entity/mapper/dto/service/controller) | ✅ v0.6.1（单向：开发者→管理员） |
 
 ### 前端（jicek-ui）
 
@@ -75,6 +76,7 @@
 | 云函数管理页 | `src/views/dev/cloud-func/` | ✅ v0.4.2 |
 | 数据统计页 | `src/views/dev/stats/` | ✅ v0.4.3 |
 | 部署管理页 | `src/views/dev/deploy/` | ✅ v0.5.0 |
+| 工单管理页 | `src/views/dev/ticket/` | ✅ v0.6.0 |
 
 ## 3. 待办任务（按优先级）
 
@@ -138,7 +140,9 @@
   - Redisson 分布式锁 + daemon 线程异步执行 + 审计日志（仅 INSERT + SELECT）
   - 重启模式分发：docker / btpanel / none
   - 前端部署管理页（3 状态卡片 + 手动触发 + 日志表格 + 状态轮询）+ 路由 /deploy + 侧边栏「系统设置」子菜单
-- 待开始：工单系统 / 多语言国际化
+### P3（低，v0.6.0 已完成工单系统 ✅）
+- **工单系统**：双向工单（终端用户→开发者 + 开发者→管理员）+ 状态机 + 分类 + 双 Controller + 前端双 Tab 页面。H5 前端 + 管理员端 Controller 待对应框架就绪后补全
+- 待开始：多语言国际化
 
 ## 4. 编码铁律（HARD，违反即重写）
 
@@ -302,6 +306,10 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 部署 | POST | `/api/dev/deploy/manual` | 手动触发部署（body: tenantId/branch） |
 | 部署 | GET | `/api/dev/deploy/status` | 当前状态（enabled/deploying/lastDeploy） |
 | 部署 | GET | `/api/dev/deploy/log/page` | 部署审计日志分页（参数：tenantId/status/triggerSource/current/size） |
+| 工单 | POST | `/api/dev/ticket/submit` | Dev 向管理员提交工单（target=2, creatorType=2，body: tenantId/title/content/category） |
+| 工单 | GET | `/api/dev/ticket/submit/page` | Dev 提交工单分页（参数：tenantId/devUserId/category/status） |
+| 工单 | GET | `/api/dev/ticket/submit/{tenantId}/{ticketId}` | Dev 工单详情（含回复列表） |
+| 工单 | POST | `/api/dev/ticket/submit/reply` | Dev 补充回复（replierType=2，状态→处理中） |
 
 ### 7.2 公开回调
 
@@ -326,6 +334,8 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | `jicek_cloud_function` | `code`(MEDIUMTEXT) + `timeout_ms` + `enabled` + `version` + `invoke_count` | 云函数（UNIQUE: tenant_id+software_id+name） |
 | `jicek_cloud_function_log` | `status`(0-6) + `invoke_source` + `caller_ip` + `duration_ms` | 云函数执行审计日志（仅 INSERT + SELECT） |
 | `jicek_deploy_log` | `trigger_source`(webhook/manual) + `status`(0-3) + `commit_hash` + `duration_ms` | 部署审计日志（仅 INSERT + SELECT + 受控更新 status，禁 UPDATE/DELETE） |
+| `jicek_ticket` | `ticket_no` + `category`(1-4) + `target`(1开发者2管理员) + `status`(0-3) + `creator_type`(1用户2开发者) | 工单主表（受控 UPDATE status/handlerId/closeTime） |
+| `jicek_ticket_reply` | `replier_type`(1用户2开发者3管理员) + `content` | 工单回复审计表（仅 INSERT + SELECT，禁 UPDATE/DELETE） |
 
 完整 DDL 见 `jicek_init.sql`。
 
@@ -437,6 +447,9 @@ const status = await deployApi.status()
 33. **部署回滚机制**（v0.5.0）：备份 jar + dist 到 `.jicek-backup/{timestamp}/`，保留最近 3 个（`DEPLOY_BACKUP_KEEP_COUNT`）。任一步骤失败（git pull / build / restart / healthCheck）触发 `rollback()`：还原最近备份 → restart → 标记 status=3(ROLLED_BACK)。
 34. **部署健康检查**（v0.5.0）：轮询 `{health-check-base-url}/actuator/health`，超时 60s（`DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS`），间隔 3s（`DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS`）。超时未恢复抛 `DEPLOY_HEALTH_CHECK_FAIL`(7008) 并触发回滚。
 35. **部署 StatusTag 不扩展**（v0.5.0）：StatusTag 组件仅支持 order/card/withdraw/device 四类业务状态，部署状态（0-3）用 `el-tag` + `deployTagType()` / `deployStatusText()` 函数直接渲染，保持组件纯净性，避免为单一场景污染公共组件。
+36. **工单类型字段由 Controller 设定**（v0.6.1 单向）：creatorType / target / replierType 三个字段由 Controller 固定设定，前端不传这些字段（防越权提单）。Dev 端固定 target=2管理员 + creatorType=2开发者 + replierType=2开发者。
+37. **工单状态机受控流转**（v0.6.1 单向）：0待处理→1处理中→2已回复→3已关闭。开发者补充回复→状态变「处理中」（提醒管理员有新信息），管理员回复→状态变「已回复」（待管理员 Controller 实现）。任意状态可关闭，已关闭禁回复（抛 TICKET_ALREADY_CLOSED 8003）。
+38. **工单回复表审计不可变**（v0.6.1）：`jicek_ticket_reply` 仅 INSERT + SELECT，禁 UPDATE/DELETE。工单主表 `jicek_ticket` 仅受控 UPDATE（status/handlerId/handlerTime/closeTime/updateTime），其余字段不可变。
 
 ## 12. 验证清单
 

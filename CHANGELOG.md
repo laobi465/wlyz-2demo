@@ -1,5 +1,32 @@
 # 更新日志
 
+## [0.6.1] - 2026-07-22
+
+### [调整] 工单系统简化为单向（开发者→管理员）
+
+取消终端用户→开发者方向，仅保留开发者→管理员，移除 H5TicketController 与收件箱功能。
+
+- 删除 `H5TicketController`，移除 `DevTicketController` 的 receive 系列接口
+- `TicketService.page` 简化签名，强制查询 creatorType=2/target=2 的工单
+- 移除终端用户相关常量（TICKET_TARGET_DEV / TICKET_CREATOR_USER / TICKET_REPLIER_USER）
+- 前端移除收件箱 Tab，只保留「已提交」+ 新建工单 + 补充回复
+- SQL `target`/`creator_type` 字段注释标注恒为 2
+
+## [0.6.0] - 2026-07-22
+
+### [新增] 工单系统（双向工单）
+
+双向工单全层实现：终端用户→开发者（H5）+ 开发者→管理员（Dev），基础 CRUD + 状态机 + 分类。
+
+- **数据库**：`jicek_ticket`（工单主表，4 索引）+ `jicek_ticket_reply`（回复审计表，仅 INSERT+SELECT）
+- **后端**：entity/mapper/dto/service/双 Controller（H5TicketController `/api/h5/ticket` + DevTicketController `/api/dev/ticket`）
+- **状态机**：0待处理 →[用户回复]→ 1处理中 →[开发者回复]→ 2已回复 →[关闭]→ 3已关闭；任意状态可关闭；已关闭禁回复
+- **安全**：creatorType/target/replierType 由 Controller 按入口设定（防越权）；租户隔离；回复表审计不可变
+- **分类**：1换机申请 2充值问题 3卡密问题 4其他
+- **错误码**：8001-8010（10 个工单错误码）
+- **前端**：双 Tab 页面（收件箱 + 已提交）+ 详情对话框 + 回复对话流 + 新建工单表单 + 路由 /ticket + 侧边栏「系统设置 > 工单管理」
+- **H5 端**：后端 Controller 已实现，前端页面待 H5 整体框架就绪后补全（铁律 06，不虚构未实现框架）
+
 ## [0.5.0] - 2026-07-22
 
 ### [新增] GitHub 自动更新部署模块
