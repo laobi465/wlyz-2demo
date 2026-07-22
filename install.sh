@@ -247,51 +247,93 @@ check_and_install_docker() {
     fi
 }
 
-# ==================== 步骤 4：端口冲突检测 ====================
-check_ports() {
-    log_step "步骤 4/7：端口冲突检测"
+# 从指定端口起 +1 递增，返回第一个空闲端口（最多尝试 100 次）
+# 用法：find_free_port <起始端口>，echo 空闲端口号
+find_free_port() {
+    local start_port="$1"
+    local port="$start_port"
+    local max_try=100
+    local tried=0
+    while [[ $tried -lt $max_try ]]; do
+        if port_is_free "$port"; then
+            echo "$port"
+            return 0
+        fi
+        port=$((port + 1))
+        tried=$((tried + 1))
+    done
+    # 超过 100 次仍占用，返回原端口（后续部署会失败，但至少不卡死）
+    echo "$start_port"
+    return 1
+}
 
-    local has_conflict=false
-    local ports_to_check=(
-        "$APP_PORT:应用服务"
-        "$MYSQL_PORT:MySQL"
-        "$REDIS_PORT:Redis"
-        "$UI_PORT:前端Nginx"
-        "$BTPANEL_PORT:宝塔面板"
-        "$PHPMYADMIN_PORT:宝塔phpMyAdmin"
-    )
+# ==================== 步骤 4：端口冲突检测（冲突自动 +1） ====================
+check_ports() {
+    log_step "步骤 4/7：端口冲突检测（冲突自动递增 +1）"
 
     log_info "检测端口占用情况（使用 ss/netstat 实查，铁律 06）..."
-    printf "%-10s %-15s %-10s %s\n" "端口" "服务" "状态" "占用进程" | tee -a "$LOG_FILE"
-    printf "%-10s %-15s %-10s %s\n" "----" "----" "----" "----" | tee -a "$LOG_FILE"
+    printf "%-12s %-15s %-10s %-12s %s\n" "原端口" "服务" "初始状态" "最终端口" "占用进程" | tee -a "$LOG_FILE"
+    printf "%-12s %-15s %-10s %-12s %s\n" "----" "----" "----" "----" "----" | tee -a "$LOG_FILE"
 
-    for entry in "${ports_to_check[@]}"; do
+    # 项目端口（冲突时自动 +1 递增，可调整）
+    # 格式："端口:服务名:全局变量名"
+    local adjustable_ports=(
+        "$APP_PORT:应用服务:APP_PORT"
+        "$MYSQL_PORT:MySQL:MYSQL_PORT"
+        "$REDIS_PORT:Redis:REDIS_PORT"
+        "$UI_PORT:前端Nginx:UI_PORT"
+    )
+
+    local has_conflict=false
+
+    for entry in "${adjustable_ports[@]}"; do
         local port="${entry%%:*}"
-        local name="${entry##*:}"
+        local rest="${entry#*:}"
+        local name="${rest%%:*}"
+        local var_name="${rest##*:}"
         if port_is_free "$port"; then
-            printf "%-10s %-15s ${GREEN}%-10s${NC} %s\n" "$port" "$name" "空闲" "-" | tee -a "$LOG_FILE"
+            printf "%-12s %-15s ${GREEN}%-10s${NC} %-12s %s\n" "$port" "$name" "空闲" "$port" "-" | tee -a "$LOG_FILE"
         else
             local occupier
             occupier=$(port_occupier "$port")
-            printf "%-10s %-15s ${RED}%-10s${NC} %s\n" "$port" "$name" "占用" "${occupier:-未知}" | tee -a "$LOG_FILE"
             has_conflict=true
+            # 自动 +1 递增找空闲端口
+            local new_port
+            new_port=$(find_free_port "$((port + 1))")
+            if [[ "$new_port" != "$port" ]] && port_is_free "$new_port"; then
+                # 通过 eval 更新全局变量（var_name 是变量名）
+                eval "$var_name=$new_port"
+                printf "%-12s %-15s ${RED}%-10s${NC} ${YELLOW}%-12s${NC} %s\n" "$port" "$name" "占用" "$port->$new_port" "${occupier:-未知}" | tee -a "$LOG_FILE"
+                log_warn "$name 端口 $port 被占用（进程：${occupier:-未知}），自动调整为 $new_port"
+            else
+                printf "%-12s %-15s ${RED}%-10s${NC} %-12s %s\n" "$port" "$name" "占用" "调整失败" "${occupier:-未知}" | tee -a "$LOG_FILE"
+                log_error "$name 端口 $port 被占用且连续 100 个端口均被占用，无法自动调整"
+            fi
+        fi
+    done
+
+    # 宝塔端口（仅检测提示，不自动调整 —— 宝塔端口由宝塔面板管理）
+    local bt_ports=(
+        "$BTPANEL_PORT:宝塔面板"
+        "$PHPMYADMIN_PORT:宝塔phpMyAdmin"
+    )
+    for entry in "${bt_ports[@]}"; do
+        local port="${entry%%:*}"
+        local name="${entry##*:}"
+        if port_is_free "$port"; then
+            printf "%-12s %-15s ${GREEN}%-10s${NC} %-12s %s\n" "$port" "$name" "空闲" "$port" "-" | tee -a "$LOG_FILE"
+        else
+            local occupier
+            occupier=$(port_occupier "$port")
+            has_conflict=true
+            printf "%-12s %-15s ${YELLOW}%-10s${NC} %-12s %s\n" "$port" "$name" "占用" "$port(宝塔管理)" "${occupier:-未知}" | tee -a "$LOG_FILE"
+            log_warn "$name 端口 $port 被占用（进程：${occupier:-未知}），该端口由宝塔面板管理，请在宝塔面板「设置」中修改"
         fi
     done
 
     if [[ "$has_conflict" == "true" ]]; then
-        log_warn "检测到端口冲突！"
-        log_warn "解决方案："
-        log_warn "  1. 停止占用端口的服务"
-        log_warn "  2. 或通过环境变量修改本脚本使用的端口，例如："
-        log_warn "     APP_PORT=8081 MYSQL_PORT=3307 REDIS_PORT=6380 UI_PORT=81 ./install.sh"
-        log_warn "  3. 修改后需同步更新 docker-compose.yml 中的端口映射"
-
-        read -r -p "是否继续安装（端口冲突可能导致服务无法启动）？[y/N]: " confirm
-        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-            log_info "用户取消安装"
-            exit 0
-        fi
-        log_warn "用户选择继续安装（忽略端口冲突）"
+        log_info "端口冲突处理完成：项目端口已自动调整，宝塔端口请手动处理"
+        log_info "最终端口配置：APP=$APP_PORT MYSQL=$MYSQL_PORT REDIS=$REDIS_PORT UI=$UI_PORT BTPANEL=$BTPANEL_PORT"
     else
         log_info "所有端口均空闲，无冲突"
     fi

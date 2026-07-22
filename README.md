@@ -95,7 +95,7 @@ chmod +x install.sh
 1. 检测操作系统环境（支持 CentOS/RHEL/Rocky/AlmaLinux/Ubuntu/Debian）
 2. 检测并安装宝塔面板（未安装则拉取官方脚本）
 3. 检测并安装 Docker + Docker Compose v2
-4. 端口冲突检测（8080/3306/6379/80/8888/888，实查 ss/netstat，无假数据）
+4. 端口冲突检测 + 自动递增（8080/3306/6379/80/8888/888，实查 ss/netstat，项目端口冲突自动 +1 找空闲端口）
 5. 自动生成加密密钥（AES-256/RSA-2048/HMAC/JWT/MySQL密码，运行时随机生成）
 6. Docker Compose 构建并启动 4 服务（mysql/redis/app/ui）
 7. 输出配置信息到 `/root/jicek-deploy-info.txt`（权限 600）
@@ -111,8 +111,8 @@ chmod +x install.sh
 - 管理员：`admin / admin@123`
 - 首次登录后请立即修改密码
 
-**端口冲突处理**：
-如检测到端口冲突，可通过环境变量自定义端口：
+**端口冲突自动处理**：
+项目端口（8080/3306/6379/80）冲突时脚本自动 +1 递增寻找空闲端口（最多 100 次），无需手动干预。宝塔端口（8888/888）由宝塔面板管理，冲突时仅提示。也可通过环境变量预设端口：
 ```bash
 APP_PORT=8081 MYSQL_PORT=3307 REDIS_PORT=6380 UI_PORT=81 ./install.sh
 ```
