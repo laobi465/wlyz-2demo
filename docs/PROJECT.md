@@ -71,19 +71,43 @@
 │       │   └── controller # DevDashboardController
 │       ├── device      # 设备指纹（待实现 v0.3.0）
 │       ├── heartbeat   # 心跳保活（待实现 v0.3.0）
+│       ├── cloudfunc   # ★ 云函数模块（v0.4.2 新增，LuaJ 沙箱远程执行）
+│       │   ├── entity  # CloudFunction / CloudFunctionLog
+│       │   ├── mapper  # CloudFunctionMapper / CloudFunctionLogMapper（审计表禁 UPDATE/DELETE）
+│       │   ├── dto     # CloudFunctionSaveDTO / CloudFunctionInvokeDTO / CloudFunctionInvokeResult
+│       │   ├── sandbox # LuaSandboxService（LuaJ 3.0.6 沙箱引擎，全局表裁剪 + 超时中断 + 输出截断）
+│       │   ├── service # CloudFunctionService
+│       │   └── controller # DevCloudFunctionController
+│       ├── stats      # ★ 数据统计模块（v0.4.3 新增，4 子项多维分析）
+│       │   ├── dto     # VerifyTrendDTO / DeviceHeatmapDTO / IncomeStatsDTO / AntiCrackStatsDTO
+│       │   ├── service # StatsService（内存分桶聚合，基于现有业务表）
+│       │   └── controller # DevStatsController
+│       ├── deploy     # ★ 部署模块（v0.5.0 新增，GitHub Webhook 自动更新）
+│       │   ├── entity  # DeployLog
+│       │   ├── mapper  # DeployLogMapper（审计表禁 UPDATE/DELETE）
+│       │   ├── dto     # WebhookResultDTO / ManualDeployDTO / DeployStatusDTO
+│       │   ├── service # DeployService（备份→拉代码→构建→重启→健康检查→失败回滚，HMAC-SHA256 验签 + Redisson 锁 + 异步 daemon 线程）
+│       │   └── controller # DevDeployController
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架）
-    ├── src/api         # API 客户端 + 接口定义
-    ├── src/components/jicek # 公共组件（StatusTag/AmountInput/ConfirmDialog）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理）
+    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi）
+    ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置
+    ├── src/router      # 路由配置（11 个页面路由）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     └── src/views/dev   # 开发者页面
-        ├── dashboard   # 控制台
+        ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
         ├── card-key-gen # 卡密生成
         ├── card-key-list # 卡密查询
+        ├── card-type   # ★ 卡类管理（v0.4.1 新增，CRUD + 4 种类型联动表单）
+        ├── device      # ★ 设备管理（v0.4.1 新增，分页 + 详情 + 封禁/解封 + 指纹脱敏）
         ├── pay-config  # 支付配置
-        └── pay-order   # 资金流水
+        ├── pay-order   # 资金流水
+        ├── agent       # 代理管理（v0.4.0）
+        ├── withdraw    # 提现审核（v0.4.0）
+        ├── cloud-func  # ★ 云函数管理（v0.4.2 新增，双 Tab：函数列表 + 执行日志）
+        ├── stats       # ★ 数据统计（v0.4.3 新增，4 Tab：验证趋势/设备热力图/收入统计/防破解事件）
+        └── deploy      # ★ 部署管理（v0.5.0 新增，3 状态卡片 + 手动触发 + 审计日志 + 状态轮询）
 ```
 
 ### 2.3 数据流
@@ -109,10 +133,10 @@
 - [ ] 在线/离线状态管理
 
 ### 3.2 卡密管理
-- [ ] 卡类管理（4 种类型 + 定价 + 绑定策略）
-- [ ] 批量生成（自定义前缀、字符集、长度）
-- [ ] 加密存储（AES-256-GCM）
-- [ ] 查询/封禁/解封/退款
+- [x] 卡类管理（4 种类型 + 定价 + 绑定策略）✅ v0.4.1（前端 CRUD + 类型联动表单）
+- [x] 批量生成（自定义前缀、字符集、长度）✅ v0.2.0
+- [x] 加密存储（AES-256-GCM）✅ v0.2.0
+- [x] 查询/封禁/解封/退款 ✅ v0.2.0
 
 ### 3.3 支付系统
 - [ ] 彩虹易支付 V1 适配器（MD5 签名）
@@ -132,7 +156,7 @@
 
 ### 3.5 云端数据
 - [ ] 云变量（key/value + 签名加密）
-- [ ] 云函数（远程执行，抗破解终极方案）
+- [x] 云函数（远程执行，抗破解终极方案）✅ v0.4.2（LuaJ 3.0.6 沙箱 + 全局表裁剪 + 超时中断 + 输出截断 + 审计日志不可篡改）
 - [ ] 远程公告（按软件/版本下发）
 
 ### 3.6 客户端 SDK
@@ -170,7 +194,7 @@
 - 代理管理（多级代理、分润、提现审核）
 - 支付配置（通道选择、商户凭证、订单流水）
 - 云端数据（云变量、云函数、远程公告）
-- 数据统计（验证量、设备、收入、防破解事件）
+- 数据统计 ✅ v0.4.3（验证量趋势、设备在线热力图、收入多维统计、防破解事件，4 Tab + ECharts）
 - 安全中心（IP/设备黑名单、风控规则、密钥轮换）
 
 ### 4.3 代理
@@ -408,6 +432,72 @@ CREATE TABLE jicek_withdraw (
 ) COMMENT='提现申请';
 ```
 
+### 5.11 云函数表（v0.4.2 新增）
+```sql
+CREATE TABLE jicek_cloud_function (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  software_id     BIGINT       NOT NULL,
+  name            VARCHAR(64)  NOT NULL COMMENT '函数名（字母开头，字母数字下划线，最长64）',
+  description     VARCHAR(255) COMMENT '描述',
+  code            MEDIUMTEXT   NOT NULL COMMENT 'Lua 代码（最大 64KB）',
+  runtime         VARCHAR(20)  DEFAULT 'lua' COMMENT '运行时（当前仅 lua）',
+  timeout_ms      INT          NOT NULL COMMENT '超时毫秒（100-30000）',
+  memory_limit_kb INT          NOT NULL COMMENT '内存上限 KB',
+  max_input_kb    INT          NOT NULL COMMENT '输入上限 KB',
+  max_output_kb   INT          NOT NULL COMMENT '输出上限 KB',
+  enabled         TINYINT      DEFAULT 1 COMMENT '0禁用 1启用',
+  version         INT          DEFAULT 1 COMMENT '版本号（每次更新自增）',
+  invoke_count    BIGINT       DEFAULT 0 COMMENT '累计调用次数',
+  last_invoke_time DATETIME    COMMENT '最后调用时间',
+  last_invoke_ip  VARCHAR(64)  COMMENT '最后调用 IP',
+  create_by       BIGINT,
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_sw_name (tenant_id, software_id, name)
+) COMMENT='云函数';
+```
+
+### 5.12 云函数执行日志表（v0.4.2 新增，审计表，仅 INSERT + SELECT，禁 UPDATE/DELETE）
+```sql
+CREATE TABLE jicek_cloud_function_log (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  function_id     BIGINT       NOT NULL,
+  function_name   VARCHAR(64)  NOT NULL COMMENT '函数名快照',
+  software_id     BIGINT       NOT NULL,
+  invoke_source   VARCHAR(10)  NOT NULL COMMENT 'dev(开发者测试) / sdk(客户端调用)',
+  caller_ip       VARCHAR(64),
+  input_size      INT          NOT NULL COMMENT '输入字节数',
+  output_size     INT          NOT NULL COMMENT '输出字节数',
+  duration_ms     INT          NOT NULL COMMENT '执行耗时毫秒',
+  status          TINYINT      NOT NULL COMMENT '0成功 1编译失败 2运行时错误 3超时 4内存超限 5输入超限 6输出超限',
+  error_message   VARCHAR(4096) COMMENT '错误信息（截断至 4KB）',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_func (tenant_id, function_id, create_time),
+  KEY idx_software (tenant_id, software_id, create_time),
+  KEY idx_status (tenant_id, status, create_time)
+) COMMENT='云函数执行日志（审计，禁 UPDATE/DELETE）';
+```
+
+### 5.13 部署审计日志表（v0.5.0 新增，审计表，仅 INSERT + SELECT + 受控更新 status，禁 UPDATE 其他字段 / DELETE）
+```sql
+CREATE TABLE jicek_deploy_log (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID',
+  trigger_source  VARCHAR(10)  NOT NULL COMMENT 'webhook / manual',
+  commit_hash     VARCHAR(64)  COMMENT '触发部署的 commit hash',
+  branch          VARCHAR(64)  NOT NULL DEFAULT 'main' COMMENT '部署分支',
+  status          TINYINT      NOT NULL DEFAULT 0 COMMENT '0进行中 1成功 2失败 3已回滚',
+  duration_ms     BIGINT       COMMENT '部署耗时毫秒',
+  operator_ip     VARCHAR(64)  COMMENT '触发者 IP（webhook 为 GitHub IP，manual 为操作者 IP）',
+  error_message   VARCHAR(4096) COMMENT '错误信息（截断至 4KB）',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_status (status, create_time),
+  KEY idx_source (trigger_source, create_time)
+) COMMENT='部署审计日志（审计，禁 UPDATE/DELETE）';
+```
+
 ## 6. 使用指南（待实现后补全）
 
 ### 6.1 部署要求
@@ -420,28 +510,48 @@ CREATE TABLE jicek_withdraw (
 ### 6.2 快速启动
 （待代码完成后补全）
 
-## 7. 自动更新系统
+## 7. 自动更新系统（v0.5.0 已实现 ✅）
 
 ### 7.1 触发方式
-- GitHub Webhook 自动触发（push 到 main 分支）
-- 管理员后台手动触发
+- GitHub Webhook 自动触发（push 到 main 分支，HMAC-SHA256 验签）
+- 管理员后台手动触发（ConfirmDialog 二次确认）
 
 ### 7.2 更新流程
 ```
-备份 → git pull → 依赖安装 → DB迁移 → 清缓存 → 健康检查 → 重启 → 健康检查 → 完成
-                                                          ↓ 失败
-                                                       自动回滚
+备份(jar+dist → .jicek-backup/{ts}/) → git pull → mvn build → npm build → 重启 → 健康检查 → 标记成功
+                                                                        ↓ 失败
+                                                                    还原备份 → 重启 → 标记已回滚
 ```
 
-### 7.3 重启策略
-- Docker 模式：docker-compose restart 或 docker restart
-- 宝塔模式：通过宝塔 API 重启容器
+### 7.3 重启策略（restart-mode 配置）
+- `docker` 模式：`docker restart {container}`
+- `btpanel` 模式：HTTP 调用宝塔 API 重启容器
+- `none` 模式：跳过重启（仅构建）
 
 ### 7.4 安全
-- Webhook 签名验证（HMAC-SHA256 + Secret）
-- 更新分布式锁（防并发）
-- 完整审计日志
-- 失败自动回滚
+- Webhook 签名验证（HMAC-SHA256 + `MessageDigest.isEqual` 常量时间比较防时序攻击）
+- Redisson 分布式锁 `jicek:deploy:lock`（防并发，5 分钟自动释放防死锁）
+- 完整审计日志（`jicek_deploy_log` 表，仅 INSERT + SELECT + 受控更新 status）
+- 失败自动回滚（备份保留 3 个，`DEPLOY_BACKUP_KEEP_COUNT`）
+- 外部命令执行用 `ProcessBuilder` 参数化（禁 `Runtime.exec` 防 shell 注入）
+- Webhook 异步执行（daemon 线程 `jicek-deploy-{logId}`，立即返回 accepted 避免 GitHub 超时）
+
+### 7.5 健康检查
+- 轮询 `{health-check-base-url}/actuator/health`
+- 超时 60s（`DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS`），间隔 3s（`DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS`）
+- 超时未恢复触发回滚
+
+### 7.6 配置（application.yml + 环境变量）
+| 配置项 | 环境变量 | 默认值 | 说明 |
+|---|---|---|---|
+| `jicek.deploy.enabled` | `JICEK_DEPLOY_ENABLED` | false | 部署功能开关（默认关闭，防开发环境误触发） |
+| `jicek.deploy.webhook-secret` | `GITHUB_WEBHOOK_SECRET` | (空) | Webhook 签名密钥 |
+| `jicek.deploy.project-root` | `JICEK_DEPLOY_PROJECT_ROOT` | /workspace | 项目根目录 |
+| `jicek.deploy.restart-mode` | `JICEK_DEPLOY_RESTART_MODE` | none | 重启模式：docker/btpanel/none |
+| `jicek.deploy.docker-container` | `JICEK_DEPLOY_DOCKER_CONTAINER` | jicek-app | Docker 容器名 |
+| `jicek.deploy.btpanel-api-url` | `BTPANEL_API_URL` | (空) | 宝塔 API URL |
+| `jicek.deploy.btpanel-api-key` | `BTPANEL_API_KEY` | (空) | 宝塔 API Key |
+| `jicek.deploy.health-check-base-url` | `JICEK_DEPLOY_HEALTH_URL` | http://127.0.0.1:8080 | 健康检查 URL |
 
 ## 8. 目录结构
 （见 2.2 节）

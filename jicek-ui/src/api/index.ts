@@ -28,6 +28,25 @@ export const cardTypeApi = {
   delete: (id: number) => api.delete(`/api/dev/card-type/${id}`)
 }
 
+/* ============ 设备 ============ */
+export const deviceApi = {
+  page: (params: any) =>
+    api.get('/api/dev/device/page', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      status: params.status,
+      onlineStatus: params.onlineStatus,
+      page: params.current || 1,
+      size: params.size || 20
+    }),
+  get: (tenantId: number, deviceId: number) =>
+    api.get(`/api/dev/device/${tenantId}/${deviceId}`),
+  ban: (tenantId: number, deviceId: number) =>
+    api.post('/api/dev/device/ban', null, { params: { tenantId, deviceId } }),
+  unban: (tenantId: number, deviceId: number) =>
+    api.post('/api/dev/device/unban', null, { params: { tenantId, deviceId } })
+}
+
 /* ============ 支付 ============ */
 export const payApi = {
   getConfig: (tenantId: number) => api.get(`/api/dev/pay/config/${tenantId}`),
@@ -90,4 +109,81 @@ export const withdrawApi = {
     api.get(`/api/dev/withdraw/${tenantId}/${withdrawId}`),
   pendingAmount: (tenantId: number, agentId: number) =>
     api.get('/api/dev/withdraw/pending-amount', { tenantId, agentId })
+}
+
+/* ============ 云函数 ============ */
+export const cloudFuncApi = {
+  save: (data: any) => api.post('/api/dev/cloud-func', data),
+  page: (params: any) =>
+    api.get('/api/dev/cloud-func/page', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      name: params.name,
+      enabled: params.enabled,
+      current: params.current || 1,
+      size: params.size || 20
+    }),
+  get: (tenantId: number, functionId: number) =>
+    api.get(`/api/dev/cloud-func/${tenantId}/${functionId}`),
+  delete: (tenantId: number, functionId: number) =>
+    api.delete(`/api/dev/cloud-func/${tenantId}/${functionId}`),
+  toggleEnabled: (tenantId: number, functionId: number, enabled: number) =>
+    api.post('/api/dev/cloud-func/toggle-enabled', null, {
+      params: { tenantId, functionId, enabled }
+    }),
+  invoke: (data: any) => api.post('/api/dev/cloud-func/invoke', data),
+  logPage: (params: any) =>
+    api.get('/api/dev/cloud-func/log/page', {
+      tenantId: params.tenantId,
+      functionId: params.functionId,
+      softwareId: params.softwareId,
+      status: params.status,
+      invokeSource: params.invokeSource,
+      current: params.current || 1,
+      size: params.size || 20
+    })
+}
+
+/* ============ 数据统计 ============ */
+export const statsApi = {
+  verifyTrend: (params: any) =>
+    api.get('/api/dev/stats/verify-trend', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      granularity: params.granularity || 'day',
+      days: params.days
+    }),
+  deviceHeatmap: (params: any) =>
+    api.get('/api/dev/stats/device-heatmap', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      days: params.days
+    }),
+  income: (params: any) =>
+    api.get('/api/dev/stats/income', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      dimension: params.dimension || 'channel',
+      days: params.days
+    }),
+  antiCrack: (params: any) =>
+    api.get('/api/dev/stats/anti-crack', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      days: params.days
+    })
+}
+
+/* ============ 部署管理 ============ */
+export const deployApi = {
+  status: () => api.get('/api/dev/deploy/status'),
+  manual: (data: any) => api.post('/api/dev/deploy/manual', data),
+  logPage: (params: any) =>
+    api.get('/api/dev/deploy/log/page', {
+      tenantId: params.tenantId,
+      status: params.status,
+      triggerSource: params.triggerSource,
+      current: params.current || 1,
+      size: params.size || 20
+    })
 }

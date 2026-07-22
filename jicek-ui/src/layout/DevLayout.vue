@@ -23,8 +23,16 @@
             <el-icon><Key /></el-icon>
             <span>卡密管理</span>
           </template>
+          <el-menu-item index="/card-type">卡类管理</el-menu-item>
           <el-menu-item index="/card-key-gen">卡密生成</el-menu-item>
           <el-menu-item index="/card-key-list">卡密查询</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="user">
+          <template #title>
+            <el-icon><Monitor /></el-icon>
+            <span>用户管理</span>
+          </template>
+          <el-menu-item index="/device">设备管理</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="pay">
           <template #title>
@@ -41,6 +49,27 @@
           </template>
           <el-menu-item index="/agent">代理列表</el-menu-item>
           <el-menu-item index="/withdraw">提现审核</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="cloud">
+          <template #title>
+            <el-icon><Cpu /></el-icon>
+            <span>云端数据</span>
+          </template>
+          <el-menu-item index="/cloud-func">云函数</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="stats">
+          <template #title>
+            <el-icon><TrendCharts /></el-icon>
+            <span>数据统计</span>
+          </template>
+          <el-menu-item index="/stats">数据统计</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统设置</span>
+          </template>
+          <el-menu-item index="/deploy">部署管理</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </aside>

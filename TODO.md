@@ -96,48 +96,81 @@
 
 ### [进行中] 前端补全
 - 优先级：P1
-- 预计版本：v0.5.0
+- 预计版本：v0.5.0（v0.4.1 已完成卡类/设备/Dashboard 图表）
 - 子项：
-  - [ ] 软件管理页面
-  - [ ] 卡类管理页面
-  - [ ] 用户管理页面
-  - [ ] 设备管理页面
+  - [ ] 软件管理页面（待后端 DevSoftwareController 实现）
+  - [x] 卡类管理页面 ✅ v0.4.1（CRUD + 4 种卡类型联动表单 + Decimal.js 金额格式化）
+  - [ ] 用户管理页面（待后端 DevUserController 实现）
+  - [x] 设备管理页面 ✅ v0.4.1（分页 + 详情弹窗 + 封禁/解封 + 指纹脱敏 + 状态组合）
   - [x] 代理管理页面（v0.4.0 已完成：代理列表 + 提现审核）
-  - [ ] 数据统计图表（ECharts）
-  - [ ] H5 终端用户页面
+  - [x] 数据统计图表（ECharts） ✅ v0.4.1 Dashboard 卡密状态饼图 + 今日收支柱状图；✅ v0.4.3 数据统计页 4 Tab（验证量趋势/设备热力图/收入统计/防破解事件）
+  - [ ] H5 终端用户页面（待后端 H5 Controller 实现）
+
+### [已完成] 前端补全 - 第一批 ✅
+- 优先级：P1
+- 完成版本：v0.4.1
+- 完成项：
+  - [x] 卡类管理页（views/dev/card-type/index.vue）：CRUD + 类型联动表单 + 表单校验
+  - [x] 设备管理页（views/dev/device/index.vue）：分页查询 + 详情弹窗 + 封禁/解封 + 指纹脱敏
+  - [x] Dashboard ECharts 集成：卡密状态分布饼图 + 今日收支柱状图
+  - [x] StatusTag.vue 扩展：新增 device 类型，支持 4 种状态语义
+  - [x] deviceApi 新增（page/get/ban/unban），含 current→page 参数映射
+  - [x] 路由新增 /card-type + /device；侧边栏新增卡类管理 + 用户管理子菜单
+- 技术约束：依据铁律 06（防幻觉），仅实现后端 Controller 已存在的页面，软件/用户/H5 未实现
 
 ## P2（中）
 
-### [待开始] 云函数远程执行
+### [已完成] 云函数远程执行 ✅
 - 优先级：P2
-- 预计版本：v0.5.0
-- 子项：
-  - [ ] 沙箱隔离（Lua/LuaJIT 或 GraalVM）
-  - [ ] 执行超时限制
-  - [ ] 资源配额（CPU/内存）
-  - [ ] 审计日志
-- 备注：抗破解终极方案，沙箱安全是难点
+- 完成版本：v0.4.2
+- 完成项：
+  - [x] 沙箱隔离（LuaJ 3.0.6 纯 Java 实现 Lua 5.4 子集，全局表裁剪禁用 os/io/loadfile/dofile/require/debug/package/load）
+  - [x] 执行超时限制（独立 jicek-lua-sandbox 线程池 + Future.get(timeoutMs) + cancel(true) 强制中断）
+  - [x] 资源配额（内存上限 memoryLimitKb + 输入上限 maxInputKb + 输出上限 maxOutputKb 硬截断）
+  - [x] 审计日志（jicek_cloud_function_log 表，仅 INSERT + SELECT，禁 UPDATE/DELETE）
+  - [x] 云函数 CRUD + 测试执行 + 执行日志查询（后端 DevCloudFunctionController + 前端双 Tab 页面）
+  - [x] 前端路由 /cloud-func + 侧边栏「云端数据」子菜单集成
+- 备注：抗破解终极方案；SDK 调用走 SdkCloudFunctionController 待后续版本实现（复用同一 Service）；资源配额仅内存/IO，CPU 配额未实现（LuaJ 纯 Java 难以精确限制 CPU）
 
 ### [已完成] UI 设计规范 ✅
 - 优先级：P2
 - 完成版本：v0.1.0（文档）/ v0.2.0（前端骨架）
 - 状态：规范已定 + 前端骨架已实现
 
-### [待开始] 数据统计与可视化
+### [已完成] 数据统计与可视化 ✅
 - 优先级：P2
-- 预计版本：v0.3.0
+- 完成版本：v0.4.3
 - 子项：
-  - [ ] 验证量趋势图（按小时/天/月）
-  - [ ] 设备在线热力图
-  - [ ] 收入统计（按通道/卡类/代理分维度）
-  - [ ] 防破解事件统计
+  - [x] 验证量趋势图（折线图，按小时/天/月，卡密激活 + 新增设备双线）
+  - [x] 设备在线热力图（ECharts heatmap，近 7 天 × 24 小时，基于 last_heartbeat 聚合）
+  - [x] 收入统计（按通道/卡类/代理分维度，柱状图+折线图双 Y 轴 + 明细表格 + 占比进度条）
+  - [x] 防破解事件统计（封禁设备/卡密/IP 汇总 + 按天趋势折线图）
+- 备注：
+  - 数据源全部基于现有业务表聚合，无独立统计表（铁律 06）
+  - 代理维度因 PayOrder 暂无 agent_id 字段，前端显示 alert 提示「待扩展」，待后续 PayOrder 扩展后补全
+  - Dashboard 页面（v0.4.1）保留作为今日汇总快照，数据统计页（v0.4.3）作为多维分析入口，二者职责互补
 
 ## P3（低）
 
-### [待开始] GitHub 自动更新部署
+### [已完成] GitHub 自动更新部署 ✅
 - 优先级：P3
-- 当前版本：v0.1.0
-- 状态：方案已设计，待实现
+- 完成版本：v0.5.0
+- 完成项：
+  - [x] GitHub Webhook 自动触发（HMAC-SHA256 签名验证 + 常量时间比较防时序攻击）
+  - [x] 管理员后台手动触发（二次确认 + ConfirmDialog）
+  - [x] 部署编排：备份 → git pull → mvn build → npm build → 重启 → 健康检查 → 失败自动回滚
+  - [x] Redisson 分布式锁防并发（jicek:deploy:lock，5 分钟自动释放）
+  - [x] 重启模式分发：docker（docker restart）/ btpanel（宝塔 API HTTP 调用）/ none（跳过）
+  - [x] 健康检查轮询（/actuator/health，超时 60s，间隔 3s）
+  - [x] 部署审计日志（jicek_deploy_log 表，仅 INSERT + SELECT + 受控更新 status，禁 UPDATE/DELETE）
+  - [x] Webhook 异步执行（daemon 线程 jicek-deploy-{logId}，避免 GitHub 超时）
+  - [x] 前端部署管理页（3 状态卡片 + 手动触发 + 日志表格 + 状态轮询）+ 路由 /deploy + 侧边栏「系统设置」子菜单
+  - [x] 5 份核心文档同步（CHANGELOG/TODO/PROMPT/PROJECT/SPEC）
+- 备注：
+  - 部署功能默认关闭（jicek.deploy.enabled=false），需显式开启
+  - Webhook Secret / 项目根目录 / 重启模式等全部走环境变量注入（铁律 04）
+  - 错误码范围 7001-7010，新增 18 个部署常量
+  - 后续可扩展：DB 迁移步骤（当前仅代码构建）、Slack/钉钉通知、灰度发布
 
 ### [待开始] 工单系统
 - 优先级：P3

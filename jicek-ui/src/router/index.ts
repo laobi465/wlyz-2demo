@@ -31,6 +31,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '卡密查询', icon: 'Search' }
       },
       {
+        path: 'card-type',
+        name: 'CardType',
+        component: () => import('@/views/dev/card-type/index.vue'),
+        meta: { title: '卡类管理', icon: 'Files' }
+      },
+      {
+        path: 'device',
+        name: 'Device',
+        component: () => import('@/views/dev/device/index.vue'),
+        meta: { title: '设备管理', icon: 'Monitor' }
+      },
+      {
         path: 'pay-config',
         name: 'PayConfig',
         component: () => import('@/views/dev/pay-config/index.vue'),
@@ -53,6 +65,24 @@ const routes: RouteRecordRaw[] = [
         name: 'Withdraw',
         component: () => import('@/views/dev/withdraw/index.vue'),
         meta: { title: '提现审核', icon: 'Wallet' }
+      },
+      {
+        path: 'cloud-func',
+        name: 'CloudFunc',
+        component: () => import('@/views/dev/cloud-func/index.vue'),
+        meta: { title: '云函数', icon: 'Cpu' }
+      },
+      {
+        path: 'stats',
+        name: 'Stats',
+        component: () => import('@/views/dev/stats/index.vue'),
+        meta: { title: '数据统计', icon: 'TrendCharts' }
+      },
+      {
+        path: 'deploy',
+        name: 'Deploy',
+        component: () => import('@/views/dev/deploy/index.vue'),
+        meta: { title: '部署管理', icon: 'Refresh' }
       }
     ]
   }

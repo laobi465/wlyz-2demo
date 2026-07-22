@@ -24,10 +24,10 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.4.0 |
+| 当前版本 | v0.5.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
-| 部署 | Docker（普通 / 宝塔面板） |
+| 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
 | 支付 | 彩虹易支付 V1（独立部署，仅 V1，无 V2） |
 | 加密 | AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4） |
 | SDK | 8 语言（Java/Python/Node.js/Go/C#/C++/Lua/Shell + 易语言），统一契约见 sdk/README.md |
@@ -49,6 +49,9 @@
 | 设备模块 | `device/` (entity/mapper/dto/fingerprint/service/controller) | ✅ v0.3.0 |
 | 客户端 SDK | `sdk/` (java/python/nodejs/go/csharp/cpp/lua/shell/epl) | ✅ v0.3.1 |
 | 代理模块 | `agent/` (entity/mapper/dto/service/controller) | ✅ v0.4.0 |
+| 云函数模块 | `cloudfunc/` (entity/mapper/dto/sandbox/service/controller) | ✅ v0.4.2 |
+| 数据统计模块 | `stats/` (dto/service/controller) | ✅ v0.4.3 |
+| 部署模块 | `deploy/` (entity/mapper/dto/service/controller) | ✅ v0.5.0 |
 
 ### 前端（jicek-ui）
 
@@ -60,13 +63,18 @@
 | 全局样式 | `src/styles/jicek.scss` | ✅ |
 | 布局 | `src/layout/DevLayout.vue` | ✅ |
 | 公共组件 | `src/components/jicek/` (StatusTag / AmountInput / ConfirmDialog) | ✅ |
-| 控制台页 | `src/views/dev/dashboard/` | ✅ |
+| 控制台页 | `src/views/dev/dashboard/` | ✅ v0.4.1 集成 ECharts |
 | 卡密生成页 | `src/views/dev/card-key-gen/` | ✅ |
 | 卡密查询页 | `src/views/dev/card-key-list/` | ✅ |
+| 卡类管理页 | `src/views/dev/card-type/` | ✅ v0.4.1 |
+| 设备管理页 | `src/views/dev/device/` | ✅ v0.4.1 |
 | 支付配置页 | `src/views/dev/pay-config/` | ✅ |
 | 资金流水页 | `src/views/dev/pay-order/` | ✅ |
 | 代理管理页 | `src/views/dev/agent/` | ✅ v0.4.0 |
 | 提现审核页 | `src/views/dev/withdraw/` | ✅ v0.4.0 |
+| 云函数管理页 | `src/views/dev/cloud-func/` | ✅ v0.4.2 |
+| 数据统计页 | `src/views/dev/stats/` | ✅ v0.4.3 |
+| 部署管理页 | `src/views/dev/deploy/` | ✅ v0.5.0 |
 
 ## 3. 待办任务（按优先级）
 
@@ -87,24 +95,50 @@
   - 前端代理管理页 + 提现审核页 + API/路由/菜单集成
   - 技术决策：未引入 WarmFlow，采用简单状态机；密码用 Hutool BCrypt
 
+### P1（高，v0.4.1 已完成 ✅）
+- **前端补全 - 第一批**（依据铁律 06，仅实现后端 Controller 已存在的页面）：
+  - 卡类管理页：CRUD + 4 种卡类型联动表单 + Decimal.js 金额格式化
+  - 设备管理页：分页 + 详情弹窗 + 封禁/解封 + 指纹脱敏 + 设备状态组合
+  - Dashboard ECharts 集成：卡密状态分布饼图 + 今日收支柱状图
+  - StatusTag 扩展：新增 device 类型，现支持 4 种状态语义（order/card/withdraw/device）
+  - deviceApi 新增（page/get/ban/unban），含 current→page 参数映射
+  - 路由 /card-type + /device；侧边栏卡密管理子菜单 + 用户管理子菜单
+
 ### P1（高，v0.5.0 计划）
 - **SDK 联调**：接入真实服务端联调测试 + 加壳工具推荐文档（VMProtect/Themida/Enigma）
 - **CardKeyService.useCard 完整流程**：DeviceService.bindDevice 接入卡密校验 + Sa-Token 鉴权 + software 表读取签名密钥/心跳间隔
 - **分润接入支付回调**：PaymentTransactionService 支付成功时触发 CommissionService.grantCommission
 - **代理制卡扣余额**：AgentService.deductBalance 接入代理制卡流程
-- **前端补全**：
-  - 软件管理页面、卡类管理页面、用户管理页面、设备管理页面
-  - ECharts 数据统计图表
-  - H5 终端用户页面（购卡/续费/换机/在线设备）
+- **前端补全 - 剩余项**：
+  - 软件管理页面（待后端 DevSoftwareController）
+  - 用户管理页面（待后端 DevUserController）
+  - ~~数据统计扩展图表~~ ✅ v0.4.3 已完成（4 Tab：验证量趋势/设备热力图/收入统计/防破解事件）
+  - H5 终端用户页面（购卡/续费/换机/在线设备，待后端 H5 Controller）
 
-### P2（中）
-- 云函数远程执行（沙箱：Lua/LuaJIT 或 GraalVM）
-- 数据统计与可视化（验证量趋势、设备热力图、收入多维统计）
+### P2（中，v0.4.2 已完成 ✅）
+- **云函数远程执行**（抗破解终极方案）：
+  - LuaJ 3.0.6 沙箱引擎（纯 Java 实现 Lua 5.4 子集，全局表裁剪 + 超时中断 + 输出截断三层防护）
+  - 审计日志不可篡改（jicek_cloud_function_log 仅 INSERT + SELECT）
+  - 前端双 Tab 页面（函数列表 + 执行日志）+ 路由/菜单集成
+  - SDK 调用走 SdkCloudFunctionController 待后续版本实现（复用同一 Service）
 
-### P3（低）
-- GitHub 自动更新部署（Webhook + 自动重启 + 管理员弹窗）
-- 工单系统
-- 多语言国际化
+### P2（中，v0.4.3 已完成 ✅）
+- **数据统计与可视化**：
+  - 4 Tab 页面（验证量趋势折线图 / 设备在线热力图 / 收入统计柱状图+表格 / 防破解事件折线图）
+  - 数据源全部基于现有业务表聚合，无独立统计表（铁律 06）
+  - 代理维度因 PayOrder 暂无 agent_id 字段，前端 alert 提示「待扩展」
+  - Dashboard 页面（v0.4.1）保留为今日汇总快照，数据统计页（v0.4.3）为多维分析入口
+
+### P2（中，待开始）
+
+### P3（低，v0.5.0 已完成 ✅）
+- **GitHub 自动更新部署**：
+  - Webhook 自动触发（HMAC-SHA256 验签 + 常量时间比较）+ 管理员后台手动触发
+  - 部署编排：备份 → git pull → mvn build → npm build → 重启 → 健康检查 → 失败回滚
+  - Redisson 分布式锁 + daemon 线程异步执行 + 审计日志（仅 INSERT + SELECT）
+  - 重启模式分发：docker / btpanel / none
+  - 前端部署管理页（3 状态卡片 + 手动触发 + 日志表格 + 状态轮询）+ 路由 /deploy + 侧边栏「系统设置」子菜单
+- 待开始：工单系统 / 多语言国际化
 
 ## 4. 编码铁律（HARD，违反即重写）
 
@@ -249,6 +283,25 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 提现 | GET | `/api/dev/withdraw/page` | 提现分页 |
 | 提现 | GET | `/api/dev/withdraw/{tenantId}/{withdrawId}` | 提现详情 |
 | 提现 | GET | `/api/dev/withdraw/pending-amount` | 待审核总额 |
+| 设备 | GET | `/api/dev/device/page` | 设备分页（参数：tenantId/softwareId/status/onlineStatus/page/size） |
+| 设备 | GET | `/api/dev/device/{tenantId}/{deviceId}` | 设备详情（含完整指纹） |
+| 设备 | POST | `/api/dev/device/ban` | 封禁设备（params: tenantId/deviceId） |
+| 设备 | POST | `/api/dev/device/unban` | 解封设备（params: tenantId/deviceId） |
+| 云函数 | POST | `/api/dev/cloud-func` | 新建/更新云函数 |
+| 云函数 | GET | `/api/dev/cloud-func/page` | 分页（参数：tenantId/softwareId/name/enabled/current/size） |
+| 云函数 | GET | `/api/dev/cloud-func/{tenantId}/{functionId}` | 云函数详情 |
+| 云函数 | DELETE | `/api/dev/cloud-func/{tenantId}/{functionId}` | 删除云函数 |
+| 云函数 | POST | `/api/dev/cloud-func/toggle-enabled` | 启用/禁用（params: tenantId/functionId/enabled） |
+| 云函数 | POST | `/api/dev/cloud-func/invoke` | 测试执行（body: tenantId/softwareId/functionId/input） |
+| 云函数 | GET | `/api/dev/cloud-func/log/page` | 执行日志分页（参数：tenantId/functionId/softwareId/status/invokeSource/current/size） |
+| 数据统计 | GET | `/api/dev/stats/verify-trend` | 验证量趋势（参数：tenantId/softwareId/granularity=hour\|day\|month/days） |
+| 数据统计 | GET | `/api/dev/stats/device-heatmap` | 设备在线热力图（参数：tenantId/softwareId/days，默认 7） |
+| 数据统计 | GET | `/api/dev/stats/income` | 收入统计（参数：tenantId/softwareId/dimension=channel\|cardType\|agent/days） |
+| 数据统计 | GET | `/api/dev/stats/anti-crack` | 防破解事件（参数：tenantId/softwareId/days） |
+| 部署 | POST | `/api/dev/deploy/webhook` | GitHub Webhook 入口（HMAC-SHA256 验签，立即返回 accepted，异步执行） |
+| 部署 | POST | `/api/dev/deploy/manual` | 手动触发部署（body: tenantId/branch） |
+| 部署 | GET | `/api/dev/deploy/status` | 当前状态（enabled/deploying/lastDeploy） |
+| 部署 | GET | `/api/dev/deploy/log/page` | 部署审计日志分页（参数：tenantId/status/triggerSource/current/size） |
 
 ### 7.2 公开回调
 
@@ -270,6 +323,9 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | `jicek_agent_package` | `agent_id` + `card_type_id` + `agent_price` | 代理可售卡类 + 代理价 |
 | `jicek_commission` | `agent_id` + `order_id` + `commission_rate`(快照) + `type`(1/2) + `status`(0/1) | 分润流水（不可变） |
 | `jicek_withdraw` | `amount` + `fee` + `actual_amount` + `status`(0-4) | 提现申请（5 状态机） |
+| `jicek_cloud_function` | `code`(MEDIUMTEXT) + `timeout_ms` + `enabled` + `version` + `invoke_count` | 云函数（UNIQUE: tenant_id+software_id+name） |
+| `jicek_cloud_function_log` | `status`(0-6) + `invoke_source` + `caller_ip` + `duration_ms` | 云函数执行审计日志（仅 INSERT + SELECT） |
+| `jicek_deploy_log` | `trigger_source`(webhook/manual) + `status`(0-3) + `commit_hash` + `duration_ms` | 部署审计日志（仅 INSERT + SELECT + 受控更新 status，禁 UPDATE/DELETE） |
 
 完整 DDL 见 `jicek_init.sql`。
 
@@ -286,18 +342,29 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 
 | 组件 | 用途 |
 |---|---|
-| `StatusTag.vue` | 状态标签（订单/卡密/提现三种模式） |
+| `StatusTag.vue` | 状态标签（4 种类型：order 订单 / card 卡密 / withdraw 提现 / device 设备） |
 | `AmountInput.vue` | 金额输入（decimal.js 精度） |
 | `ConfirmDialog.vue` | 二次确认弹窗（资金/卡密操作） |
+
+> 设备状态约定（caller 需组合 status + onlineStatus 后传入）：0=在线 / 1=离线 / 2=封禁
 
 ### 9.3 API 调用约定
 
 ```typescript
-import { dashboardApi, cardKeyApi, cardTypeApi, payApi, agentApi, withdrawApi } from '@/api'
+import {
+  dashboardApi, cardKeyApi, cardTypeApi, payApi,
+  agentApi, withdrawApi, deviceApi, cloudFuncApi, statsApi, deployApi
+} from '@/api'
 
 // 统一响应：{ code, msg, data }
 // 拦截器自动剥 data，失败自动 ElMessage.error
 const data = await dashboardApi.summary(tenantId)
+
+// 分页参数映射：前端 current/size → 后端 page/size（device 接口用 page/size，card-type/cloud-func 用 current/size，差异在 API 层屏蔽）
+const deviceList = await deviceApi.page({ tenantId: 1, current: 1, size: 20 })
+
+// 部署状态轮询：deploying=true 时每 5s 刷新，完成后停止
+const status = await deployApi.status()
 ```
 
 ## 10. 开发流程
@@ -346,6 +413,30 @@ const data = await dashboardApi.summary(tenantId)
 9. **提现状态机**：不可逆（0→1→3 / 0→2 / 1→4），资金流必须同事务（balance↔frozenBalance↔totalWithdraw），禁伪异步。
 10. **分润撤销余额不足**：余额 < 撤销金额时，余额清零 + 累计收益扣减差额，余额永不为负。
 11. **代理密码**：使用 Hutool `cn.hutool.crypto.digest.BCrypt`（spring-security-crypto 未引入依赖）。
+12. **设备状态组合**：Device 实体含两个状态字段（status 0/1 + onlineStatus 0/1），UI 层须通过 `deviceTagStatus()` 合并为 StatusTag 的 device 类型值（封禁→2 / 在线→0 / 离线→1），不可直接展示两个字段。
+13. **设备指纹脱敏**：列表展示仅前 16 字符 + `****`，详情弹窗可展示完整指纹（审计用），符合「敏感信息最小暴露」原则。
+14. **分页参数命名差异**：DevCardTypeController 使用 `current`/`size`，DevDeviceController 使用 `page`/`size`。前端统一使用 `current`/`size`，在 API 层做映射（如 `page: params.current || 1`），不可让调用方关心差异。
+15. **ECharts 生命周期**：必须 `onBeforeUnmount` 调用 `chart.dispose()` 释放实例；异步数据驱动渲染须用 `watch(data, () => nextTick(() => render()))` 确保 DOM 已就绪；窗口 resize 须监听并调用 `chart.resize()`。
+16. **页面实现范围**（铁律 06）：仅实现后端 Controller 已存在的页面。若 UI-DESIGN.md 列出但后端无 Controller，**禁止虚构接口**，应标注「待后端 XXController 实现后再补」。
+17. **云函数沙箱安全**（v0.4.2）：LuaJ 全局表必须裁剪（禁 os/io/loadfile/dofile/require/debug/package/load，全设为 `LuaValue.NIL`）；`LuaC.install(globals)` 必须在 BaseLib 之前，否则 `globals.load()` 无法编译用户代码；超时控制用 `Future.get(timeoutMs)` + `future.cancel(true)` 强制中断，禁用固定 sleep 轮询。
+18. **云函数审计不可篡改**：`jicek_cloud_function_log` 表仅允许 INSERT + SELECT，Service 层禁 UPDATE/DELETE，确保执行历史完整可追溯。审计日志写入失败不应阻断主流程（invoke 已返回结果）。
+19. **云函数输入注入契约**：通过 `jicek.input` 全局变量传入字符串，Lua 代码 `return` 返回值由 `luaValueToJson()` 递归序列化为 JSON（table 自动判断数组 vs 对象，key 为 1..n 连续正整数则为数组）。输入/输出大小在 Service 层二次校验（DTO 校验 + 实际字节数校验），超限直接截断或拒绝。
+20. **云函数线程池隔离**：独立 `jicek-lua-sandbox` daemon 线程池（4 核心/16 最大/64 队列/CallerRunsPolicy）与业务线程池隔离，避免沙箱执行阻塞主业务。线程名必须为 daemon，防止 JVM 退出受阻。
+21. **数据统计不新建表**（v0.4.3）：所有统计基于现有业务表（CardKey/Device/PayOrder）内存聚合，禁虚构统计表（铁律 06）。时间分组使用 Java Stream + `DateTimeFormatter` 分桶，与现有 DevDashboardController 风格一致。
+22. **统计时间标签连续补 0**：`StatsService.buildTimeLabels()` 必须生成完整日期序列，无数据时段补 0，避免 ECharts X 轴跳跃。粒度切换时 hour 固定查近 1 天（24 点）、day/month 用 `STATS_DEFAULT_RANGE_DAYS`(7) 默认值，禁字面量（铁律 04）。
+23. **统计范围上限**：`STATS_MAX_RANGE_DAYS`(90) 天硬上限，超限抛 `STATS_RANGE_EXCEED`(6003)，防止全表扫描。热力图固定 `STATS_HEATMAP_DAYS`(7) 天避免维度爆炸。
+24. **统计代理维度预留**：PayOrder 当前无 `agent_id` 字段，`groupByAgent()` 返回空列表 + 前端 alert 提示「待扩展」，禁虚构字段（铁律 06）。待 PayOrder 扩展 agent_id 后再实现。
+25. **ECharts 生命周期**：多 Tab 页面每个 Tab 独立 chart 实例，`onBeforeUnmount` 必须 dispose 全部图表，Tab 切换后 `setTimeout(resize, 50)` 避免尺寸未初始化。`watch` 全局筛选（如 softwareId）触发 `reloadAll` 并行加载。
+26. **Webhook 验签常量时间比较**（v0.5.0）：`MessageDigest.isEqual` 比较期望签名与接收签名，禁用 `String.equals`（时序攻击风险）。签名格式 `sha256=<hex>`，前缀 `DEPLOY_WEBHOOK_SIGNATURE_PREFIX` 校验后再截取。
+27. **部署功能默认关闭**（v0.5.0）：`jicek.deploy.enabled=false` 是默认值，开发环境禁触发真实部署。生产开启需显式设置 `JICEK_DEPLOY_ENABLED=true`，否则 manual 接口返回 403/参数错误，webhook 接口直接忽略。
+28. **部署异步执行**（v0.5.0）：Webhook 立即返回 `accepted(deployLogId, message)`，部署在 daemon 线程 `jicek-deploy-{logId}` 中异步执行。GitHub Webhook 默认 10s 超时，同步执行会超时重试导致重复触发。前端通过 `deployApi.status()` 轮询（5s 间隔），完成后停止。
+29. **部署 Redisson 锁防并发**（v0.5.0）：`jicek:deploy:lock` Redisson 分布式锁，5 分钟自动释放防死锁。Webhook 与 manual 共用同一锁，获取失败抛 `DEPLOY_LOCK_FAIL`(7001)。
+30. **部署审计不可篡改**（v0.5.0）：`jicek_deploy_log` 表仅允许 INSERT + SELECT + 受控更新 status（0→1/2/3），禁 UPDATE 其他字段 / DELETE 任意记录。审计失败不阻断主流程，但记录 ERROR 日志。
+31. **部署外部命令执行**（v0.5.0）：禁用 `Runtime.exec`（参数拼接易 shell 注入），统一用 `ProcessBuilder` 参数化执行 git/mvn/npm/docker 命令。`redirectErrorStream(true)` 合并 stderr 到 stdout 便于日志收集。
+32. **部署重启模式分发**（v0.5.0）：`restart-mode` 三选一 — `docker`（`docker restart {container}`）/ `btpanel`（HTTP 调用宝塔 API）/ `none`（跳过重启，仅构建）。模式错误或容器名缺失抛 `DEPLOY_RESTART_FAIL`(7007)。
+33. **部署回滚机制**（v0.5.0）：备份 jar + dist 到 `.jicek-backup/{timestamp}/`，保留最近 3 个（`DEPLOY_BACKUP_KEEP_COUNT`）。任一步骤失败（git pull / build / restart / healthCheck）触发 `rollback()`：还原最近备份 → restart → 标记 status=3(ROLLED_BACK)。
+34. **部署健康检查**（v0.5.0）：轮询 `{health-check-base-url}/actuator/health`，超时 60s（`DEPLOY_HEALTH_CHECK_TIMEOUT_SECONDS`），间隔 3s（`DEPLOY_HEALTH_CHECK_INTERVAL_SECONDS`）。超时未恢复抛 `DEPLOY_HEALTH_CHECK_FAIL`(7008) 并触发回滚。
+35. **部署 StatusTag 不扩展**（v0.5.0）：StatusTag 组件仅支持 order/card/withdraw/device 四类业务状态，部署状态（0-3）用 `el-tag` + `deployTagType()` / `deployStatusText()` 函数直接渲染，保持组件纯净性，避免为单一场景污染公共组件。
 
 ## 12. 验证清单
 
