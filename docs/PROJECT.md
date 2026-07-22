@@ -88,19 +88,19 @@
 │       │   ├── dto     # WebhookResultDTO / ManualDeployDTO / DeployStatusDTO
 │       │   ├── service # DeployService（备份→拉代码→构建→重启→健康检查→失败回滚，HMAC-SHA256 验签 + Redisson 锁 + 异步 daemon 线程）
 │       │   └── controller # DevDeployController
-│       ├── ticket     # ★ 工单模块（v0.6.0 新增，双向工单）
+│       ├── ticket     # ★ 工单模块（v0.6.0 新增，双向工单；v0.15.0 加 AdminTicketController）
 │       │   ├── entity  # Ticket / TicketReply
 │       │   ├── mapper  # TicketMapper / TicketReplyMapper（回复表禁 UPDATE/DELETE）
-│       │   ├── dto     # TicketCreateDTO / TicketReplyDTO / TicketDetailDTO
-│       │   ├── service # TicketService（CRUD + 状态机 + 分类，类型字段由 Controller 设定防越权）
-│       │   └── controller # H5TicketController + DevTicketController（双角色双入口）
-│       ├── auth       # ★ 鉴权模块（v0.7.0 新增，JWT + @AuthRequired 渐进式）
+│       │   ├── dto     # TicketCreateDTO / TicketReplyDTO / TicketDetailDTO / AdminTicketReplyDTO（v0.15.0）
+│       │   ├── service # TicketService（CRUD + 状态机 + 分类 + adminPage/adminGet/adminReply/adminClose，类型字段由 Controller 设定防越权）
+│       │   └── controller # H5TicketController + DevTicketController + AdminTicketController（v0.15.0，/api/admin/ticket 4 接口 @AuthRequired(role=2)）
+│       ├── auth       # ★ 鉴权模块（v0.7.0 新增，JWT + @AuthRequired 渐进式；v0.15.0 加 AdminDevUserController + DevUserService）
 │       │   ├── entity  # DevUser / AdminUser
 │       │   ├── mapper  # DevUserMapper / AdminUserMapper
-│       │   ├── dto     # LoginDTO / LoginResultDTO / ChangePasswordDTO / UserInfoDTO
-│       │   ├── service # JwtService（HMAC-SHA256） + AuthService（登录/当前用户/改密）
+│       │   ├── dto     # LoginDTO / LoginResultDTO / ChangePasswordDTO / UserInfoDTO / DevUserDetailDTO / DevUserResetPasswordDTO（v0.15.0）
+│       │   ├── service # JwtService（HMAC-SHA256） + AuthService（登录/当前用户/改密） + DevUserService（v0.15.0，page/get/ban/unban/resetPassword）
 │       │   ├── interceptor # AuthContext（ThreadLocal） + @AuthRequired 注解 + JwtAuthInterceptor
-│       │   └── controller # AuthController（/api/auth/* 4 接口）
+│       │   └── controller # AuthController（/api/auth/* 4 接口） + AdminDevUserController（v0.15.0，/api/admin/dev-user 5 接口 @AuthRequired(role=2)）
 │       ├── software   # ★ 软件模块（v0.8.0 新增，CRUD + 密钥生成/轮换 + 关联校验）
 │       │   ├── entity  # Software
 │       │   ├── mapper  # SoftwareMapper
@@ -144,16 +144,16 @@
 │       │   ├── service # EndUserService（CRUD + ban/unban + reset-password + 账号登录自建 H5Session）
 │       │   └── controller # DevEndUserController（/api/dev/end-user/* 8 接口 JWT） + H5EndUserController（/api/h5/end-user/login 公开）
 │       └── sdk-gen     # ★ SDK 代码生成器（v0.12.0 前端实现，9 语言模板，无后端）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网，v0.14.0 新增终端用户管理 + 多语言国际化）
-    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 + endUserApi v0.14.0 新增）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理，v0.12.0 新增 SDK 代码生成 + 对接文档，v0.13.0 新增 H5 + 内嵌卡网，v0.14.0 新增终端用户管理 + 多语言国际化，v0.15.0 新增管理员后台 + i18n 全量）
+    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi/h5Api/shopApi v0.13.0 + endUserApi v0.14.0 + admin.ts v0.15.0 独立 adminAxios 实例 jicek_admin_token 隔离）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/components/LangSwitch.vue # ★ 多语言切换组件（v0.14.0，顶栏下拉 + localStorage 持久化）
-    ├── src/i18n        # ★ 多语言国际化（v0.14.0，index.ts 注册 vue-i18n 9.x + locales/{zh-CN,en-US}.ts 六模块）
-    ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置（11 个页面路由 + /h5/* 7 个 public 子路由 v0.13.0 + /shop 后台路由 + /end-user v0.14.0）
+    ├── src/i18n        # ★ 多语言国际化（v0.14.0 起，v0.15.0 全量改造 17 dev 页面 + 语言包扩展 16 新模块，所有用户可见文案中英文切换）
+    ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏) + AdminLayout（v0.15.0 管理员后台布局）
+    ├── src/router      # 路由配置（11 个页面路由 + /h5/* 7 个 public 子路由 v0.13.0 + /shop 后台路由 + /end-user v0.14.0 + /admin/* 守卫 v0.15.0 校验 jicek_admin_token）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     ├── src/utils       # ★ sdk-code-templates.ts（v0.12.0，9 语言代码模板生成器）
-    ├── src/views/dev   # 开发者页面
+    ├── src/views/dev   # 开发者页面（v0.15.0 全量 i18n 改造）
         ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
         ├── card-key-gen # 卡密生成
         ├── card-key-list # 卡密查询
@@ -172,7 +172,11 @@
         ├── integration-doc # ★ 对接文档页（v0.12.0 新增，接入流程 + 签名算法 + RSA + API + 错误码 + SDK 索引）
         ├── shop        # ★ 内嵌卡网管理（v0.13.0 新增，店铺 + 商品双层弹窗）
         └── end-user    # ★ 终端用户管理（v0.14.0 新增，CRUD + 封禁 + 重置密码）
-    └── src/views/h5    # ★ H5 终端用户页（v0.13.0 新增，7 页：H5Layout + login + my-card + announcement + agent/register + shop + shop/order）
+    ├── src/views/h5    # ★ H5 终端用户页（v0.13.0 新增，7 页：H5Layout + login + my-card + announcement + agent/register + shop + shop/order）
+    └── src/views/admin # ★ 管理员后台页（v0.15.0 新增，jicek_admin_token 隔离 + adminAxios 独立实例）
+        ├── login       # 管理员登录（用户名+密码，无租户ID）
+        ├── ticket      # 工单管理（筛选+表格+详情弹窗+回复+关闭）
+        └── dev-user    # 开发者管理（筛选+表格+封禁/解封+重置密码）
 ```
 
 ### 2.3 数据流
@@ -240,8 +244,8 @@
 - [x] 向上链式分润（直推 type=1 + 父级链 type=2，最多 10 层，同事务原子）✅ v0.4.0
 - [x] 分润撤销（退款触发，余额不足保护）✅ v0.4.0
 - [x] 提现审核状态机（简单状态机，未引入 WarmFlow）✅ v0.4.0
-- [ ] 代理制卡扣余额（待接入 AgentService.deductBalance）
-- [ ] 分润接入支付回调（待接入 PaymentTransactionService）
+- [x] 代理制卡扣余额 ✅ v0.15.0（CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance，先扣款再生成卡密，同事务）
+- [x] 分润接入支付回调 ✅ v0.15.0（PayNotifyService 支付成功事务提交后调 CommissionService.grantCommission，分润独立事务 + try-catch，分润失败不回滚卡密；jicek_commission 加 uk_order_agent 幂等索引）
 
 ### 3.5 云端数据
 - [ ] 云变量（key/value + 签名加密）
@@ -275,6 +279,12 @@
 ### 3.9 v0.14.0 新增功能（已完成）
 - [x] 终端用户账号体系 ✅ v0.14.0（jicek_end_user 表 + 后台 8 接口 CRUD/封禁/重置密码 + H5 账号密码登录复用 H5Session）
 - [x] 多语言国际化 ✅ v0.14.0（vue-i18n 9.x 中英文 + LangSwitch 组件 + 渐进式改造）
+
+### 3.10 v0.15.0 新增功能（已完成）
+- [x] 代理制卡扣余额 ✅ v0.15.0（CardKeyService.batchGenerate 代理制卡分支调 AgentService.deductBalance，先扣款再生成卡密同事务；CardKeyGenRequestDTO 加 agentId）
+- [x] 分润接入支付回调 ✅ v0.15.0（PayOrder 加 agentId + jicek_pay_order 加 idx_agent；PayNotifyService 支付成功后调 CommissionService.grantCommission，分润独立事务 + try-catch，分润失败不回滚卡密；jicek_commission 加 uk_order_agent 幂等）
+- [x] 管理员端工单处理 + 租户管理 ✅ v0.15.0（AdminTicketController 4 接口 + AdminDevUserController 5 接口，@AuthRequired(role=2)；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离）
+- [x] 多语言国际化全量 ✅ v0.15.0（17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块，所有用户可见文案支持中英文切换）
 
 ## 4. 角色权限体系
 

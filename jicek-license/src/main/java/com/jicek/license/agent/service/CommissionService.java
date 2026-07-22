@@ -78,6 +78,17 @@ public class CommissionService {
             return;
         }
 
+        // 幂等校验：同一 orderNo 已产生过分润流水则跳过（铁律 09，防重复分润）
+        // 配合 jicek_commission.uk_order_agent(out_trade_no, agent_id) 唯一索引双重保障
+        Long existCount = commissionMapper.selectCount(
+                new LambdaQueryWrapper<Commission>()
+                        .eq(Commission::getOutTradeNo, order.getOutTradeNo()));
+        if (existCount != null && existCount > 0) {
+            log.info("分润跳过（已分润，幂等命中）: outTradeNo={}, existCount={}",
+                    order.getOutTradeNo(), existCount);
+            return;
+        }
+
         LocalDateTime now = LocalDateTime.now();
         List<Commission> records = new ArrayList<>();
         BigDecimal totalCommission = BigDecimal.ZERO;

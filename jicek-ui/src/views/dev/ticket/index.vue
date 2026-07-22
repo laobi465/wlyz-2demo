@@ -15,55 +15,55 @@
   <div class="jicek-page">
     <el-card>
       <template #header>
-        <span class="jicek-card-title">工单管理（向管理员提交）</span>
+        <span class="jicek-card-title">{{ t('ticket.title') }}</span>
       </template>
 
       <div style="margin-bottom: 16px">
-        <el-button type="primary" @click="openSubmitDialog">新建工单</el-button>
-        <el-button @click="loadList">刷新</el-button>
+        <el-button type="primary" @click="openSubmitDialog">{{ t('ticket.create') }}</el-button>
+        <el-button @click="loadList">{{ t('ticket.refresh') }}</el-button>
       </div>
 
       <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-        <el-form-item label="状态">
-          <el-select v-model="filter.status" placeholder="全部" clearable style="width: 140px">
-            <el-option label="待处理" :value="0" />
-            <el-option label="处理中" :value="1" />
-            <el-option label="已回复" :value="2" />
-            <el-option label="已关闭" :value="3" />
+        <el-form-item :label="t('ticket.status')">
+          <el-select v-model="filter.status" :placeholder="t('common.all')" clearable style="width: 140px">
+            <el-option :label="t('ticket.statusPending')" :value="0" />
+            <el-option :label="t('ticket.statusProcessing')" :value="1" />
+            <el-option :label="t('ticket.statusReplied')" :value="2" />
+            <el-option :label="t('ticket.statusClosed')" :value="3" />
           </el-select>
         </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="filter.category" placeholder="全部" clearable style="width: 160px">
-            <el-option label="换机申请" :value="1" />
-            <el-option label="充值问题" :value="2" />
-            <el-option label="卡密问题" :value="3" />
-            <el-option label="其他" :value="4" />
+        <el-form-item :label="t('ticket.category')">
+          <el-select v-model="filter.category" :placeholder="t('common.all')" clearable style="width: 160px">
+            <el-option :label="t('ticket.categoryChangeMachine')" :value="1" />
+            <el-option :label="t('ticket.categoryRecharge')" :value="2" />
+            <el-option :label="t('ticket.categoryCard')" :value="3" />
+            <el-option :label="t('ticket.categoryOther')" :value="4" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadList">查询</el-button>
+          <el-button type="primary" @click="loadList">{{ t('common.search') }}</el-button>
         </el-form-item>
       </el-form>
 
       <el-table :data="list" v-loading="loading" border stripe>
-        <el-table-column prop="ticketNo" label="工单号" width="180" />
-        <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
-        <el-table-column label="分类" width="110">
+        <el-table-column prop="ticketNo" :label="t('ticket.ticketNo')" width="180" />
+        <el-table-column prop="title" :label="t('ticket.titleCol')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('ticket.category')" width="110">
           <template #default="{ row }">
             <el-tag size="small">{{ categoryText(row.category) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column :label="t('ticket.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="ticketTagType(row.status)" size="small">
               {{ ticketStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="提交时间" width="170" />
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column prop="createTime" :label="t('ticket.submitTime')" width="170" />
+        <el-table-column :label="t('common.operation')" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="openDetail(row)">详情</el-button>
+            <el-button size="small" @click="openDetail(row)">{{ t('ticket.detail') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -81,57 +81,57 @@
     </el-card>
 
     <!-- ============ 新建工单对话框 ============ -->
-    <el-dialog v-model="submitDialogVisible" title="向管理员提交工单" width="600px">
+    <el-dialog v-model="submitDialogVisible" :title="t('ticket.submitDialogTitle')" width="600px">
       <el-form ref="submitFormRef" :model="submitForm" :rules="submitRules" label-width="80px">
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="submitForm.title" maxlength="128" show-word-limit placeholder="简要描述问题" />
+        <el-form-item :label="t('ticket.titleLabel')" prop="title">
+          <el-input v-model="submitForm.title" maxlength="128" show-word-limit :placeholder="t('ticket.titlePlaceholder')" />
         </el-form-item>
-        <el-form-item label="分类" prop="category">
-          <el-select v-model="submitForm.category" placeholder="选择分类" style="width: 100%">
-            <el-option label="换机申请" :value="1" />
-            <el-option label="充值问题" :value="2" />
-            <el-option label="卡密问题" :value="3" />
-            <el-option label="其他" :value="4" />
+        <el-form-item :label="t('ticket.categoryLabel')" prop="category">
+          <el-select v-model="submitForm.category" :placeholder="t('ticket.categoryPlaceholder')" style="width: 100%">
+            <el-option :label="t('ticket.categoryChangeMachine')" :value="1" />
+            <el-option :label="t('ticket.categoryRecharge')" :value="2" />
+            <el-option :label="t('ticket.categoryCard')" :value="3" />
+            <el-option :label="t('ticket.categoryOther')" :value="4" />
           </el-select>
         </el-form-item>
-        <el-form-item label="问题描述" prop="content">
+        <el-form-item :label="t('ticket.contentLabel')" prop="content">
           <el-input
             v-model="submitForm.content"
             type="textarea"
             :rows="6"
             maxlength="4096"
             show-word-limit
-            placeholder="详细描述问题，便于管理员处理"
+            :placeholder="t('ticket.contentPlaceholder')"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="submitDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitTicket" :loading="submitting">提交</el-button>
+        <el-button @click="submitDialogVisible = false">{{ t('ticket.cancel') }}</el-button>
+        <el-button type="primary" @click="submitTicket" :loading="submitting">{{ t('ticket.submit') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- ============ 工单详情对话框 ============ -->
-    <el-dialog v-model="detailVisible" title="工单详情" width="720px" top="5vh">
+    <el-dialog v-model="detailVisible" :title="t('ticket.detailDialogTitle')" width="720px" top="5vh">
       <div v-loading="detailLoading">
         <el-descriptions :column="2" border v-if="detail.ticket">
-          <el-descriptions-item label="工单号">{{ detail.ticket.ticketNo }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="t('ticket.ticketNo')">{{ detail.ticket.ticketNo }}</el-descriptions-item>
+          <el-descriptions-item :label="t('ticket.statusLabel')">
             <el-tag :type="ticketTagType(detail.ticket.status)" size="small">
               {{ ticketStatusText(detail.ticket.status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="标题" :span="2">{{ detail.ticket.title }}</el-descriptions-item>
-          <el-descriptions-item label="分类">{{ categoryText(detail.ticket.category) }}</el-descriptions-item>
-          <el-descriptions-item label="提交时间">{{ detail.ticket.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="问题描述" :span="2">
+          <el-descriptions-item :label="t('ticket.titleLabel')" :span="2">{{ detail.ticket.title }}</el-descriptions-item>
+          <el-descriptions-item :label="t('ticket.categoryLabel2')">{{ categoryText(detail.ticket.category) }}</el-descriptions-item>
+          <el-descriptions-item :label="t('ticket.submitTimeLabel')">{{ detail.ticket.createTime }}</el-descriptions-item>
+          <el-descriptions-item :label="t('ticket.contentLabel2')" :span="2">
             <div class="ticket-content">{{ detail.ticket.content }}</div>
           </el-descriptions-item>
         </el-descriptions>
 
         <!-- 回复列表 -->
         <div class="reply-section">
-          <div class="reply-section-title">对话记录</div>
+          <div class="reply-section-title">{{ t('ticket.replySectionTitle') }}</div>
           <div v-if="detail.replies && detail.replies.length">
             <div
               v-for="reply in detail.replies"
@@ -148,7 +148,7 @@
               <div class="reply-content">{{ reply.content }}</div>
             </div>
           </div>
-          <el-empty v-else description="暂无回复" :image-size="60" />
+          <el-empty v-else :description="t('ticket.replyEmpty')" :image-size="60" />
         </div>
 
         <!-- 补充回复（已关闭工单禁回复） -->
@@ -157,12 +157,12 @@
             v-model="replyContent"
             type="textarea"
             :rows="3"
-            placeholder="补充信息，提醒管理员有新内容..."
+            :placeholder="t('ticket.replyInputPlaceholder')"
             maxlength="4096"
             show-word-limit
           />
           <el-button type="primary" @click="submitReply" :loading="replySubmitting" style="margin-top: 8px">
-            发送补充
+            {{ t('ticket.sendReply') }}
           </el-button>
         </div>
       </div>
@@ -172,8 +172,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { ticketApi } from '@/api'
+
+const { t } = useI18n()
 
 // TODO: 鉴权接入后从 token 解析，当前暂用固定值（开发者用户ID=1, 租户ID=1）
 const DEV_USER_ID = 1
@@ -218,9 +221,9 @@ const submitForm = reactive({
   category: undefined as number | undefined
 })
 const submitRules = {
-  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
-  category: [{ required: true, message: '请选择分类', trigger: 'change' }],
-  content: [{ required: true, message: '请输入问题描述', trigger: 'blur' }]
+  title: [{ required: true, message: t('ticket.titleRequired'), trigger: 'blur' }],
+  category: [{ required: true, message: t('ticket.categoryRequired'), trigger: 'change' }],
+  content: [{ required: true, message: t('ticket.contentRequired'), trigger: 'blur' }]
 }
 
 function openSubmitDialog() {
@@ -240,11 +243,11 @@ async function submitTicket() {
         title: submitForm.title,
         content: submitForm.content,
         category: submitForm.category,
-        creatorName: '开发者'
+        creatorName: t('ticket.creatorDev')
       },
       DEV_USER_ID
     )
-    ElMessage.success('工单已提交')
+    ElMessage.success(t('ticket.submitSuccess'))
     submitDialogVisible.value = false
     loadList()
   } finally {
@@ -272,17 +275,17 @@ async function openDetail(row: any) {
 
 async function submitReply() {
   if (!replyContent.value.trim()) {
-    ElMessage.warning('补充内容不能为空')
+    ElMessage.warning(t('ticket.replyEmptyWarn'))
     return
   }
   replySubmitting.value = true
   try {
     await ticketApi.submitReply(
-      { ticketId: detail.value.ticket.id, content: replyContent.value, replierName: '开发者' },
+      { ticketId: detail.value.ticket.id, content: replyContent.value, replierName: t('ticket.creatorDev') },
       TENANT_ID,
       DEV_USER_ID
     )
-    ElMessage.success('补充成功')
+    ElMessage.success(t('ticket.replySuccess'))
     replyContent.value = ''
     // 重新加载详情
     detail.value = await ticketApi.submitDetail(TENANT_ID, detail.value.ticket.id)
@@ -294,8 +297,13 @@ async function submitReply() {
 
 /* ============ 工具函数 ============ */
 function ticketStatusText(status: number): string {
-  const map: Record<number, string> = { 0: '待处理', 1: '处理中', 2: '已回复', 3: '已关闭' }
-  return map[status] || '未知'
+  const map: Record<number, string> = {
+    0: t('ticket.statusPending'),
+    1: t('ticket.statusProcessing'),
+    2: t('ticket.statusReplied'),
+    3: t('ticket.statusClosed')
+  }
+  return map[status] || t('ticket.statusUnknown')
 }
 
 function ticketTagType(status: number): '' | 'success' | 'warning' | 'info' | 'danger' {
@@ -309,13 +317,21 @@ function ticketTagType(status: number): '' | 'success' | 'warning' | 'info' | 'd
 }
 
 function categoryText(category: number): string {
-  const map: Record<number, string> = { 1: '换机申请', 2: '充值问题', 3: '卡密问题', 4: '其他' }
-  return map[category] || '未知'
+  const map: Record<number, string> = {
+    1: t('ticket.categoryChangeMachine'),
+    2: t('ticket.categoryRecharge'),
+    3: t('ticket.categoryCard'),
+    4: t('ticket.categoryOther')
+  }
+  return map[category] || t('ticket.statusUnknown')
 }
 
 function replierTypeText(type: number): string {
-  const map: Record<number, string> = { 2: '开发者', 3: '管理员' }
-  return map[type] || '未知'
+  const map: Record<number, string> = {
+    2: t('ticket.replierDev'),
+    3: t('ticket.replierAdmin')
+  }
+  return map[type] || t('ticket.replierUnknown')
 }
 
 onMounted(() => {

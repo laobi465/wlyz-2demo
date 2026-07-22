@@ -10,32 +10,32 @@
   <div class="jicek-page">
     <el-card>
       <template #header>
-        <span class="jicek-card-title">卡密查询</span>
+        <span class="jicek-card-title">{{ t('cardKey.listTitle') }}</span>
       </template>
 
       <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-        <el-form-item label="卡号">
-          <el-input v-model="filter.cardNo" placeholder="请输入卡号" clearable style="width: 320px" />
+        <el-form-item :label="t('cardKey.cardNo')">
+          <el-input v-model="filter.cardNo" :placeholder="t('cardKey.cardNoPlaceholder')" clearable style="width: 320px" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="loading" @click="handleQuery">查询</el-button>
+          <el-button type="primary" :loading="loading" @click="handleQuery">{{ t('cardKey.query') }}</el-button>
         </el-form-item>
       </el-form>
 
       <el-descriptions v-if="cardInfo" :column="2" border>
-        <el-descriptions-item label="卡号">{{ cardInfo.cardNo }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
+        <el-descriptions-item :label="t('cardKey.cardNo')">{{ cardInfo.cardNo }}</el-descriptions-item>
+        <el-descriptions-item :label="t('cardKey.status')">
           <StatusTag :status="cardInfo.status" type="card" />
         </el-descriptions-item>
-        <el-descriptions-item label="卡类ID">{{ cardInfo.cardTypeId }}</el-descriptions-item>
-        <el-descriptions-item label="软件ID">{{ cardInfo.softwareId }}</el-descriptions-item>
-        <el-descriptions-item label="首次使用">{{ cardInfo.firstUseTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="到期时间">{{ cardInfo.expireTime || '永久' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ cardInfo.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ cardInfo.updateTime }}</el-descriptions-item>
+        <el-descriptions-item :label="t('cardKey.cardTypeId')">{{ cardInfo.cardTypeId }}</el-descriptions-item>
+        <el-descriptions-item :label="t('cardKey.softwareIdLabel')">{{ cardInfo.softwareId }}</el-descriptions-item>
+        <el-descriptions-item :label="t('cardKey.firstUseTime')">{{ cardInfo.firstUseTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('cardKey.expireTime')">{{ cardInfo.expireTime || t('cardKey.expirePermanent') }}</el-descriptions-item>
+        <el-descriptions-item :label="t('common.createTime')">{{ cardInfo.createTime }}</el-descriptions-item>
+        <el-descriptions-item :label="t('common.updateTime')">{{ cardInfo.updateTime }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-empty v-else-if="!loading" description="请输入卡号查询" />
+      <el-empty v-else-if="!loading" :description="t('cardKey.queryEmpty')" />
 
       <div v-if="cardInfo" style="margin-top: 16px">
         <el-button
@@ -43,35 +43,35 @@
           type="danger"
           @click="handleBan"
         >
-          封禁卡密
+          {{ t('cardKey.banCard') }}
         </el-button>
         <el-button
           v-if="cardInfo.status === 0 || cardInfo.status === 1"
           type="warning"
           @click="handleRefund"
         >
-          退款卡密
+          {{ t('cardKey.refundCard') }}
         </el-button>
       </div>
     </el-card>
 
     <ConfirmDialog
       v-model="banVisible"
-      title="封禁确认"
+      :title="t('cardKey.banTitle')"
       type="danger"
-      :message="`确认封禁卡密 ${cardInfo?.cardNo}?`"
-      sub-message="封禁后所有绑定设备立即下线，不可恢复"
-      confirm-text="确认封禁"
+      :message="t('cardKey.banMessage', { cardNo: cardInfo?.cardNo })"
+      :sub-message="t('cardKey.banSubMessage')"
+      :confirm-text="t('cardKey.banConfirm')"
       @confirm="doBan"
     />
 
     <ConfirmDialog
       v-model="refundVisible"
-      title="退款确认"
+      :title="t('cardKey.refundTitle')"
       type="warning"
-      :message="`确认退款卡密 ${cardInfo?.cardNo}?`"
-      sub-message="退款后卡密立即失效，不可恢复"
-      confirm-text="确认退款"
+      :message="t('cardKey.refundMessage', { cardNo: cardInfo?.cardNo })"
+      :sub-message="t('cardKey.refundSubMessage')"
+      :confirm-text="t('cardKey.refundConfirm')"
       @confirm="doRefund"
     />
   </div>
@@ -79,10 +79,13 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { cardKeyApi } from '@/api'
 import StatusTag from '@/components/jicek/StatusTag.vue'
 import ConfirmDialog from '@/components/jicek/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const cardInfo = ref<any>(null)
@@ -96,7 +99,7 @@ const filter = reactive({
 
 const handleQuery = async () => {
   if (!filter.cardNo) {
-    ElMessage.warning('请输入卡号')
+    ElMessage.warning(t('cardKey.cardNoRequired'))
     return
   }
   loading.value = true
@@ -116,7 +119,7 @@ const doBan = async () => {
   if (!cardInfo.value) return
   try {
     await cardKeyApi.ban(filter.tenantId, cardInfo.value.id, '管理员手动封禁')
-    ElMessage.success('封禁成功')
+    ElMessage.success(t('cardKey.banSuccess'))
     handleQuery()
   } catch {}
 }
@@ -129,7 +132,7 @@ const doRefund = async () => {
   if (!cardInfo.value) return
   try {
     await cardKeyApi.refund(filter.tenantId, cardInfo.value.id)
-    ElMessage.success('退款成功')
+    ElMessage.success(t('cardKey.refundSuccess'))
     handleQuery()
   } catch {}
 }

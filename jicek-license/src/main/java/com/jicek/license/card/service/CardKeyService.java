@@ -1,6 +1,7 @@
 package com.jicek.license.card.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jicek.license.agent.service.AgentService;
 import com.jicek.license.card.dto.CardKeyGenRequestDTO;
 import com.jicek.license.card.dto.CardKeyGenResponseDTO;
 import com.jicek.license.card.entity.CardKey;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,13 +42,16 @@ public class CardKeyService {
     private final CardKeyMapper cardKeyMapper;
     private final CardTypeMapper cardTypeMapper;
     private final AesCryptoService aesCryptoService;
+    private final AgentService agentService;
 
     public CardKeyService(CardKeyMapper cardKeyMapper,
                           CardTypeMapper cardTypeMapper,
-                          AesCryptoService aesCryptoService) {
+                          AesCryptoService aesCryptoService,
+                          AgentService agentService) {
         this.cardKeyMapper = cardKeyMapper;
         this.cardTypeMapper = cardTypeMapper;
         this.aesCryptoService = aesCryptoService;
+        this.agentService = agentService;
     }
 
     /**
@@ -73,7 +78,25 @@ public class CardKeyService {
             throw new ServiceException(ResultCode.CARD_TYPE_NOT_FOUND, "卡类已禁用");
         }
 
-        // 3. 批量生成
+        // 3. 代理制卡场景：先扣代理余额，再生成卡密（铁律 06 同事务，铁律 13 BigDecimal）
+        //    开发者制卡（agentId=null）不扣余额，保持原逻辑
+        //    单价取 CardType.price（零售价）；扣款失败（余额不足）抛 AGENT_BALANCE_INSUFFICIENT，事务回滚，不生成任何卡密
+        if (request.getAgentId() != null && request.getAgentId() > 0) {
+            BigDecimal unitPrice = cardType.getPrice();
+            if (unitPrice == null) {
+                unitPrice = BigDecimal.ZERO;
+            }
+            BigDecimal totalCost = unitPrice.multiply(BigDecimal.valueOf(request.getQuantity()));
+            if (totalCost.compareTo(BigDecimal.ZERO) > 0) {
+                agentService.deductBalance(request.getTenantId(), request.getAgentId(),
+                        totalCost, "代理制卡扣除");
+                log.info("代理制卡扣余额: tenantId={}, agentId={}, cardTypeId={}, quantity={}, totalCost={}",
+                        request.getTenantId(), request.getAgentId(),
+                        request.getCardTypeId(), request.getQuantity(), totalCost);
+            }
+        }
+
+        // 4. 批量生成
         List<String> plainCards = new ArrayList<>(request.getQuantity());
         List<String> maskedCardNos = new ArrayList<>(request.getQuantity());
         LocalDateTime now = LocalDateTime.now();
@@ -85,7 +108,7 @@ public class CardKeyService {
                     request.getCustomCharset(),
                     request.getLength());
 
-            // 4. 加密入库（铁律 04）
+            // 5. 加密入库（铁律 04）
             String cipher = aesCryptoService.encrypt(plainCard);
             String hash = Md5SignService.sha256Hex(plainCard);
 
@@ -108,7 +131,7 @@ public class CardKeyService {
         log.info("批量生成卡密: tenantId={}, cardTypeId={}, count={}",
                 request.getTenantId(), request.getCardTypeId(), request.getQuantity());
 
-        // 5. 返回（明文仅本次返回）
+        // 6. 返回（明文仅本次返回）
         CardKeyGenResponseDTO resp = new CardKeyGenResponseDTO();
         resp.setMaskedCardNos(maskedCardNos);
         resp.setPlainCards(plainCards);

@@ -1,5 +1,16 @@
 # 更新日志
 
+## [0.15.0] - 2026-07-22
+
+### [新增] 四项扩展全部完成（代理扣余额 + 分润回调 + 管理员端 + i18n 全量）
+
+四项遗留扩展全部实施完毕，核心功能与扩展项均已完成。
+
+- **代理制卡扣余额**：CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance（先扣款再生成卡密，同事务）；CardKeyGenRequestDTO 加 agentId 字段
+- **分润接入支付回调**：PayOrder 加 agentId 字段 + jicek_pay_order 表加 agent_id 列；PayNotifyService 支付成功后调用 CommissionService.grantCommission（try-catch，分润失败不回滚卡密）；jicek_commission 表加 uk_order_agent 幂等索引
+- **管理员端 Controller**：AdminTicketController（/api/admin/ticket 4 接口）+ AdminDevUserController（/api/admin/dev-user 5 接口），@AuthRequired(role=2) 限制；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离
+- **多语言国际化全量**：17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块，至此所有用户可见文案均支持中英文切换
+
 ## [0.14.0] - 2026-07-22
 
 ### [新增] 终端用户账号体系 + 多语言国际化

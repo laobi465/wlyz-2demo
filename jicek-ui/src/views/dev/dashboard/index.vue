@@ -13,25 +13,25 @@
     <el-row :gutter="16" class="stat-row">
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">今日收入</div>
+          <div class="jicek-stat-label">{{ t('dashboard.todayIncome') }}</div>
           <div class="jicek-stat-value success">¥{{ formatAmount(summary.todayIncome) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">今日订单</div>
+          <div class="jicek-stat-label">{{ t('dashboard.todayOrder') }}</div>
           <div class="jicek-stat-value">{{ summary.todayOrderCount || 0 }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">今日退款</div>
+          <div class="jicek-stat-label">{{ t('dashboard.todayRefund') }}</div>
           <div class="jicek-stat-value danger">¥{{ formatAmount(summary.todayRefund) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">今日净收入</div>
+          <div class="jicek-stat-label">{{ t('dashboard.todayNetIncome') }}</div>
           <div class="jicek-stat-value success">¥{{ formatAmount(summary.todayNetIncome) }}</div>
         </div>
       </el-col>
@@ -40,26 +40,26 @@
     <el-row :gutter="16" class="stat-row">
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">今日生成卡密</div>
-          <div class="jicek-stat-value">{{ summary.todayCardCount || 0 }} 张</div>
+          <div class="jicek-stat-label">{{ t('dashboard.todayCardCount') }}</div>
+          <div class="jicek-stat-value">{{ summary.todayCardCount || 0 }} {{ t('dashboard.cardUnit') }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">未使用卡密</div>
-          <div class="jicek-stat-value warning">{{ summary.cardStatus?.unused || 0 }} 张</div>
+          <div class="jicek-stat-label">{{ t('dashboard.cardUnused') }}</div>
+          <div class="jicek-stat-value warning">{{ summary.cardStatus?.unused || 0 }} {{ t('dashboard.cardUnit') }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">已使用卡密</div>
-          <div class="jicek-stat-value success">{{ summary.cardStatus?.used || 0 }} 张</div>
+          <div class="jicek-stat-label">{{ t('dashboard.cardUsed') }}</div>
+          <div class="jicek-stat-value success">{{ summary.cardStatus?.used || 0 }} {{ t('dashboard.cardUnit') }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="jicek-stat-card">
-          <div class="jicek-stat-label">已封禁卡密</div>
-          <div class="jicek-stat-value danger">{{ summary.cardStatus?.banned || 0 }} 张</div>
+          <div class="jicek-stat-label">{{ t('dashboard.cardBanned') }}</div>
+          <div class="jicek-stat-value danger">{{ summary.cardStatus?.banned || 0 }} {{ t('dashboard.cardUnit') }}</div>
         </div>
       </el-col>
     </el-row>
@@ -69,7 +69,7 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span class="jicek-card-title">卡密状态分布</span>
+            <span class="jicek-card-title">{{ t('dashboard.cardStatusDist') }}</span>
           </template>
           <div ref="pieChartRef" class="chart-container"></div>
         </el-card>
@@ -77,7 +77,7 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span class="jicek-card-title">今日收支概览</span>
+            <span class="jicek-card-title">{{ t('dashboard.todayOverview') }}</span>
           </template>
           <div ref="barChartRef" class="chart-container"></div>
         </el-card>
@@ -88,9 +88,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts'
 import { dashboardApi } from '@/api'
 import Decimal from 'decimal.js'
+
+const { t } = useI18n()
 
 const summary = ref<any>({})
 
@@ -124,15 +127,16 @@ const renderPieChart = () => {
   }
   const cs = summary.value.cardStatus || {}
   const data = [
-    { name: '未使用', value: cs.unused || 0, itemStyle: { color: '#6B7280' } },
-    { name: '已使用', value: cs.used || 0, itemStyle: { color: '#2E7D5B' } },
-    { name: '已封禁', value: cs.banned || 0, itemStyle: { color: '#B23A3A' } }
+    { name: t('dashboard.cardUnused'), value: cs.unused || 0, itemStyle: { color: '#6B7280' } },
+    { name: t('dashboard.cardUsed'), value: cs.used || 0, itemStyle: { color: '#2E7D5B' } },
+    { name: t('dashboard.cardBanned'), value: cs.banned || 0, itemStyle: { color: '#B23A3A' } }
   ]
   const total = data.reduce((s, d) => s + d.value, 0)
+  const cardUnit = t('dashboard.cardUnit')
   pieChart.setOption({
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c} 张 ({d}%)'
+      formatter: `{b}: {c} ${cardUnit} ({d}%)`
     },
     legend: {
       bottom: 10,
@@ -141,7 +145,7 @@ const renderPieChart = () => {
     },
     series: [
       {
-        name: '卡密状态',
+        name: t('dashboard.cardStatusSeries'),
         type: 'pie',
         radius: ['40%', '65%'],
         center: ['50%', '42%'],
@@ -153,7 +157,7 @@ const renderPieChart = () => {
         },
         label: {
           show: true,
-          formatter: total > 0 ? '{b}\n{c} 张' : '',
+          formatter: total > 0 ? `{b}\n{c} ${cardUnit}` : '',
           color: '#1F2937',
           fontSize: 13
         },
@@ -161,7 +165,7 @@ const renderPieChart = () => {
         emphasis: {
           label: { show: true, fontSize: 14, fontWeight: 'bold' }
         },
-        data: total > 0 ? data : [{ name: '暂无数据', value: 1, itemStyle: { color: '#E5E7EB' } }]
+        data: total > 0 ? data : [{ name: t('dashboard.noData'), value: 1, itemStyle: { color: '#E5E7EB' } }]
       }
     ]
   })
@@ -188,7 +192,7 @@ const renderBarChart = () => {
     grid: { left: 60, right: 30, top: 30, bottom: 40 },
     xAxis: {
       type: 'category',
-      data: ['今日收入', '今日退款', '今日净收入'],
+      data: [t('dashboard.todayIncome'), t('dashboard.refund'), t('dashboard.netIncome')],
       axisLine: { lineStyle: { color: '#E5E7EB' } },
       axisLabel: { color: '#6B7280', fontSize: 13 }
     },

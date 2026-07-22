@@ -264,11 +264,16 @@
 - 完成版本：v0.14.0
 - 备注：vue-i18n 9.x 中英文 + 渐进式改造，详见 v0.14.0 新增功能条目
 
+### [已完成] v0.15.0 新增功能 ✅
+- 优先级：P1
+- 完成版本：v0.15.0
+- 完成项：
+  - [x] 代理制卡扣余额：CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance（先扣款再生成卡密，同事务）；CardKeyGenRequestDTO 加 agentId 字段
+  - [x] 分润接入支付回调：PayOrder 加 agentId 字段 + jicek_pay_order 表加 idx_agent 索引；PayNotifyService 支付成功事务提交后调 CommissionService.grantCommission（分润独立事务 + try-catch，分润失败不回滚卡密）；jicek_commission 表加 uk_order_agent(out_trade_no, agent_id) 幂等索引
+  - [x] 管理员端 Controller：AdminTicketController（/api/admin/ticket 4 接口 page/get/reply/close）+ AdminDevUserController（/api/admin/dev-user 5 接口 page/get/ban/unban/reset-password），@AuthRequired(role=JicekConstants.ROLE_ADMIN)；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离
+  - [x] 多语言国际化全量：17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块（dashboard/software/cardType/cardKey/device/agent/withdraw/payConfig/payOrder/cloudFunc/stats/ticket/deploy/updatePackage/announcement/shop + admin），所有用户可见文案支持中英文切换
+- 备注：详见 [CHANGELOG.md](CHANGELOG.md) v0.15.0 条目；7 份核心文档已同步（CHANGELOG/README/PROMPT/PROJECT/SPEC/UI-DESIGN/TODO）
+
 ## 待实现清单
 
-核心功能已全部完成，后续按需迭代。剩余增强项（非阻塞）：
-
-- 代理制卡扣余额接入（AgentService.deductBalance）
-- 分润接入支付回调（PaymentTransactionService 触发 grantCommission）
-- 管理员端 Controller（工单处理 + 租户管理）
-- 多语言国际化剩余页面逐步替换（当前登录页 + DevLayout + 终端用户页已全量 i18n）
+全部完成，无待实现项。核心功能与扩展项已全部完成，后续按需迭代。

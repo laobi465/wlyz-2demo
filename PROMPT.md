@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.14.0 |
+| 当前版本 | v0.15.0 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板）+ GitHub Webhook 自动更新 |
@@ -62,6 +62,8 @@
 | shop/ | `shop/` (entity/mapper/dto/service/controller) | ✅ v0.13.0（内嵌卡网：店铺 + 商品 + H5 下单） |
 | agent/ 扩展 | `agent/` (util/InviteCodeGenerator + dto/AgentRegisterDTO) | ✅ v0.13.0（invite_code/invited_by 字段 + H5 公开注册接口 + 邀请码生成器） |
 | enduser/ | `enduser/` (entity/mapper/dto/service/controller) | ✅ v0.14.0（终端用户账号体系，H5 账号密码登录复用 H5Session） |
+| ticket/controller/AdminTicketController | `ticket/controller/AdminTicketController` | ✅ v0.15.0（管理员工单处理：page/get/reply/close，@AuthRequired(role=2)） |
+| auth/controller/AdminDevUserController + auth/service/DevUserService | `auth/controller/AdminDevUserController` + `auth/service/DevUserService` | ✅ v0.15.0（管理员租户管理：page/get/ban/unban/reset-password，@AuthRequired(role=2)） |
 
 ### 前端（jicek-ui）
 
@@ -99,6 +101,8 @@
 | 内嵌卡网管理页 | `src/views/dev/shop/` | ✅ v0.13.0（店铺 CRUD + 商品双层弹窗 + 状态开关） |
 | 终端用户管理页 | `src/views/dev/end-user/` | ✅ v0.14.0（CRUD + 封禁 + 重置密码） |
 | 多语言国际化 | `src/i18n/` + `src/components/LangSwitch.vue` | ✅ v0.14.0（vue-i18n 9.x 中英文，渐进式改造） |
+| 管理员后台 | `src/views/admin/` | ✅ v0.15.0（AdminLayout + login + ticket + dev-user 4 页，jicek_admin_token 隔离 + adminAxios 独立实例） |
+| 多语言国际化全量 | `src/i18n/` | ✅ v0.15.0（17 个 dev 页面全量 i18n + 16 个新语言包模块，所有用户可见文案支持中英文切换） |
 
 ## 3. 待办任务（按优先级）
 
@@ -415,6 +419,25 @@ SDK 请求头规范（所有 `/api/sdk/**` 必填）：
 |---|---|---|
 | POST | `/api/h5/end-user/login` | 终端用户账号密码登录（公开，appKey + username + password），返回 X-H5-Token |
 
+### 7.8 Admin Ticket API（`/api/admin/ticket/**`，@AuthRequired(role=2)，v0.15.0）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/admin/ticket/page` | 分页查询所有租户工单（params: current/size/tenantId/category/status） |
+| GET | `/api/admin/ticket/{id}` | 工单详情（含回复列表） |
+| POST | `/api/admin/ticket/{id}/reply` | 管理员回复工单（replierType=2，状态→已回复） |
+| POST | `/api/admin/ticket/{id}/close` | 关闭工单（状态→已关闭） |
+
+### 7.9 Admin Dev User API（`/api/admin/dev-user/**`，@AuthRequired(role=2)，v0.15.0）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/admin/dev-user/page` | 分页查询所有开发者账号（params: current/size/tenantId/username/status） |
+| GET | `/api/admin/dev-user/{id}` | 开发者详情 |
+| POST | `/api/admin/dev-user/{id}/ban` | 封禁开发者（status=0） |
+| POST | `/api/admin/dev-user/{id}/unban` | 解封开发者（status=1） |
+| POST | `/api/admin/dev-user/reset-password` | 重置密码（BCrypt 哈希存储） |
+
 ## 8. 数据库表（核心）
 
 | 表名 | 关键字段 | 说明 |
@@ -576,6 +599,8 @@ const status = await deployApi.status()
 60. **代理邀请码注册继承规则**（v0.13.0）：新代理 `parentId=inviter.id` / `level=inviter.level+1` / `maxSubLevel=inviter.maxSubLevel-1` / `commissionRate=inviter.commissionRate`（继承）。邀请码 8 位 SecureRandom，字符集 `INVITE_CODE_CHARSET` 去易混淆字符 I/O/0/1。注册接口 `POST /api/h5/agent/register` 公开，无需 JWT 也无需 X-H5-Token。
 61. **终端用户账号登录复用 H5Session**（v0.14.0）：H5Session 表 `user_id` 字段（可空）与 `card_key_id`（可空）互斥——卡密登录填 cardKeyId/userId=null，账号登录填 userId/cardKeyId=null。EndUserService 自行生成 H5Session（不修改 H5AuthService），login 流程：appKey→查 Software→查 EndUser by (tenantId, softwareId, username)→BCrypt.checkpw 校验→生成 UUID token→存 H5Session。
 62. **多语言国际化渐进式改造**（v0.14.0）：vue-i18n 9.x Composition API 模式（legacy: false），useI18n() 在 setup 获取 t 函数。语言包按模块组织（common/lang/topbar/menu/login/endUser），新增页面应优先用 t() 而非硬编码中文。LangSwitch 切换后 location.reload() 同步 Element Plus 语言包（因 main.ts 仅初始化时按 localStorage 决定 EP locale）。localStorage key: `jicek_locale`。
+63. **管理员 token 独立于开发者 token**（v0.15.0）：管理员登录存 `jicek_admin_token`，开发者存 `jicek_token`，前端 `adminAxios` 独立实例注入 admin token，路由守卫按 `/admin/*` 前缀分流。后端 `@AuthRequired(role=2)` 限制管理员接口，`JwtAuthInterceptor` 拦截 `/api/admin/**`。
+64. **分润幂等与事务边界**（v0.15.0）：`PayNotifyService` 支付成功事务（订单状态+卡密发放）提交后，再调 `CommissionService.grantCommission`，分润独立事务 + try-catch。分润失败不回滚卡密（已发放不可逆）。`jicek_commission` 表 `uk_order_agent(out_trade_no, agent_id)` 唯一索引保证幂等，重复回调短路返回。代理制卡扣余额在制卡事务内先扣款再生成卡密，余额不足事务回滚。
 
 ## 12. 验证清单
 

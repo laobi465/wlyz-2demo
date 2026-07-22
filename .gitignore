@@ -30,3 +30,8 @@ application-prod.yml
 *.tmp
 *.bak
 *.swp
+
+# Node.js
+node_modules/
+dist/
+.vite/

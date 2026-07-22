@@ -1,5 +1,6 @@
 package com.jicek.license.pay.service;
 
+import com.jicek.license.agent.service.CommissionService;
 import com.jicek.license.common.constant.JicekConstants;
 import com.jicek.license.common.exception.ServiceException;
 import com.jicek.license.common.result.ResultCode;
@@ -46,6 +47,9 @@ public class PayNotifyService {
 
     @Resource
     private PaymentTransactionService paymentTransactionService;
+
+    @Resource
+    private CommissionService commissionService;
 
     @Resource
     private PayAdapter payAdapterV1;
@@ -115,6 +119,17 @@ public class PayNotifyService {
             // 8. 调用资金事务服务（同事务：订单流转 + 卡密发放）
             // 此处为资金安全核心，详见 PaymentTransactionService
             paymentTransactionService.processPaymentSuccess(order, notify);
+
+            // 9. 订单关联代理时触发向上链式分润（后置操作，独立事务）
+            //    卡密已发放并提交，分润失败不回滚卡密，仅记录日志（铁律 06 事务边界隔离）
+            if (order.getAgentId() != null && order.getAgentId() > 0) {
+                try {
+                    commissionService.grantCommission(order, order.getAgentId());
+                } catch (Exception ce) {
+                    log.error("分润处理失败（卡密已发放，不影响主流程）: outTradeNo={}, agentId={}",
+                            order.getOutTradeNo(), order.getAgentId(), ce);
+                }
+            }
 
             return JicekConstants.EPAY_NOTIFY_RETURN_SUCCESS;
 

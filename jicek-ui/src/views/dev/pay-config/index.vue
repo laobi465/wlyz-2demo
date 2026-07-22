@@ -10,67 +10,67 @@
   <div class="jicek-page">
     <el-card>
       <template #header>
-        <span class="jicek-card-title">支付配置</span>
+        <span class="jicek-card-title">{{ t('payConfig.title') }}</span>
         <el-button type="primary" style="float: right" :loading="saving" @click="handleSave">
-          保存配置
+          {{ t('payConfig.save') }}
         </el-button>
       </template>
 
       <el-form ref="formRef" :model="form" :rules="rules" label-width="140px" style="max-width: 750px">
-        <el-form-item label="支付网关地址" prop="gatewayUrl">
-          <el-input v-model="form.gatewayUrl" placeholder="https://pay.example.com" />
+        <el-form-item :label="t('payConfig.gatewayUrl')" prop="gatewayUrl">
+          <el-input v-model="form.gatewayUrl" :placeholder="t('payConfig.gatewayUrlPlaceholder')" />
         </el-form-item>
 
-        <el-form-item label="商户 ID" prop="pid">
+        <el-form-item :label="t('payConfig.pid')" prop="pid">
           <el-input-number v-model="form.pid" :min="1" style="width: 100%" />
         </el-form-item>
 
-        <el-form-item label="商户密钥" prop="merchantKey">
+        <el-form-item :label="t('payConfig.merchantKey')" prop="merchantKey">
           <el-input
             v-model="form.merchantKey"
             type="password"
             show-password
-            placeholder="彩虹易支付商户密钥"
+            :placeholder="t('payConfig.merchantKeyPlaceholder')"
           />
-          <div class="form-tip">密钥采用 AES-256-GCM 加密存储，禁明文</div>
+          <div class="form-tip">{{ t('payConfig.merchantKeyTip') }}</div>
         </el-form-item>
 
-        <el-form-item label="支付通道">
+        <el-form-item :label="t('payConfig.channels')">
           <el-checkbox-group v-model="selectedChannels">
-            <el-checkbox value="alipay">支付宝 (alipay)</el-checkbox>
-            <el-checkbox value="wxpay">微信支付 (wxpay)</el-checkbox>
-            <el-checkbox value="qqpay">QQ 钱包 (qqpay)</el-checkbox>
-            <el-checkbox value="unionpay">银联云闪付 (unionpay)</el-checkbox>
+            <el-checkbox value="alipay">{{ t('payConfig.channelAlipay') }}</el-checkbox>
+            <el-checkbox value="wxpay">{{ t('payConfig.channelWxpay') }}</el-checkbox>
+            <el-checkbox value="qqpay">{{ t('payConfig.channelQqpay') }}</el-checkbox>
+            <el-checkbox value="unionpay">{{ t('payConfig.channelUnionpay') }}</el-checkbox>
           </el-checkbox-group>
-          <div class="form-tip">用户不可选支付通道，由你勾选的通道展示给用户</div>
+          <div class="form-tip">{{ t('payConfig.channelsTip') }}</div>
         </el-form-item>
 
-        <el-form-item label="异步通知地址">
-          <el-input v-model="form.notifyUrl" placeholder="系统自动生成" />
+        <el-form-item :label="t('payConfig.notifyUrl')">
+          <el-input v-model="form.notifyUrl" :placeholder="t('payConfig.notifyUrlPlaceholder')" />
         </el-form-item>
 
-        <el-form-item label="同步跳转地址">
-          <el-input v-model="form.returnUrl" placeholder="https://www.example.com/pay/return" />
+        <el-form-item :label="t('payConfig.returnUrl')">
+          <el-input v-model="form.returnUrl" :placeholder="t('payConfig.returnUrlPlaceholder')" />
         </el-form-item>
 
-        <el-divider>加密选项</el-divider>
+        <el-divider>{{ t('payConfig.cryptoTitle') }}</el-divider>
 
-        <el-form-item label="卡密传输加密">
+        <el-form-item :label="t('payConfig.cardCrypto')">
           <el-radio-group v-model="cryptoScheme">
-            <el-radio value="rsa-aes">RSA-2048 + AES-256-GCM（推荐）</el-radio>
-            <el-radio value="sm">国密 SM2 + SM4</el-radio>
+            <el-radio value="rsa-aes">{{ t('payConfig.cryptoRsaAes') }}</el-radio>
+            <el-radio value="sm">{{ t('payConfig.cryptoSm') }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="回调验签强度">
+        <el-form-item :label="t('payConfig.signStrength')">
           <el-radio-group v-model="signStrength">
-            <el-radio value="md5">MD5（V1 兼容）</el-radio>
-            <el-radio value="md5-replay">MD5 + 时间戳防重放（推荐）</el-radio>
+            <el-radio value="md5">{{ t('payConfig.signMd5') }}</el-radio>
+            <el-radio value="md5-replay">{{ t('payConfig.signMd5Replay') }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
         <el-form-item>
-          <el-button @click="handleTest">测试连接</el-button>
+          <el-button @click="handleTest">{{ t('payConfig.test') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -79,8 +79,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { payApi } from '@/api'
+
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const saving = ref(false)
@@ -106,9 +109,9 @@ watch(selectedChannels, (val) => {
 })
 
 const rules: FormRules = {
-  gatewayUrl: [{ required: true, message: '请输入支付网关地址', trigger: 'blur' }],
-  pid: [{ required: true, message: '请输入商户 ID', trigger: 'blur' }],
-  merchantKey: [{ required: true, message: '请输入商户密钥', trigger: 'blur' }]
+  gatewayUrl: [{ required: true, message: t('payConfig.gatewayUrlRequired'), trigger: 'blur' }],
+  pid: [{ required: true, message: t('payConfig.pidRequired'), trigger: 'blur' }],
+  merchantKey: [{ required: true, message: t('payConfig.merchantKeyRequired'), trigger: 'blur' }]
 }
 
 const loadConfig = async () => {
@@ -130,13 +133,13 @@ const handleSave = async () => {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     if (selectedChannels.value.length === 0) {
-      ElMessage.warning('至少启用一个支付通道')
+      ElMessage.warning(t('payConfig.channelsRequired'))
       return
     }
     saving.value = true
     try {
       await payApi.saveConfig(form)
-      ElMessage.success('保存成功')
+      ElMessage.success(t('payConfig.saveSuccess'))
       loadConfig()
     } finally {
       saving.value = false
@@ -145,7 +148,7 @@ const handleSave = async () => {
 }
 
 const handleTest = () => {
-  ElMessage.info('测试连接功能待实现（v0.3.0）')
+  ElMessage.info(t('payConfig.testTodo'))
 }
 
 loadConfig()

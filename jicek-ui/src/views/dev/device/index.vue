@@ -14,65 +14,65 @@
   <div class="jicek-page">
     <el-card>
       <template #header>
-        <span class="jicek-card-title">设备管理</span>
+        <span class="jicek-card-title">{{ t('device.title') }}</span>
       </template>
 
       <!-- 筛选 -->
       <el-form :inline="true" :model="filter" style="margin-bottom: 16px">
-        <el-form-item label="软件ID">
+        <el-form-item :label="t('device.softwareId')">
           <el-input-number v-model="filter.softwareId" :min="1" clearable style="width: 140px" />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filter.status" placeholder="全部" clearable style="width: 120px">
-            <el-option label="正常" :value="0" />
-            <el-option label="封禁" :value="1" />
+        <el-form-item :label="t('device.status')">
+          <el-select v-model="filter.status" :placeholder="t('common.all')" clearable style="width: 120px">
+            <el-option :label="t('device.statusNormal')" :value="0" />
+            <el-option :label="t('device.statusBanned')" :value="1" />
           </el-select>
         </el-form-item>
-        <el-form-item label="在线状态">
-          <el-select v-model="filter.onlineStatus" placeholder="全部" clearable style="width: 120px">
-            <el-option label="在线" :value="1" />
-            <el-option label="离线" :value="0" />
+        <el-form-item :label="t('device.onlineStatus')">
+          <el-select v-model="filter.onlineStatus" :placeholder="t('common.all')" clearable style="width: 120px">
+            <el-option :label="t('device.online')" :value="1" />
+            <el-option :label="t('device.offline')" :value="0" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadData">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button type="primary" @click="loadData">{{ t('common.search') }}</el-button>
+          <el-button @click="handleReset">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
 
       <!-- 表格 -->
       <el-table v-loading="loading" :data="tableData" border stripe style="width: 100%">
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="softwareId" label="软件ID" width="90" />
-        <el-table-column prop="deviceName" label="设备名称" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="osType" label="系统" width="100">
+        <el-table-column prop="softwareId" :label="t('device.softwareId')" width="90" />
+        <el-table-column prop="deviceName" :label="t('device.deviceName')" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="osType" :label="t('device.osType')" width="100">
           <template #default="{ row }">
             <el-tag size="small" :type="osTagType(row.osType)">{{ osText(row.osType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="clientVersion" label="客户端版本" width="120" />
-        <el-table-column label="虚拟机" width="80">
+        <el-table-column prop="clientVersion" :label="t('device.clientVersion')" width="120" />
+        <el-table-column :label="t('device.isVm')" width="80">
           <template #default="{ row }">
             <el-tag v-if="row.isVm === 1" type="warning" size="small">VM</el-tag>
             <span v-else style="color: var(--jicek-text-secondary)">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="指纹" min-width="180" show-overflow-tooltip>
+        <el-table-column :label="t('device.fingerprint')" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="fingerprint-text">{{ maskFingerprint(row.deviceFingerprint) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="bindIp" label="绑定IP" width="130" />
-        <el-table-column label="状态" width="90">
+        <el-table-column prop="bindIp" :label="t('device.bindIp')" width="130" />
+        <el-table-column :label="t('device.status')" width="90">
           <template #default="{ row }">
             <StatusTag :status="deviceTagStatus(row)" type="device" />
           </template>
         </el-table-column>
-        <el-table-column prop="lastHeartbeat" label="最后心跳" min-width="160" />
-        <el-table-column prop="bindTime" label="绑定时间" min-width="160" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column prop="lastHeartbeat" :label="t('device.lastHeartbeat')" min-width="160" />
+        <el-table-column prop="bindTime" :label="t('device.bindTime')" min-width="160" />
+        <el-table-column :label="t('common.operation')" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button link type="primary" size="small" @click="handleDetail(row)">{{ t('device.detail') }}</el-button>
             <el-button
               v-if="row.status === 0"
               link
@@ -80,7 +80,7 @@
               size="small"
               @click="handleBan(row)"
             >
-              封禁
+              {{ t('device.ban') }}
             </el-button>
             <el-button
               v-else
@@ -89,7 +89,7 @@
               size="small"
               @click="handleUnban(row)"
             >
-              解封
+              {{ t('device.unban') }}
             </el-button>
           </template>
         </el-table-column>
@@ -108,38 +108,38 @@
     </el-card>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="设备详情" width="600px">
+    <el-dialog v-model="detailVisible" :title="t('device.detailTitle')" width="600px">
       <el-descriptions v-if="detailData" :column="2" border>
-        <el-descriptions-item label="设备 ID">{{ detailData.id }}</el-descriptions-item>
-        <el-descriptions-item label="软件 ID">{{ detailData.softwareId }}</el-descriptions-item>
-        <el-descriptions-item label="设备名称">{{ detailData.deviceName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="操作系统">{{ osText(detailData.osType) }} {{ detailData.osVersion || '' }}</el-descriptions-item>
-        <el-descriptions-item label="客户端版本">{{ detailData.clientVersion || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="虚拟机">{{ detailData.isVm === 1 ? '是' : '否' }}</el-descriptions-item>
-        <el-descriptions-item label="绑定用户 ID">{{ detailData.userId || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="绑定 IP">{{ detailData.bindIp || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="设备指纹" :span="2">
+        <el-descriptions-item :label="t('device.deviceId')">{{ detailData.id }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.softwareIdLabel')">{{ detailData.softwareId }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.deviceName')">{{ detailData.deviceName || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.os')">{{ osText(detailData.osType) }} {{ detailData.osVersion || '' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.clientVersion')">{{ detailData.clientVersion || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.isVmLabel')">{{ detailData.isVm === 1 ? t('common.yes') : t('common.no') }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.bindUserId')">{{ detailData.userId || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.bindIpLabel')">{{ detailData.bindIp || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.fingerprintLabel')" :span="2">
           <code class="fingerprint-full">{{ detailData.deviceFingerprint }}</code>
         </el-descriptions-item>
-        <el-descriptions-item label="换机码">{{ detailData.bindCode || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
+        <el-descriptions-item :label="t('device.bindCode')">{{ detailData.bindCode || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.status')">
           <StatusTag :status="deviceTagStatus(detailData)" type="device" />
         </el-descriptions-item>
-        <el-descriptions-item label="绑定时间">{{ detailData.bindTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="最后心跳">{{ detailData.lastHeartbeat || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detailData.createTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ detailData.updateTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.bindTime')">{{ detailData.bindTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.lastHeartbeat')">{{ detailData.lastHeartbeat || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.createTime')">{{ detailData.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item :label="t('device.updateTime')">{{ detailData.updateTime || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
 
     <!-- 封禁确认 -->
     <ConfirmDialog
       v-model="banVisible"
-      title="封禁设备确认"
+      :title="t('device.banTitle')"
       type="danger"
-      :message="`确认封禁设备 ${banRow?.deviceName || banRow?.id}?`"
-      sub-message="封禁后该设备所有会话立即下线，无法再绑定卡密"
-      confirm-text="确认封禁"
+      :message="t('device.banMessage', { name: banRow?.deviceName || banRow?.id })"
+      :sub-message="t('device.banSubMessage')"
+      :confirm-text="t('device.banConfirm')"
       @confirm="doBan"
     />
   </div>
@@ -147,10 +147,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { deviceApi } from '@/api'
 import StatusTag from '@/components/jicek/StatusTag.vue'
 import ConfirmDialog from '@/components/jicek/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -241,7 +244,7 @@ const doBan = async () => {
   if (!banRow.value) return
   try {
     await deviceApi.ban(filter.tenantId, banRow.value.id)
-    ElMessage.success('设备已封禁')
+    ElMessage.success(t('device.banSuccess'))
     loadData()
   } catch {
     // 错误已在拦截器处理
@@ -251,7 +254,7 @@ const doBan = async () => {
 const handleUnban = async (row: any) => {
   try {
     await deviceApi.unban(filter.tenantId, row.id)
-    ElMessage.success('设备已解封')
+    ElMessage.success(t('device.unbanSuccess'))
     loadData()
   } catch {
     // 静默

@@ -37,6 +37,7 @@ CREATE TABLE jicek_pay_order (
   out_trade_no    VARCHAR(64)  NOT NULL COMMENT '商户订单号',
   trade_no        VARCHAR(64)  COMMENT '易支付流水号',
   card_type_id    BIGINT       COMMENT '购买的卡类ID',
+  agent_id        BIGINT       COMMENT '关联代理ID（null表示终端用户购买，非空时支付成功后触发分润）',
   quantity        INT          DEFAULT 1,
   amount          DECIMAL(10,2) NOT NULL COMMENT '金额',
   pay_type        VARCHAR(20)  COMMENT 'alipay/wxpay/qqpay/unionpay',
@@ -48,7 +49,8 @@ CREATE TABLE jicek_pay_order (
   create_time     DATETIME     NOT NULL,
   update_time     DATETIME     NOT NULL,
   UNIQUE KEY uk_trade (tenant_id, out_trade_no),
-  KEY idx_status (status, create_time)
+  KEY idx_status (status, create_time),
+  KEY idx_agent (tenant_id, agent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付订单';
 
 -- ============================================================
@@ -222,7 +224,8 @@ CREATE TABLE jicek_commission (
   create_time     DATETIME     NOT NULL,
   KEY idx_agent (tenant_id, agent_id, create_time),
   KEY idx_order (order_id),
-  KEY idx_source (source_agent_id)
+  KEY idx_source (source_agent_id),
+  UNIQUE KEY uk_order_agent (out_trade_no, agent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='分润流水（不可删除，仅审计）';
 
 -- ============================================================

@@ -2,7 +2,7 @@
 
 > 面向开发者的多租户卡密验证 SaaS 平台 · 基于 RuoYi-Vue-Plus 技术栈 · 国产开源可私有部署
 
-[![Version](https://img.shields.io/badge/version-0.14.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.15.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.6-green)](https://spring.io/projects/spring-boot)
@@ -18,7 +18,7 @@
 - **8 语言 SDK 全覆盖**：Java / C# / Python / Go / Node.js / C++ / 易语言 / Lua / Shell
 - **最前沿加密**：AES-256-GCM + RSA-2048-OAEP + HMAC-SHA256（可选国密 SM2/SM4）
 
-## 当前版本（v0.14.0）
+## 当前版本（v0.15.0）
 
 ### 已完成 ✅
 
@@ -40,20 +40,19 @@
 | v0.11.0 | 自动更新包 | 文件上传 + CRUD + 发布/下线 + 多格式 exe/sh/win/lua/zip/7z |
 | v0.12.0 | SDK 代码生成器 + 对接文档 | 9 语言模板一键生成 + 对接文档页（纯前端） |
 | v0.13.0 | H5 验证界面 + 代理邀请码注册 + 内嵌卡网系统 | 详见 CHANGELOG.md |
-| **v0.14.0** | **终端用户账号体系 + 多语言国际化** | 详见下方 |
+| v0.14.0 | 终端用户账号体系 + 多语言国际化 | 详见 CHANGELOG.md |
+| **v0.15.0** | **四项扩展全部完成** | **代理扣余额 + 分润回调 + 管理员端 + i18n 全量，详见 CHANGELOG.md** |
 
-#### v0.14.0 新增（2 项功能）
+#### v0.15.0 新增（4 项扩展）
 
-- **终端用户账号体系**：`enduser/` 后端模块（`jicek_end_user` 表 + (tenantId, softwareId, username) 三元唯一 + BCrypt 密码哈希）+ 后台 DevEndUserController 8 接口（CRUD + ban/unban + reset-password，JWT 鉴权）+ H5 公开接口 `POST /api/h5/end-user/login`（账号密码登录复用 H5Session，cardKeyId 与 userId 互斥）+ 错误码 1053-1057。
-- **多语言国际化**：vue-i18n 9.x（Composition API 模式，legacy: false）+ 语言包 `src/i18n/locales/{zh-CN,en-US}.ts`（六模块 common/lang/topbar/menu/login/endUser）+ LangSwitch 顶栏组件（localStorage `jicek_locale` 持久化，切换后 location.reload 同步 Element Plus locale）+ 渐进式改造（登录页 + DevLayout + 终端用户页全量 i18n，其余保留硬编码）。
+- **代理制卡扣余额**：CardKeyService.batchGenerate 代理制卡分支调用 AgentService.deductBalance（先扣款再生成卡密，同事务）；CardKeyGenRequestDTO 加 agentId 字段。
+- **分润接入支付回调**：PayOrder 加 agentId 字段 + jicek_pay_order 表加 agent_id 列 + idx_agent 索引；PayNotifyService 支付成功后调用 CommissionService.grantCommission（try-catch，分润失败不回滚卡密）；jicek_commission 表加 uk_order_agent 幂等索引。
+- **管理员端 Controller**：AdminTicketController（/api/admin/ticket 4 接口）+ AdminDevUserController（/api/admin/dev-user 5 接口），@AuthRequired(role=2) 限制；DevUserService 新建；前端 AdminLayout + 管理员登录/工单/开发者管理 3 页 + adminAxios 独立实例 + jicek_admin_token 隔离。
+- **多语言国际化全量**：17 个 dev 页面全量 i18n 改造 + 语言包扩展 16 个新模块，至此所有用户可见文案均支持中英文切换。
 
-### 待实现（v0.15.0+）
+### 待实现
 
-- 代理制卡扣余额接入（AgentService.deductBalance）
-- 分润接入支付回调（PaymentTransactionService 触发 grantCommission）
-- 管理员端 Controller（工单处理 + 租户管理）
-
-详见 [TODO.md](TODO.md)。
+核心功能与扩展项已全部完成，无待实现项。详见 [TODO.md](TODO.md)。
 
 ## 技术栈
 
@@ -117,16 +116,21 @@ wlyz-2demo/
 │       │   ├── dto                   # EndUserSaveDTO / H5EndUserLoginDTO
 │       │   ├── service               # EndUserService(CRUD + ban/unban + reset-password + 账号登录复用 H5Session)
 │       │   └── controller            # DevEndUserController(8 接口 JWT) + H5EndUserController(登录公开)
+│       ├── auth/                     # ★ 鉴权模块（v0.7.0，v0.15.0 加 AdminDevUserController + DevUserService）
+│       │   ├── service               # AuthService + DevUserService(page/get/ban/unban/resetPassword，v0.15.0)
+│       │   └── controller            # AuthController + AdminDevUserController(/api/admin/dev-user 5 接口 @AuthRequired(role=2))
+│       ├── ticket/                   # ★ 工单模块（v0.6.0，v0.15.0 加 AdminTicketController）
+│       │   └── controller            # DevTicketController + AdminTicketController(/api/admin/ticket 4 接口 @AuthRequired(role=2))
 │       └── agent/                    # ★ 代理模块（v0.4.0 + v0.13.0 扩展 invite_code/invited_by）
 │           └── util                  # InviteCodeGenerator(8 位 SecureRandom)
 ├── jicek-ui/                         # 前端 - Vue3 + TS + Element Plus
 │   └── src/
-│       ├── api/                      # API 客户端 + 接口定义（h5Api + shopApi v0.13.0 + endUserApi v0.14.0）
+│       ├── api/                      # API 客户端 + 接口定义（h5Api + shopApi v0.13.0 + endUserApi v0.14.0 + admin.ts v0.15.0 独立 adminAxios 实例）
 │       ├── components/jicek/         # 公共组件（StatusTag/AmountInput/ConfirmDialog）
 │       ├── components/LangSwitch.vue # ★ 多语言切换组件（v0.14.0，顶栏下拉 + localStorage 持久化）
-│       ├── i18n/                     # ★ 多语言国际化（v0.14.0，vue-i18n 9.x + locales/{zh-CN,en-US}）
-│       ├── layout/                   # DevLayout (220px 侧栏 + 60px 顶栏)
-│       ├── router/                   # 路由配置（/h5/* 7 个 public 子路由 v0.13.0 + /end-user v0.14.0）
+│       ├── i18n/                     # ★ 多语言国际化（v0.14.0 起，v0.15.0 全量改造 17 dev 页面 + 16 新模块）
+│       ├── layout/                   # DevLayout (220px 侧栏 + 60px 顶栏) + AdminLayout (v0.15.0 管理员布局)
+│       ├── router/                   # 路由配置（/h5/* 7 个 public 子路由 v0.13.0 + /end-user v0.14.0 + /admin/* v0.15.0 守卫 jicek_admin_token）
 │       ├── styles/                   # jicek.scss (CSS 变量系统)
 │       ├── utils/sdk-code-templates.ts # ★ 9 语言代码模板生成器（v0.12.0）
 │       └── views/
@@ -140,13 +144,17 @@ wlyz-2demo/
 │           │   ├── integration-doc/ # ★ 对接文档页（v0.12.0 新增）
 │           │   ├── shop/             # ★ 内嵌卡网管理（v0.13.0，店铺+商品双层弹窗）
 │           │   └── end-user/         # ★ 终端用户管理（v0.14.0，CRUD + 封禁 + 重置密码）
-│           └── h5/                   # ★ H5 终端用户页（v0.13.0 新增，7 页）
-│               ├── H5Layout.vue      # 44px 顶导 + 56px 底部 4-Tab + 480px 居中
-│               ├── login/            # 卡密登录（appKey + cardKey）
-│               ├── my-card/          # 我的卡密（按 cardType 渲染）
-│               ├── announcement/     # 公告列表
-│               ├── agent/register.vue # 代理注册（邀请码）
-│               └── shop/             # 店铺列表 + 订单确认
+│           ├── h5/                   # ★ H5 终端用户页（v0.13.0 新增，7 页）
+│           │   ├── H5Layout.vue      # 44px 顶导 + 56px 底部 4-Tab + 480px 居中
+│           │   ├── login/            # 卡密登录（appKey + cardKey）
+│           │   ├── my-card/          # 我的卡密（按 cardType 渲染）
+│           │   ├── announcement/     # 公告列表
+│           │   ├── agent/register.vue # 代理注册（邀请码）
+│           │   └── shop/             # 店铺列表 + 订单确认
+│           └── admin/                # ★ 管理员后台页（v0.15.0 新增，jicek_admin_token 隔离）
+│               ├── login/            # 管理员登录（用户名+密码，无租户ID）
+│               ├── ticket/           # 工单管理（筛选+表格+详情弹窗+回复+关闭）
+│               └── dev-user/         # 开发者管理（筛选+表格+封禁/解封+重置密码）
 ├── docs/                             # 核心文档
 │   ├── PROJECT.md                    # 项目文档
 │   ├── SPEC.md                       # 规范文档
@@ -435,6 +443,25 @@ pnpm dev   # 默认 http://localhost:5173，自动代理 /api 到 8080
 | 端点 | 鉴权 | 说明 |
 |---|---|---|
 | `POST /api/h5/end-user/login` | 公开 | 终端用户账号密码登录（appKey + username + password），返回 X-H5-Token |
+
+### Admin Ticket API（`/api/admin/ticket/**`，@AuthRequired(role=2)，v0.15.0）
+
+| 方法 | 端点 | 说明 |
+|---|---|---|
+| GET | `/api/admin/ticket/page` | 分页查询所有租户工单（tenantId/category/status 筛选） |
+| GET | `/api/admin/ticket/{id}` | 工单详情（含回复列表） |
+| POST | `/api/admin/ticket/{id}/reply` | 管理员回复工单（replierType=2，状态→已回复） |
+| POST | `/api/admin/ticket/{id}/close` | 关闭工单（状态→已关闭） |
+
+### Admin Dev User API（`/api/admin/dev-user/**`，@AuthRequired(role=2)，v0.15.0）
+
+| 方法 | 端点 | 说明 |
+|---|---|---|
+| GET | `/api/admin/dev-user/page` | 分页查询所有开发者账号（tenantId/username/status 筛选） |
+| GET | `/api/admin/dev-user/{id}` | 开发者详情 |
+| POST | `/api/admin/dev-user/{id}/ban` | 封禁开发者（status=0） |
+| POST | `/api/admin/dev-user/{id}/unban` | 解封开发者（status=1） |
+| POST | `/api/admin/dev-user/reset-password` | 重置密码（BCrypt 哈希存储） |
 
 ## 数据库表（核心）
 
