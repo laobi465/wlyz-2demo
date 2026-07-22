@@ -64,6 +64,7 @@
             <span>云端数据</span>
           </template>
           <el-menu-item index="/cloud-func">云函数</el-menu-item>
+          <el-menu-item index="/announcement">远程公告</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="stats">
           <template #title>

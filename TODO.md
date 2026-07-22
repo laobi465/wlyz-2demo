@@ -132,6 +132,18 @@
   - [x] 前端路由 /cloud-func + 侧边栏「云端数据」子菜单集成
 - 备注：抗破解终极方案；SDK 调用走 SdkCloudFunctionController 待后续版本实现（复用同一 Service）；资源配额仅内存/IO，CPU 配额未实现（LuaJ 纯 Java 难以精确限制 CPU）
 
+### [已完成] 远程公告 ✅
+- 优先级：P1
+- 完成版本：v0.10.0
+- 完成项：
+  - [x] 公告表 jicek_announcement（15 字段 + 2 索引）
+  - [x] 开发者后台 CRUD + 发布/下线状态机（草稿→已发布→已下线，不可逆）
+  - [x] SDK 拉取已发布公告（GET /api/sdk/announcement，SdkAuthFilter 鉴权）
+  - [x] 客户端版本范围匹配（minVersion/maxVersion，语义化版本比较）
+  - [x] 排序：pinned DESC + sortOrder DESC + publishTime DESC
+  - [x] viewCount 拉取次数累加
+  - [x] 前端公告管理页 + 路由 + 菜单
+
 ### [已完成] UI 设计规范 ✅
 - 优先级：P2
 - 完成版本：v0.1.0（文档）/ v0.2.0（前端骨架）

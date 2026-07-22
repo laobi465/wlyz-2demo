@@ -443,6 +443,32 @@ CREATE TABLE jicek_admin_user (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员用户';
 
 -- ============================================================
+-- 17. 远程公告表（v0.10.0，开发者按软件/版本下发，SDK 拉取展示）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_announcement;
+CREATE TABLE jicek_announcement (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID（开发者隔离）',
+  software_id     BIGINT       NOT NULL COMMENT '所属软件',
+  title           VARCHAR(128) NOT NULL COMMENT '公告标题',
+  content         TEXT         NOT NULL COMMENT '公告内容（Markdown，客户端渲染）',
+  type            TINYINT      NOT NULL DEFAULT 1 COMMENT '1通知条 2弹窗 3置顶横幅',
+  status          TINYINT      NOT NULL DEFAULT 0 COMMENT '0草稿 1已发布 2已下线',
+  min_version     VARCHAR(20)  COMMENT '最低适用客户端版本（含），null 表示不限',
+  max_version     VARCHAR(20)  COMMENT '最高适用客户端版本（含），null 表示不限',
+  sort_order      INT          DEFAULT 0 COMMENT '排序值，越大越靠前',
+  pinned          TINYINT      DEFAULT 0 COMMENT '0普通 1置顶',
+  view_count      BIGINT       DEFAULT 0 COMMENT 'SDK 拉取次数（统计用）',
+  publish_time    DATETIME     COMMENT '发布时间（status 改为 1 时写入）',
+  offline_time    DATETIME     COMMENT '下线时间（status 改为 2 时写入）',
+  creator_id      BIGINT       NOT NULL COMMENT '创建者（开发者用户ID）',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  KEY idx_software_status (tenant_id, software_id, status, sort_order),
+  KEY idx_publish_time (tenant_id, software_id, status, publish_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='远程公告（开发者按软件/版本下发）';
+
+-- ============================================================
 -- 初始化超管账号（v0.7.0）
 -- 默认账号：admin / admin@123  （BCrypt cost=10）
 -- 首次登录后必须修改密码（铁律 04，生产环境强制环境变量覆盖）

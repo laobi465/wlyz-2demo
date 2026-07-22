@@ -1,5 +1,29 @@
 # 更新日志
 
+## [0.10.0] - 2026-07-22
+
+### [新增] 远程公告模块（开发者按软件/版本下发，SDK 拉取展示）
+
+终端用户客户端通过 SDK 拉取已发布公告，开发者后台管理全生命周期。
+
+- **后端**（`announcement/` 模块）：
+  - `Announcement` entity + `AnnouncementMapper`
+  - 3 DTO：`AnnouncementSaveDTO`（JSR-303 校验）/ `AnnouncementDetailDTO`（管理视图）/ `SdkAnnouncementDTO`（SDK 视图，无管理字段）
+  - `AnnouncementService`：CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配
+  - `DevAnnouncementController`：7 接口（CRUD + publish + offline），类级 `@AuthRequired(role=ROLE_DEV)`
+  - `SdkAnnouncementController`：`GET /api/sdk/announcement`，由 SdkAuthFilter 鉴权，softwareId 从 SoftwareContext 获取
+- **状态机**：草稿(0) → 已发布(1) → 已下线(2)，不可逆
+  - 仅草稿可编辑（已发布/已下线不可改，避免影响线上展示）
+  - 已发布可下线，已下线只能删除
+- **版本范围匹配**：minVersion/maxVersion 可选，SDK 拉取传入 clientVersion 做语义化版本比较（按数字段而非字符串，1.2.3 < 1.10.0）
+- **排序规则**：pinned DESC + sortOrder DESC + publishTime DESC
+- **viewCount 累加**：SDK 每次拉取累加 view_count（try-catch 容错，失败不阻断主流程）
+- **错误码**：1021-1029 共 9 个
+- **前端**：
+  - `announcementApi` 7 方法
+  - `views/dev/announcement/index.vue` 公告管理页（列表 + 创建/编辑弹窗 + 发布/下线二次确认 + 只读查看 + 软件下拉筛选）
+  - 路由 `/announcement` + DevLayout「云端数据」子菜单新增「远程公告」入口
+
 ## [0.9.0] - 2026-07-22
 
 ### [新增] SDK 鉴权框架 + 卡密登录（终端用户在开发者软件内用卡密登录）

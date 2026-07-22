@@ -305,4 +305,20 @@ public final class JicekConstants {
     public static final int SOFTWARE_MAX_CONCURRENT_MIN = 1;
     /** signSecret 脱敏展示前缀长度 */
     public static final int SOFTWARE_SECRET_MASK_PREFIX = 4;
+
+    /* ============ 公告模块（v0.10.0） ============ */
+    /** 公告类型：通知条 */
+    public static final int ANNOUNCEMENT_TYPE_NOTICE = 1;
+    /** 公告类型：弹窗 */
+    public static final int ANNOUNCEMENT_TYPE_POPUP = 2;
+    /** 公告类型：置顶横幅 */
+    public static final int ANNOUNCEMENT_TYPE_BANNER = 3;
+    /** 公告状态：草稿 */
+    public static final int ANNOUNCEMENT_STATUS_DRAFT = 0;
+    /** 公告状态：已发布 */
+    public static final int ANNOUNCEMENT_STATUS_PUBLISHED = 1;
+    /** 公告状态：已下线 */
+    public static final int ANNOUNCEMENT_STATUS_OFFLINE = 2;
+    /** SDK 单次拉取公告最大条数 */
+    public static final int ANNOUNCEMENT_SDK_FETCH_LIMIT = 20;
 }

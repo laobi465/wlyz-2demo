@@ -266,3 +266,55 @@ export const ticketApi = {
   submitReply: (data: any, tenantId: number, devUserId: number) =>
     api.post('/api/dev/ticket/submit/reply', data, { params: { tenantId, devUserId } })
 }
+
+/* ============ 公告管理（v0.10.0，开发者按软件/版本下发） ============ */
+export const announcementApi = {
+  // 分页查询
+  page: (params: {
+    current?: number
+    size?: number
+    softwareId?: number
+    status?: number
+    type?: number
+    title?: string
+  }) =>
+    api.get('/api/dev/announcement/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      softwareId: params.softwareId,
+      status: params.status,
+      type: params.type,
+      title: params.title
+    }),
+  // 详情
+  get: (id: number) => api.get(`/api/dev/announcement/${id}`),
+  // 创建（初始为草稿）
+  create: (data: {
+    softwareId: number
+    title: string
+    content: string
+    type: number
+    minVersion?: string
+    maxVersion?: string
+    sortOrder?: number
+    pinned?: number
+  }) => api.post('/api/dev/announcement', data),
+  // 编辑（仅草稿可编辑）
+  update: (data: {
+    id: number
+    softwareId: number
+    title: string
+    content: string
+    type: number
+    minVersion?: string
+    maxVersion?: string
+    sortOrder?: number
+    pinned?: number
+  }) => api.put('/api/dev/announcement', data),
+  // 删除
+  delete: (id: number) => api.delete(`/api/dev/announcement/${id}`),
+  // 发布（草稿 → 已发布）
+  publish: (id: number) => api.post(`/api/dev/announcement/${id}/publish`),
+  // 下线（已发布 → 已下线）
+  offline: (id: number) => api.post(`/api/dev/announcement/${id}/offline`)
+}

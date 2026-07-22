@@ -52,6 +52,17 @@ public enum ResultCode {
     SOFTWARE_PARAM_INVALID(1018, "软件参数非法"),
     SOFTWARE_PERMISSION_DENIED(1019, "无权操作该软件"),
 
+    /* ============ 公告模块 1021-1030 ============ */
+    ANNOUNCEMENT_NOT_FOUND(1021, "公告不存在"),
+    ANNOUNCEMENT_TITLE_REQUIRED(1022, "公告标题不能为空"),
+    ANNOUNCEMENT_CONTENT_REQUIRED(1023, "公告内容不能为空"),
+    ANNOUNCEMENT_SOFTWARE_INVALID(1024, "公告所属软件无效或无权操作"),
+    ANNOUNCEMENT_STATUS_INVALID(1025, "公告状态非法"),
+    ANNOUNCEMENT_TYPE_INVALID(1026, "公告类型非法"),
+    ANNOUNCEMENT_ALREADY_PUBLISHED(1027, "公告已发布，不能重复发布"),
+    ANNOUNCEMENT_ALREADY_OFFLINE(1028, "公告已下线"),
+    ANNOUNCEMENT_NOT_PUBLISHED(1029, "公告未发布，不能下线"),
+
     /* ============ 支付模块 2001-2999 ============ */
     PAY_CONFIG_NOT_FOUND(2001, "支付配置不存在"),
     PAY_MERCHANT_KEY_ERROR(2002, "商户密钥错误"),

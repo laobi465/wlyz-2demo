@@ -112,9 +112,15 @@
 │       │   ├── dto     # SdkLoginRequestDTO / SdkLoginResultDTO
 │       │   ├── service # SdkAuthService（卡密登录）
 │       │   └── controller # SdkLoginController（/api/sdk/card/login）
+│       ├── announcement # ★ 公告模块（v0.10.0 新增，开发者按软件/版本下发，SDK 拉取展示）
+│       │   ├── entity  # Announcement
+│       │   ├── mapper  # AnnouncementMapper
+│       │   ├── dto     # AnnouncementSaveDTO / AnnouncementDetailDTO / SdkAnnouncementDTO
+│       │   ├── service # AnnouncementService（CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配）
+│       │   └── controller # DevAnnouncementController（/api/dev/announcement/* 7 接口） + SdkAnnouncementController（/api/sdk/announcement）
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理）
-    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理，v0.10.0 新增公告管理）
+    ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi/announcementApi）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
     ├── src/router      # 路由配置（11 个页面路由）

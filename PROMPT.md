@@ -56,6 +56,7 @@
 | 鉴权模块 | `auth/` (entity/mapper/dto/service/interceptor/controller) | ✅ v0.7.0（JWT + @AuthRequired 渐进式） |
 | 软件模块 | `software/` (entity/mapper/dto/service/controller) | ✅ v0.8.0（CRUD + 密钥生成/轮换 + 关联校验 + @AuthRequired） |
 | SDK 模块 | `sdk/` (auth/dto/service/controller) | ✅ v0.9.0（SdkAuthFilter 签名鉴权 + 卡密登录） |
+| 公告模块 | `announcement/` (entity/mapper/dto/service/controller) | ✅ v0.10.0（CRUD + 发布/下线状态机 + SDK 拉取 + 版本范围匹配） |
 
 ### 前端（jicek-ui）
 
@@ -85,6 +86,7 @@
 | 拦截器鉴权 | `src/api/request.ts` | ✅ v0.7.0（自动注入 Bearer + 401/9001/9002/9003 跳登录） |
 | 布局鉴权 | `src/layout/DevLayout.vue` | ✅ v0.7.0（用户昵称头像 + 退出 + 修改密码弹窗） |
 | 软件管理页 | `src/views/dev/software/` | ✅ v0.8.0（CRUD + 密钥展示弹窗 + 轮换二次确认） |
+| 公告管理页 | `src/views/dev/announcement/` | ✅ v0.10.0（CRUD + 发布/下线状态机 + 软件下拉筛选 + 只读查看） |
 
 ## 3. 待办任务（按优先级）
 
@@ -345,6 +347,7 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | `/api/sdk/card/login` | 卡密登录（X-Card-Cipher 头传 RSA 加密卡密，返回卡类信息+软件配置） |
+| GET | `/api/sdk/announcement` | 拉取已发布公告（params: clientVersion 可选，返回最多 20 条） |
 | POST | `/api/sdk/device/bind` | 设备绑定（旧接口，过渡期仍需 X-Sign-Secret 头） |
 | POST | `/api/sdk/device/unbind` | 设备换机（旧接口） |
 | POST | `/api/sdk/device/heartbeat` | 设备心跳（旧接口，过渡期仍需 X-Sign-Secret 头） |
