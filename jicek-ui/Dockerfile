@@ -1,6 +1,10 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 WORKDIR /build
+
+# 配置淘宝 npm 镜像源（解决国内服务器下载 npm registry 慢/超时问题）
+RUN npm config set registry https://registry.npmmirror.com
+
 COPY package*.json ./
 RUN npm ci
 COPY . .

@@ -1,6 +1,24 @@
 # Stage 1: Build
 FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /build
+
+# 配置阿里云 Maven 镜像源（解决国内服务器下载 Maven Central 依赖慢/超时问题）
+RUN mkdir -p /root/.m2 && cat > /root/.m2/settings.xml <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>aliyun</id>
+      <name>Aliyun Maven Mirror</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+
 # 先复制 pom.xml 利用缓存
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
@@ -15,8 +33,10 @@ LABEL description="极策k网络验证 - 卡密验证核心模块"
 
 WORKDIR /app
 
-# 安装 tzdata + curl（curl 用于 HEALTHCHECK）
-RUN apt-get update && apt-get install -y --no-install-recommends tzdata curl \
+# 使用阿里云 Debian 镜像源加速 apt（解决国内服务器 apt 慢/超时）
+RUN sed -i 's|http://archive.ubuntu.com|https://mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true \
+    && sed -i 's|http://security.ubuntu.com|https://mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true \
+    && apt-get update && apt-get install -y --no-install-recommends tzdata curl \
     && ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone \
     && rm -rf /var/lib/apt/lists/*
