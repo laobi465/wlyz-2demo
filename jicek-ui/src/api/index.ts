@@ -391,3 +391,85 @@ export const updatePackageApi = {
   // 下线（已发布 → 已下线）
   offline: (id: number) => api.post(`/api/dev/update-package/${id}/offline`)
 }
+
+/* ============ H5 终端用户（v0.13.0） ============ */
+export const H5_TOKEN_KEY = 'jicek_h5_token'
+
+export const h5Api = {
+  // 卡密登录（公开）
+  login: (data: { appKey: string; cardKey: string }) =>
+    api.post('/api/h5/auth/login', data),
+  // 我的卡密详情（需 X-H5-Token）
+  myCard: () =>
+    api.get('/api/h5/auth/my-card', undefined, {
+      headers: { 'X-H5-Token': localStorage.getItem(H5_TOKEN_KEY) || '' }
+    }),
+  // 退出登录
+  logout: () =>
+    api.post('/api/h5/auth/logout', null, {
+      headers: { 'X-H5-Token': localStorage.getItem(H5_TOKEN_KEY) || '' }
+    }),
+  // 公告列表
+  announcement: () =>
+    api.get('/api/h5/announcement', undefined, {
+      headers: { 'X-H5-Token': localStorage.getItem(H5_TOKEN_KEY) || '' }
+    }),
+  // 代理注册（公开）
+  agentRegister: (data: {
+    appKey: string
+    inviteCode: string
+    username: string
+    password: string
+    realName?: string
+    contact?: string
+  }) => api.post('/api/h5/agent/register', data),
+  // 店铺信息（公开）
+  shopInfo: (path: string) => api.get('/api/h5/shop/info', { path }),
+  // 创建订单（需 X-H5-Token）
+  createOrder: (data: { shopProductId: number; quantity: number; payType: string }) =>
+    api.post('/api/h5/shop/order', data, {
+      headers: { 'X-H5-Token': localStorage.getItem(H5_TOKEN_KEY) || '' }
+    })
+}
+
+/* ============ 内嵌卡网 - 开发者后台 ============ */
+export const shopApi = {
+  page: (params: {
+    current?: number
+    size?: number
+    softwareId?: number
+    name?: string
+    status?: number
+  }) =>
+    api.get('/api/dev/shop/page', {
+      current: params.current || 1,
+      size: params.size || 20,
+      softwareId: params.softwareId,
+      name: params.name,
+      status: params.status
+    }),
+  get: (id: number) => api.get(`/api/dev/shop/${id}`),
+  create: (data: {
+    name: string
+    softwareId: number
+    path: string
+    description?: string
+    contact?: string
+    status?: number
+  }) => api.post('/api/dev/shop', data),
+  update: (data: any) => api.put('/api/dev/shop', data),
+  delete: (id: number) => api.delete(`/api/dev/shop/${id}`),
+  open: (id: number) => api.post(`/api/dev/shop/${id}/open`),
+  close: (id: number) => api.post(`/api/dev/shop/${id}/close`),
+  listProducts: (shopId: number) => api.get(`/api/dev/shop/${shopId}/products`),
+  addProduct: (data: {
+    shopId: number
+    cardTypeId: number
+    price: number
+    sortOrder?: number
+    status?: number
+  }) => api.post('/api/dev/shop/product', data),
+  updateProduct: (data: any) => api.put('/api/dev/shop/product', data),
+  removeProduct: (shopId: number, productId: number) =>
+    api.delete(`/api/dev/shop/product/${shopId}/${productId}`)
+}

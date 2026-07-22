@@ -184,17 +184,43 @@ public class AnnouncementService {
         log.info("【公告】下线成功 id={} tenantId={}", id, tenantId);
     }
 
-    /* ============ SDK 拉取（终端用户客户端调用） ============ */
+    /* ============ SDK / H5 拉取（终端用户客户端调用） ============ */
 
     /**
      * SDK 拉取已发布公告
+     *
+     * 软件身份从 SoftwareContext 获取（由 SdkAuthFilter 注入）。
      *
      * @param clientVersion 客户端版本（用于版本范围匹配，null 表示不限）
      * @return 按 pinned DESC + sort_order DESC + publish_time DESC 排序的公告列表
      */
     public List<SdkAnnouncementDTO> fetchPublished(String clientVersion) {
         Software software = SoftwareContext.requireSoftware();
+        return doFetchPublished(software, clientVersion);
+    }
 
+    /**
+     * H5 拉取已发布公告（v0.13.0）
+     *
+     * H5 走独立鉴权（X-H5-Token），不经过 SdkAuthFilter，因此 SoftwareContext 不可用，
+     * 由调用方传入 softwareId，本方法自行查库。
+     *
+     * @param softwareId    软件ID（来自 H5AuthContext）
+     * @param clientVersion 客户端版本（用于版本范围匹配，null 表示不限）
+     * @return 按 pinned DESC + sort_order DESC + publish_time DESC 排序的公告列表
+     */
+    public List<SdkAnnouncementDTO> fetchPublished(Long softwareId, String clientVersion) {
+        Software software = softwareMapper.selectById(softwareId);
+        if (software == null) {
+            return List.of();
+        }
+        return doFetchPublished(software, clientVersion);
+    }
+
+    /**
+     * 公告拉取共享实现（SDK 与 H5 共用）
+     */
+    private List<SdkAnnouncementDTO> doFetchPublished(Software software, String clientVersion) {
         LambdaQueryWrapper<Announcement> wrapper = new LambdaQueryWrapper<Announcement>()
                 .eq(Announcement::getTenantId, software.getTenantId())
                 .eq(Announcement::getSoftwareId, software.getId())

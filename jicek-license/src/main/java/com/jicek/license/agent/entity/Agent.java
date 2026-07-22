@@ -71,6 +71,12 @@ public class Agent {
 
     private String remark;
 
+    /** 邀请码（代理自己的邀请码，注册时自动生成） */
+    private String inviteCode;
+
+    /** 邀请人代理ID，0表示无邀请人 */
+    private Long invitedBy;
+
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;

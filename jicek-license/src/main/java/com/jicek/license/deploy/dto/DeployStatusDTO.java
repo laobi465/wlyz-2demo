@@ -1,5 +1,6 @@
 package com.jicek.license.deploy.dto;
 
+import com.jicek.license.deploy.entity.DeployLog;
 import lombok.Data;
 
 /**

@@ -28,6 +28,7 @@ public enum ResultCode {
     FAIL(500, "操作失败"),
     UNAUTHORIZED(401, "未登录"),
     FORBIDDEN(403, "无权限"),
+    PARAM_ERROR(400, "参数非法"),
 
     /* ============ 卡密模块 1001-1999 ============ */
     CARD_NOT_FOUND(1001, "卡密不存在"),
@@ -75,7 +76,19 @@ public enum ResultCode {
     UPDATE_PACKAGE_ALREADY_PUBLISHED(1039, "更新包已发布，不能重复发布"),
     UPDATE_PACKAGE_ALREADY_OFFLINE(1040, "更新包已下线"),
     UPDATE_PACKAGE_NOT_PUBLISHED(1041, "更新包未发布，不能下线"),
-    UPDATE_PACKAGE_HASH_MISMATCH(1042, "文件 SHA-256 校验失败（文件可能损坏）"),
+    UPDATE_PACKAGE_HASH_MISMATCH(1042, "文件 Sha-256 校验失败（文件可能损坏）"),
+
+    // H5 终端用户（v0.13.0）
+    H5_TOKEN_MISSING(1043, "X-H5-Token 头缺失"),
+    H5_TOKEN_INVALID(1044, "H5 令牌无效或已过期"),
+    H5_CARD_NOT_FOUND(1045, "卡密不存在"),
+    H5_CARD_EXPIRED(1046, "卡密已过期"),
+    H5_CARD_BANNED(1047, "卡密已封禁"),
+    H5_SOFTWARE_DISABLED(1048, "软件已禁用"),
+    H5_LOGIN_FAIL(1049, "卡密登录失败"),
+    H5_SHOP_NOT_FOUND(1050, "店铺不存在"),
+    H5_SHOP_DISABLED(1051, "店铺已关闭"),
+    H5_PRODUCT_NOT_FOUND(1052, "商品不存在"),
 
     /* ============ 支付模块 2001-2999 ============ */
     PAY_CONFIG_NOT_FOUND(2001, "支付配置不存在"),
@@ -139,6 +152,12 @@ public enum ResultCode {
     WITHDRAW_LOCK_FAIL(4015, "提现申请处理中，请稍后"),
     WITHDRAW_ACCOUNT_INVALID(4016, "收款账号无效"),
     AGENT_BALANCE_LOCK_FAIL(4017, "代理余额变动处理中，请稍后"),
+
+    // 代理邀请码（v0.13.0）
+    AGENT_INVITE_CODE_INVALID(4018, "邀请码无效"),
+    AGENT_INVITE_CODE_USED(4019, "邀请码已被使用"),
+    AGENT_INVITE_CODE_DISABLED(4020, "邀请码已禁用"),
+    AGENT_INVITE_CODE_SELF(4021, "不能使用自己的邀请码"),
 
     /* ============ 云函数模块 5001-5999 ============ */
     CF_NOT_FOUND(5001, "云函数不存在"),

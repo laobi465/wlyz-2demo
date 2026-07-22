@@ -1,5 +1,33 @@
 # 更新日志
 
+## [0.13.0] - 2026-07-22
+
+### [新增] H5 终端用户界面 + 代理邀请码注册 + 内嵌卡网系统
+
+终端用户通过 H5（移动端）卡密登录后查看自己的卡密/公告/购卡；代理可凭邀请码自助注册；开发者后台内嵌卡网店铺。
+
+- **H5 验证界面**（`h5/` 后端模块 + `views/h5/` 前端）：
+  - 后端：H5Session 表 + UUID token（24h，DB+Redis 双写）+ H5AuthInterceptor（X-H5-Token 头，放行 login/agent-register/shop-info）
+  - 接口：`/api/h5/auth/{login,my-card,logout}` + `/api/h5/announcement`（复用 AnnouncementService 新增 H5 重载）
+  - 卡密校验复用 `Md5SignService.sha256Hex()`，与 SDK 同源；明文传输依赖 HTTPS
+  - 前端：H5Layout（44px 顶导 + 56px 底部 4-Tab + 480px 居中）+ login + my-card（按 cardType 渲染）+ announcement
+- **代理邀请码注册**（`agent/` 后端扩展 + `views/h5/agent/register.vue`）：
+  - Agent 表新增 `invite_code` / `invited_by` 字段 + `uk_invite` 唯一索引
+  - 8 位 SecureRandom 邀请码（去易混淆字符 I/O/0/1）
+  - 注册接口 `POST /api/h5/agent/register`（公开）：appKey→查 Software→校验邀请码→继承邀请人 commissionRate/level+1/maxSubLevel-1
+  - 后台 `POST /api/dev/agent/{tenantId}/{agentId}/regenerate-invite-code` 重新生成邀请码
+- **内嵌卡网系统**（`shop/` 后端模块 + `views/dev/shop/` + `views/h5/shop/`）：
+  - 后端：`jicek_shop`（店铺，路径模式）+ `jicek_shop_product`（商品，关联卡类，可覆盖售价）
+  - 开发者后台 11 接口（店铺 CRUD + 开关 + 商品 CRUD），路径前缀 `/api/dev/shop`
+  - H5 购卡：`GET /api/h5/shop/info?path=`（公开）+ `POST /api/h5/shop/order`（需 X-H5-Token，写 jicek_pay_order）
+  - 前端：dev/shop（店铺 + 商品双层弹窗）+ h5/shop（店铺查询）+ h5/shop/order（数量/支付方式/确认）
+- **数据库**：jicek_init.sql 新增 jicek_h5_session / jicek_shop / jicek_shop_product 三表 + jicek_agent 加 invite_code/invited_by 列
+- **错误码**：H5 段 1043-1052（10 个）+ 邀请码段 4018-4021（4 个）
+- **常量**：JicekConstants 追加 H5/邀请码/卡网三组常量
+- **WebMvcConfig**：H5AuthInterceptor 拦截 `/api/h5/**`，放行 login/agent-register/shop-info
+- **前端 API**：新增 `h5Api`（X-H5-Token 头注入）+ `shopApi`，H5_TOKEN_KEY='jicek_h5_token' 独立于 JWT
+- **前端路由**：`/h5/*` 子路由 7 个（全 public）+ `/shop` 后台路由 + DevLayout「支付管理」子菜单新增「内嵌卡网」
+
 ## [0.12.0] - 2026-07-22
 
 ### [新增] SDK 代码生成器 + 对接文档（一键接入开发者软件）

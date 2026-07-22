@@ -13,6 +13,7 @@ import com.jicek.license.pay.dto.PayResponseDTO;
 import com.jicek.license.pay.entity.PayConfig;
 import com.jicek.license.pay.entity.PayOrder;
 import com.jicek.license.pay.mapper.PayOrderMapper;
+import com.jicek.license.transaction.PaymentTransactionService;
 import com.jicek.license.card.entity.CardType;
 import com.jicek.license.card.mapper.CardTypeMapper;
 import jakarta.annotation.Resource;
