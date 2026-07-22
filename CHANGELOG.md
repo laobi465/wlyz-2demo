@@ -1,5 +1,29 @@
 # 更新日志
 
+## [0.9.0] - 2026-07-22
+
+### [新增] SDK 鉴权框架 + 卡密登录（终端用户在开发者软件内用卡密登录）
+
+终端用户不通过 H5 页面，而是在开发者自己的软件内通过 SDK 接入极策k 验证服务。本版本补全 SDK 鉴权框架 + 卡密登录接口，为后续公告/更新/云函数SDK/云变量奠定基础。
+
+- **SDK 鉴权 Filter**（`SdkAuthFilter`，拦截 `/api/sdk/**`）：
+  - `CachedBodyHttpServletRequest` 包装请求体（body 可重复读，解决 Filter 读取 body 后 @RequestBody 无法再读的问题）
+  - 完整签名校验：X-App-Key → 查 software 表 → X-Timestamp ±300s → X-Nonce Redis 原子防重放（5min TTL）→ X-Signature HMAC-SHA256（含 body SHA-256，常量时间比较）
+  - `SoftwareContext` ThreadLocal 注入当前 Software，finally 强制清理防串号
+  - 每软件独立 signSecret 验签（AES 解密后传入 HmacSignService.verify）
+- **卡密登录**（`POST /api/sdk/card/login`）：
+  - 客户端用软件 RSA 公钥加密卡密 → X-Card-Cipher 头传输
+  - 服务端用软件独立 RSA 私钥解密 → cardHash = SHA-256(明文) 查库（禁明文查库）
+  - 校验：软件归属 + 状态（封禁/退款/过期拒绝）+ 到期时间
+  - 首次使用：设置 firstUseTime + 计算 expireTime（时长卡 now+duration）+ 状态改已使用
+  - 返回：卡类信息 + 到期时间 + 功能列表 + 软件配置（心跳间隔/最大并发/版本/最低版本/服务器时间）
+- **错误码**：3100-3110 共 11 个（SDK_APP_KEY_MISSING/INVALID/SOFTWARE_DISABLED/TIMESTAMP_MISSING/EXPIRED/NONCE_MISSING/REPLAY/SIGNATURE_MISSING/INVALID/CARD_CIPHER_MISSING/CARD_NOT_BELONG_TO_SOFTWARE）
+- **安全铁律**：
+  - 卡密明文永不日志输出
+  - nonce 防重放用 Redisson RBucket.trySet 原子操作，禁内存缓存
+  - SoftwareContext.clear() 必须在 finally 执行
+  - 过渡期：现有 SdkDeviceController 的 heartbeat 接口仍从 X-Sign-Secret 头取明文密钥（旧代码），后续版本统一改为从 SoftwareContext 获取
+
 ## [0.8.0] - 2026-07-22
 
 ### [新增] 软件管理模块（卡密/设备/云函数的父实体，接入鉴权框架）

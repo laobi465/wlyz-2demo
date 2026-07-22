@@ -83,6 +83,19 @@ public enum ResultCode {
     HEARTBEAT_SIGN_FAIL(3015, "心跳签名校验失败"),
     HEARTBEAT_NONCE_REPLAY(3016, "心跳 nonce 重复（疑似重放）"),
 
+    /* ============ SDK 鉴权子段 3100-3199 ============ */
+    SDK_APP_KEY_MISSING(3100, "X-App-Key 头缺失"),
+    SDK_APP_KEY_INVALID(3101, "AppKey 无效或软件不存在"),
+    SDK_SOFTWARE_DISABLED(3102, "软件已禁用"),
+    SDK_TIMESTAMP_MISSING(3103, "X-Timestamp 头缺失"),
+    SDK_TIMESTAMP_EXPIRED(3104, "时间戳超出 ±300s 容差"),
+    SDK_NONCE_MISSING(3105, "X-Nonce 头缺失"),
+    SDK_NONCE_REPLAY(3106, "Nonce 重复（疑似重放攻击）"),
+    SDK_SIGNATURE_MISSING(3107, "X-Signature 头缺失"),
+    SDK_SIGNATURE_INVALID(3108, "签名校验失败"),
+    SDK_CARD_CIPHER_MISSING(3109, "X-Card-Cipher 头缺失（卡密密文）"),
+    SDK_CARD_NOT_BELONG_TO_SOFTWARE(3110, "卡密不属于当前软件"),
+
     /* ============ 代理/分润/提现模块 4001-4999 ============ */
     AGENT_NOT_FOUND(4001, "代理不存在"),
     AGENT_BANNED(4002, "代理已封禁"),

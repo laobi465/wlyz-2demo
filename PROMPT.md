@@ -55,6 +55,7 @@
 | 工单模块 | `ticket/` (entity/mapper/dto/service/controller) | ✅ v0.6.1（单向：开发者→管理员） |
 | 鉴权模块 | `auth/` (entity/mapper/dto/service/interceptor/controller) | ✅ v0.7.0（JWT + @AuthRequired 渐进式） |
 | 软件模块 | `software/` (entity/mapper/dto/service/controller) | ✅ v0.8.0（CRUD + 密钥生成/轮换 + 关联校验 + @AuthRequired） |
+| SDK 模块 | `sdk/` (auth/dto/service/controller) | ✅ v0.9.0（SdkAuthFilter 签名鉴权 + 卡密登录） |
 
 ### 前端（jicek-ui）
 
@@ -339,6 +340,22 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | POST | `/api/dev/software/{id}/regenerate-sign-secret` | 轮换签名密钥（返回新明文仅此一次） |
 | POST | `/api/dev/software/{id}/regenerate-rsa-key` | 轮换 RSA 密钥对（返回新公钥+私钥明文仅此一次） |
 
+### 7.2.2 SDK API（`/api/sdk/**`，全部由 SdkAuthFilter 签名鉴权，无公开接口）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/sdk/card/login` | 卡密登录（X-Card-Cipher 头传 RSA 加密卡密，返回卡类信息+软件配置） |
+| POST | `/api/sdk/device/bind` | 设备绑定（旧接口，过渡期仍需 X-Sign-Secret 头） |
+| POST | `/api/sdk/device/unbind` | 设备换机（旧接口） |
+| POST | `/api/sdk/device/heartbeat` | 设备心跳（旧接口，过渡期仍需 X-Sign-Secret 头） |
+
+SDK 请求头规范（所有 `/api/sdk/**` 必填）：
+- `X-App-Key`：软件 AppKey（开发者后台创建软件时生成）
+- `X-Timestamp`：13 位毫秒时间戳（±300s 容差）
+- `X-Nonce`：UUID v4（5 分钟内不可重复，Redis 原子防重放）
+- `X-Signature`：HMAC-SHA256 签名 Base64（签名原文 = METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256）
+- `X-Card-Cipher`：RSA-2048-OAEP 加密的卡密密文（仅卡密接口）
+
 ### 7.3 公开回调
 
 | 方法 | 路径 | 返回 |
@@ -491,6 +508,12 @@ const status = await deployApi.status()
 49. **软件删除关联校验**（v0.8.0）：`SoftwareService.delete()` 删除前必须校验关联卡类/设备/云函数，存在则抛 `SOFTWARE_HAS_CARD_TYPE`(1014) / `SOFTWARE_HAS_DEVICE`(1015) / `SOFTWARE_HAS_CLOUD_FUNC`(1016)。防止删除软件后子实体成为孤儿数据。
 50. **appKey 全局唯一查重**（v0.8.0）：`generateUniqueAppKey()` 生成后查 `jicek_software.app_key` 是否冲突，最多重试 5 次。虽 32 字符随机冲突概率极低（36^32 ≈ 2^165），但铁律要求健壮性。冲突超限抛 `FAIL`。
 51. **密钥轮换影响范围**（v0.8.0）：轮换 signSecret 后所有客户端 SDK 需更新配置（HMAC-SHA256 签名失效）；轮换 RSA 密钥对后所有客户端加密的卡密将无法解密（需重新发放或更新客户端）。前端轮换操作必须二次确认 + 警告提示。
+52. **SDK 鉴权用 Filter 不用 Interceptor**（v0.9.0）：`SdkAuthFilter` 需在 Filter 阶段读取 body 计算 SHA-256 用于签名校验，HandlerInterceptor 的 preHandle 阶段 body 尚未解析。用 `CachedBodyHttpServletRequest` 包装请求体使其可重复读，解决 Filter 读取后 `@RequestBody` 无法再读的问题。仅 `/api/sdk/**` 路径包装，不影响其他请求。
+53. **SoftwareContext ThreadLocal 必须清理**（v0.9.0）：`SdkAuthFilter.doFilterInternal` 的 `finally` 块**必须** `SoftwareContext.clear()`，否则 Tomcat 线程池复用导致软件身份串号。与 AuthContext（后台用户）同理，但 SoftwareContext 持有的是 Software 实体而非用户身份。
+54. **nonce 防重放用 Redis 原子操作**（v0.9.0）：`redissonClient.getBucket(key).trySet("1", Duration.ofMinutes(5))` 是原子的 setIfAbsent + TTL，禁用「先查再写」两步操作（并发场景下两请求同时查到不存在，同时写入）。trySet 返回 false 表示 nonce 已存在（重放攻击）。
+55. **卡密禁明文查库**（v0.9.0）：SDK 卡密登录通过 `cardHash = SHA-256(卡密明文)` 查 `jicek_card_key.card_hash` 索引，禁用 `WHERE card_no = ?` 明文查询（防 SQL 注入泄露卡密）。卡密明文仅在 RSA 解密后内存中短暂存在，永不日志输出。
+56. **SDK 每软件独立密钥验签**（v0.9.0）：`SdkAuthFilter` 从 `software.sign_secret`（AES 解密后）获取该软件独立的签名密钥，传入 `HmacSignService.verify(data, signature, secretKey)` 验签。不用全局 HmacSignService 单例（其用全局 hmacKey），而是用按软件的 signSecret。
+57. **过渡期：SdkDeviceController 旧接口**（v0.9.0）：现有 `/api/sdk/device/heartbeat` 仍从 `@RequestHeader("X-Sign-Secret")` 取明文 signSecret 做二次校验（旧代码遗留）。SdkAuthFilter 已用 software.signSecret 完成验签，X-Sign-Secret 头冗余且不安全。后续版本统一改为从 SoftwareContext 获取，移除明文密钥头。
 
 ## 12. 验证清单
 

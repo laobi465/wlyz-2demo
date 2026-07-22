@@ -107,6 +107,11 @@
 │       │   ├── dto     # SoftwareSaveDTO / SoftwareDetailDTO / SoftwareCreateResultDTO
 │       │   ├── service # SoftwareService（CRUD + 密钥生成 + 轮换 + 关联校验）
 │       │   └── controller # DevSoftwareController（/api/dev/software/* 7 接口）
+│       ├── sdk         # ★ SDK 模块（v0.9.0 新增，终端用户通过 SDK 在开发者软件内接入）
+│       │   ├── auth    # SdkAuthFilter（签名鉴权） + SoftwareContext（ThreadLocal） + CachedBodyHttpServletRequest
+│       │   ├── dto     # SdkLoginRequestDTO / SdkLoginResultDTO
+│       │   ├── service # SdkAuthService（卡密登录）
+│       │   └── controller # SdkLoginController（/api/sdk/card/login）
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
 └── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架，v0.8.0 新增软件管理）
     ├── src/api         # API 客户端 + 接口定义（authApi/softwareApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi）
