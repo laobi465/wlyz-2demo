@@ -1,0 +1,11 @@
+package com.jicek.license.auth.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.jicek.license.auth.entity.AdminUser;
+
+/**
+ * 管理员用户 Mapper
+ * 作者: 极策k  日期: 2026-07-22
+ */
+public interface AdminUserMapper extends BaseMapper<AdminUser> {
+}

@@ -1,5 +1,20 @@
 # 更新日志
 
+## [0.7.0] - 2026-07-22
+
+### [新增] 鉴权框架（JWT + BCrypt + @AuthRequired 渐进式鉴权）
+
+替代 SPEC.md 2.1 节原描述的 Sa-Token（实际未引入依赖），改用 JJWT 0.12.6 轻量标准库；双角色（开发者 ROLE_DEV=1 / 管理员 ROLE_ADMIN=2）+ ThreadLocal 上下文 + 注解式鉴权，兼容现有裸传参数接口。
+
+- **数据库**：`jicek_dev_user`（15 字段 + uk_tenant_username）+ `jicek_admin_user`（11 字段 + uk_username，含 role 字段：1超管 2运营）
+- **默认账号**：admin/admin@123（超管）、dev/dev@123（tenantId=1）
+- **后端**：2 Entity + 2 Mapper + 4 DTO（Login/LoginResult/ChangePassword/UserInfo）+ JwtService（HMAC-SHA256，密钥环境变量 JICEK_JWT_SECRET 至少 32 字节）+ AuthContext（ThreadLocal，afterCompletion 强制清理防串号）+ @AuthRequired 注解（方法级优先，类级兜底；未标注放行，渐进式兼容）+ JwtAuthInterceptor + WebMvcConfig + AuthService + AuthController
+- **接口**：POST /api/auth/dev/login、POST /api/auth/admin/login、GET /api/auth/me、POST /api/auth/change-password
+- **安全**：BCrypt 密码哈希（cost=10）；登录失败统一返回 AUTH_PASSWORD_ERROR（防用户枚举）；JWT claims 含 uid/role/tenantId/username；密钥未配置时 warn 但不阻止启动
+- **错误码**：9001-9011 共 11 个（AUTH_TOKEN_MISSING/AUTH_TOKEN_INVALID/AUTH_TOKEN_WRONG_ROLE/AUTH_USER_NOT_FOUND/AUTH_PASSWORD_ERROR/AUTH_USER_BANNED/AUTH_USER_ALREADY_EXISTS/AUTH_OLD_PASSWORD_ERROR/AUTH_PASSWORD_TOO_SHORT/AUTH_ROLE_INVALID/AUTH_NO_PERMISSION）
+- **前端**：request.ts 拦截器自动注入 `Authorization: Bearer {token}` + 401/9001/9002/9003 自动清 token 跳 /login；新增登录页（租户ID+用户名+密码表单）；router beforeEach 守卫（无 token 跳 /login，已登录访问 /login 跳 /dashboard）；DevLayout 顶栏接入用户昵称头像 + 修改密码弹窗 + 退出登录二次确认
+- **拦截路径**：/api/dev/** + /api/admin/** 走鉴权；排除 /api/auth/** + /api/sdk/** + /api/h5/** + /api/pay/notify/** + /api/deploy/webhook + /actuator/**
+
 ## [0.6.1] - 2026-07-22
 
 ### [调整] 工单系统简化为单向（开发者→管理员）

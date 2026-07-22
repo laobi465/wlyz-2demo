@@ -32,7 +32,8 @@ controller → service → mapper → db
 ### 2.2 模块边界
 - `jicek-license` 是核心模块，所有业务在此
 - 支付、加密、设备指纹为独立子包，可未来拆为独立模块
-- SDK 接口 (`controller/sdk`) 必须独立鉴权，不依赖 Sa-Token 的后台登录态
+- SDK 接口 (`controller/sdk`) 必须独立鉴权（HMAC-SHA256 签名），不依赖 JWT 后台登录态
+- 后台鉴权采用 JJWT 0.12.6（HMAC-SHA256），替代原 SPEC 描述但实际未引入的 Sa-Token；密钥环境变量 `JICEK_JWT_SECRET` 注入（≥ 32 字节）
 
 ## 3. 接口规范
 
@@ -60,6 +61,7 @@ controller → service → mapper → db
 | 6001-6999 | 极策k 数据统计模块 |
 | 7001-7999 | 极策k 部署模块 |
 | 8001-8999 | 极策k 工单模块 |
+| 9001-9999 | 极策k 鉴权模块 |
 
 #### 极策k 错误码明细
 
@@ -155,6 +157,21 @@ controller → service → mapper → db
 | 8009 | 创建者类型非法 |
 | 8010 | 工单参数非法 |
 
+**鉴权模块 (9001-9999)**
+| 错误码 | 含义 |
+|---|---|
+| 9001 | Token 缺失（未登录） |
+| 9002 | Token 无效（被篡改/过期/密钥未配置） |
+| 9003 | Token 角色不匹配（@AuthRequired(role) 校验失败） |
+| 9004 | 用户不存在 |
+| 9005 | 密码错误（用户不存在也返回此码，防枚举） |
+| 9006 | 用户已被封禁（status=0） |
+| 9007 | 用户已存在（注册/创建时重复） |
+| 9008 | 原密码错误（修改密码时） |
+| 9009 | 新密码长度不足（< 8 位） |
+| 9010 | 角色非法 |
+| 9011 | 无权限（@AuthRequired(role) 校验失败时的业务语义） |
+
 ### 3.3 SDK 接口签名（HMAC-SHA256 + RSA 混合）
 ```
 请求头：
@@ -213,9 +230,21 @@ docs: 更新PROJECT.md数据库表设计
 - 金额字段强制 BigDecimal
 
 ### 6.2 权限控制
-- 管理员/开发者/代理/用户四套独立鉴权
+- 管理员/开发者/代理/用户四套独立鉴权（v0.7.0 已实现开发者 + 管理员 JWT 鉴权）
 - 数据隔离：MyBatis-Plus 多租户插件
 - 敏感操作二次确认 + 操作审计
+
+### 6.2.1 JWT 鉴权框架（v0.7.0）
+
+- **签名算法**：HMAC-SHA256（JJWT 0.12.6），密钥环境变量 `JICEK_JWT_SECRET`（≥ 32 字节），未配置时 warn 但不阻止启动
+- **JWT claims**：`uid` / `role`（1开发者 2管理员）/ `tenantId`（管理员为 null）/ `username` / `iss`=jicek-license / `iat` / `exp`（默认 24h）
+- **传输**：HTTP 头 `Authorization: Bearer {token}`
+- **密码哈希**：BCrypt（Hutool `cn.hutool.crypto.digest.BCrypt`，cost=10）
+- **鉴权方式**：`@AuthRequired` 注解（方法级优先，类级兜底；`role()` 默认 0=任意已登录用户，`role=2` 限制管理员）；未标注的接口**放行**（渐进式兼容现有裸传参数接口）
+- **上下文**：`AuthContext` ThreadLocal 持有当前用户身份，`JwtAuthInterceptor.afterCompletion` **必须** `AuthContext.clear()` 防线程池串号
+- **拦截路径**：`/api/dev/**` + `/api/admin/**`；排除 `/api/auth/**` + `/api/sdk/**` + `/api/h5/**` + `/api/pay/notify/**` + `/api/deploy/webhook` + `/actuator/**`
+- **防枚举**：登录失败（用户不存在 + 密码错误）统一返回 `AUTH_PASSWORD_ERROR`(9005)
+- **默认账号**：admin/admin@123（超管）、dev/dev@123（tenantId=1）
 
 ### 6.3 敏感信息
 - 商户密钥：AES-256-GCM 加密入库

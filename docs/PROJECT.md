@@ -94,9 +94,16 @@
 │       │   ├── dto     # TicketCreateDTO / TicketReplyDTO / TicketDetailDTO
 │       │   ├── service # TicketService（CRUD + 状态机 + 分类，类型字段由 Controller 设定防越权）
 │       │   └── controller # H5TicketController + DevTicketController（双角色双入口）
+│       ├── auth       # ★ 鉴权模块（v0.7.0 新增，JWT + @AuthRequired 渐进式）
+│       │   ├── entity  # DevUser / AdminUser
+│       │   ├── mapper  # DevUserMapper / AdminUserMapper
+│       │   ├── dto     # LoginDTO / LoginResultDTO / ChangePasswordDTO / UserInfoDTO
+│       │   ├── service # JwtService（HMAC-SHA256） + AuthService（登录/当前用户/改密）
+│       │   ├── interceptor # AuthContext（ThreadLocal） + @AuthRequired 注解 + JwtAuthInterceptor
+│       │   └── controller # AuthController（/api/auth/* 4 接口）
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理）
-    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数，v0.4.3 新增数据统计，v0.5.0 新增部署管理，v0.6.0 新增工单管理，v0.7.0 新增鉴权框架）
+    ├── src/api         # API 客户端 + 接口定义（authApi/dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi/statsApi/deployApi/ticketApi）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
     ├── src/router      # 路由配置（11 个页面路由）
@@ -115,6 +122,7 @@
         ├── stats       # ★ 数据统计（v0.4.3 新增，4 Tab：验证趋势/设备热力图/收入统计/防破解事件）
         ├── deploy      # ★ 部署管理（v0.5.0 新增，3 状态卡片 + 手动触发 + 审计日志 + 状态轮询）
         └── ticket      # ★ 工单管理（v0.6.0 新增，双 Tab：收件箱 + 已提交 + 详情对话流）
+        └── login       # ★ 登录页（v0.7.0 新增，租户ID+用户名+密码 + 表单校验）
 ```
 
 ### 2.3 数据流
@@ -545,6 +553,50 @@ CREATE TABLE jicek_ticket_reply (
   KEY idx_ticket (tenant_id, ticket_id, create_time),
   KEY idx_replier (replier_type, replier_id, create_time)
 ) COMMENT='工单回复（审计，禁 UPDATE/DELETE）';
+```
+
+### 5.15 鉴权用户表（v0.7.0 新增，双角色独立表）
+```sql
+-- 开发者用户表（带 tenantId，多租户隔离）
+CREATE TABLE jicek_dev_user (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '所属租户',
+  username        VARCHAR(64)  NOT NULL,
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 哈希（cost=10）',
+  nickname        VARCHAR(64),
+  email           VARCHAR(128),
+  status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
+  last_login_time DATETIME,
+  last_login_ip   VARCHAR(45),
+  login_count     INT          DEFAULT 0,
+  remark          VARCHAR(255),
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_tenant_username (tenant_id, username),
+  KEY idx_status (status)
+) COMMENT='开发者用户';
+
+-- 管理员用户表（无 tenantId，全局超管/运营）
+CREATE TABLE jicek_admin_user (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  username        VARCHAR(64)  NOT NULL,
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 哈希（cost=10）',
+  nickname        VARCHAR(64),
+  role            TINYINT      DEFAULT 1 COMMENT '1超管 2运营',
+  email           VARCHAR(128),
+  status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
+  last_login_time DATETIME,
+  last_login_ip   VARCHAR(45),
+  login_count     INT          DEFAULT 0,
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_username (username),
+  KEY idx_status (status)
+) COMMENT='管理员用户';
+
+-- 初始化账号：
+-- admin / BCrypt('admin@123')  超管
+-- dev   / BCrypt('dev@123')    默认开发者 tenant_id=1
 ```
 
 ## 6. 使用指南（待实现后补全）

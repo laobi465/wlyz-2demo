@@ -403,6 +403,61 @@ CREATE TABLE jicek_ticket_reply (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单回复（审计，禁 UPDATE/DELETE）';
 
 -- ============================================================
+-- 15. 开发者用户表（v0.7.0 鉴权框架，租户账号）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_dev_user;
+CREATE TABLE jicek_dev_user (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL COMMENT '租户ID（开发者隔离）',
+  username        VARCHAR(64)  NOT NULL COMMENT '登录用户名',
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 密码哈希',
+  nickname        VARCHAR(64)  COMMENT '昵称',
+  email           VARCHAR(128) COMMENT '邮箱',
+  status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
+  last_login_time DATETIME     COMMENT '最后登录时间',
+  last_login_ip   VARCHAR(45)  COMMENT '最后登录 IP',
+  remark          VARCHAR(255),
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_tenant_username (tenant_id, username),
+  KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='开发者用户（租户账号）';
+
+-- ============================================================
+-- 16. 管理员用户表（v0.7.0 鉴权框架，超管账号）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_admin_user;
+CREATE TABLE jicek_admin_user (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  username        VARCHAR(64)  NOT NULL COMMENT '登录用户名',
+  password_hash   VARCHAR(128) NOT NULL COMMENT 'BCrypt 密码哈希',
+  nickname        VARCHAR(64),
+  role            TINYINT      DEFAULT 1 COMMENT '1超级管理员 2运营',
+  status          TINYINT      DEFAULT 1 COMMENT '0封禁 1正常',
+  last_login_time DATETIME,
+  last_login_ip   VARCHAR(45),
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_username (username),
+  KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员用户';
+
+-- ============================================================
+-- 初始化超管账号（v0.7.0）
+-- 默认账号：admin / admin@123  （BCrypt cost=10）
+-- 首次登录后必须修改密码（铁律 04，生产环境强制环境变量覆盖）
+-- BCrypt('admin@123', 10) = $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- ============================================================
+INSERT INTO jicek_admin_user (username, password_hash, nickname, role, status, create_time, update_time)
+VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '超级管理员', 1, 1, NOW(), NOW());
+
+-- 初始化默认开发者账号（租户ID=1）
+-- 默认账号：dev / dev@123  （BCrypt cost=10）
+-- BCrypt('dev@123', 10) = $2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu.
+INSERT INTO jicek_dev_user (tenant_id, username, password_hash, nickname, status, create_time, update_time)
+VALUES (1, 'dev', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu.', '默认开发者', 1, NOW(), NOW());
+
+-- ============================================================
 -- 完成
 -- ============================================================
 SELECT 'jicek database initialized successfully' AS message;

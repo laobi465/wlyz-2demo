@@ -187,7 +187,24 @@
   - 管理员端 Controller（处理开发者提交的工单，replierType=3）待管理员后台框架就绪后补全
   - 后续可扩展：附件上传（需 MinIO）、优先级、SLA 超时提醒
 
+### [已完成] 鉴权框架 ✅
+- 优先级：P1
+- 完成版本：v0.7.0
+- 完成项：
+  - [x] JWT 鉴权（JJWT 0.12.6 替代原 SPEC.md 描述的 Sa-Token，HMAC-SHA256 签名）
+  - [x] 双角色体系：开发者 ROLE_DEV=1（带 tenantId）+ 管理员 ROLE_ADMIN=2（无 tenantId）
+  - [x] BCrypt 密码哈希（cost=10）+ 登录失败统一返回防枚举
+  - [x] @AuthRequired 注解 + JwtAuthInterceptor 渐进式鉴权（未标注放行，兼容现有裸传参数接口）
+  - [x] AuthContext ThreadLocal 持有当前用户身份，afterCompletion 强制清理防串号
+  - [x] 4 接口：dev/login + admin/login + me + change-password
+  - [x] 前端登录页 + router 守卫 + 拦截器自动注入 token + DevLayout 退出/改密
+  - [x] 11 个鉴权错误码 9001-9011 + 5 份核心文档同步
+- 备注：
+  - 密钥通过环境变量 JICEK_JWT_SECRET 注入（至少 32 字节），未配置时 warn 但不阻止启动
+  - 渐进式鉴权设计：现有接口未加 @AuthRequired 仍可访问，新接口从 AuthContext 取身份
+  - 后续可扩展：管理员端 Controller（处理开发者工单 + 租户管理）、@AuthRequired(role=2) 限制管理员接口、代理/用户角色
+
 ### [待开始] 多语言国际化
 - 优先级：P3
-- 预计版本：v0.7.0
+- 预计版本：v0.8.0
 - 备注：先支持中文，后续扩展英文

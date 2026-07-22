@@ -4,6 +4,21 @@
  */
 import { api } from './request'
 
+/* ============ 鉴权 ============ */
+export const authApi = {
+  // 开发者登录（需提交 tenantId + username + password）
+  devLogin: (data: { tenantId: number; username: string; password: string }) =>
+    api.post('/api/auth/dev/login', data),
+  // 管理员登录（无需 tenantId）
+  adminLogin: (data: { username: string; password: string }) =>
+    api.post('/api/auth/admin/login', data),
+  // 获取当前登录用户信息
+  me: () => api.get('/api/auth/me'),
+  // 修改密码
+  changePassword: (data: { oldPassword: string; newPassword: string }) =>
+    api.post('/api/auth/change-password', data)
+}
+
 /* ============ 控制台 ============ */
 export const dashboardApi = {
   summary: (tenantId: number) => api.get('/api/dev/dashboard/summary', { tenantId })

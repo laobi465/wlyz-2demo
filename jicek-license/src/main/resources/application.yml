@@ -88,6 +88,15 @@ jicek:
     # 健康检查基础 URL
     health-check-base-url: ${JICEK_DEPLOY_HEALTH_URL:http://127.0.0.1:8080}
 
+  # 鉴权配置（v0.7.0 JWT 框架）
+  auth:
+    # JWT 签名密钥（HMAC-SHA256，环境变量注入，禁硬编码，铁律 04，至少 32 字节）
+    jwt-secret: ${JICEK_JWT_SECRET:}
+    # JWT 有效期（小时）
+    jwt-expire-hours: ${JICEK_JWT_EXPIRE_HOURS:24}
+    # JWT 签发者
+    jwt-issuer: jicek-license
+
 logging:
   level:
     com.jicek: debug

@@ -8,6 +8,7 @@ import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 /**
  * 全局异常处理
@@ -19,8 +20,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ServiceException.class)
     public R<Void> handleServiceException(ServiceException e) {
-        log.warn("业务异常: code={}, msg={}", e.getCode(), e.getMessage());
+        // 鉴权类异常降级日志级别为 debug（避免日志被刷屏），其他业务异常 warn
+        if (e.getCode() != null && e.getCode() >= 9001 && e.getCode() <= 9999) {
+            log.debug("鉴权异常: code={}, msg={}", e.getCode(), e.getMessage());
+        } else {
+            log.warn("业务异常: code={}, msg={}", e.getCode(), e.getMessage());
+        }
         return R.fail(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public R<Void> handleNoHandlerFound(NoHandlerFoundException e) {
+        log.debug("接口不存在: {}", e.getRequestURL());
+        return R.fail(ResultCode.FAIL.getCode(), "接口不存在");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

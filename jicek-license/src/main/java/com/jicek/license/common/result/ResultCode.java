@@ -18,6 +18,7 @@ import lombok.Getter;
  *  6001-6999  数据统计模块
  *  7001-7999  部署模块
  *  8001-8999  工单模块
+ *  9001-9999  鉴权模块
  */
 @Getter
 @AllArgsConstructor
@@ -133,7 +134,20 @@ public enum ResultCode {
     TICKET_CONTENT_TOO_LONG(8007, "工单内容超过长度限制"),
     TICKET_REPLY_EMPTY(8008, "回复内容不能为空"),
     TICKET_CREATOR_TYPE_INVALID(8009, "创建者类型非法"),
-    TICKET_PARAM_INVALID(8010, "工单参数非法");
+    TICKET_PARAM_INVALID(8010, "工单参数非法"),
+
+    /* ============ 鉴权模块 9001-9999 ============ */
+    AUTH_TOKEN_MISSING(9001, "未登录或令牌缺失"),
+    AUTH_TOKEN_INVALID(9002, "令牌无效或已过期"),
+    AUTH_TOKEN_WRONG_ROLE(9003, "令牌角色不匹配"),
+    AUTH_USER_NOT_FOUND(9004, "用户不存在"),
+    AUTH_PASSWORD_ERROR(9005, "用户名或密码错误"),
+    AUTH_USER_BANNED(9006, "账号已被封禁"),
+    AUTH_USER_ALREADY_EXISTS(9007, "用户名已存在"),
+    AUTH_OLD_PASSWORD_ERROR(9008, "原密码错误"),
+    AUTH_PASSWORD_TOO_SHORT(9009, "密码长度不足（至少 8 位）"),
+    AUTH_ROLE_INVALID(9010, "角色非法"),
+    AUTH_NO_PERMISSION(9011, "无权限访问该资源");
 
     private final Integer code;
     private final String msg;

@@ -53,6 +53,7 @@
 | 数据统计模块 | `stats/` (dto/service/controller) | ✅ v0.4.3 |
 | 部署模块 | `deploy/` (entity/mapper/dto/service/controller) | ✅ v0.5.0 |
 | 工单模块 | `ticket/` (entity/mapper/dto/service/controller) | ✅ v0.6.1（单向：开发者→管理员） |
+| 鉴权模块 | `auth/` (entity/mapper/dto/service/interceptor/controller) | ✅ v0.7.0（JWT + @AuthRequired 渐进式） |
 
 ### 前端（jicek-ui）
 
@@ -77,6 +78,10 @@
 | 数据统计页 | `src/views/dev/stats/` | ✅ v0.4.3 |
 | 部署管理页 | `src/views/dev/deploy/` | ✅ v0.5.0 |
 | 工单管理页 | `src/views/dev/ticket/` | ✅ v0.6.0 |
+| 登录页 | `src/views/dev/login/` | ✅ v0.7.0（租户ID+用户名+密码 + 表单校验） |
+| 路由守卫 | `src/router/index.ts` beforeEach | ✅ v0.7.0（无 token 跳 /login） |
+| 拦截器鉴权 | `src/api/request.ts` | ✅ v0.7.0（自动注入 Bearer + 401/9001/9002/9003 跳登录） |
+| 布局鉴权 | `src/layout/DevLayout.vue` | ✅ v0.7.0（用户昵称头像 + 退出 + 修改密码弹窗） |
 
 ## 3. 待办任务（按优先级）
 
@@ -311,7 +316,16 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 工单 | GET | `/api/dev/ticket/submit/{tenantId}/{ticketId}` | Dev 工单详情（含回复列表） |
 | 工单 | POST | `/api/dev/ticket/submit/reply` | Dev 补充回复（replierType=2，状态→处理中） |
 
-### 7.2 公开回调
+### 7.2 鉴权 API（`/api/auth/*`，全部免鉴权除了 /me 与 /change-password）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/auth/dev/login` | 开发者登录（body: tenantId/username/password，返回 token/userId/role/tenantId/username/nickname） |
+| POST | `/api/auth/admin/login` | 管理员登录（body: username/password，无 tenantId） |
+| GET | `/api/auth/me` | 获取当前登录用户信息（@AuthRequired） |
+| POST | `/api/auth/change-password` | 修改密码（@AuthRequired，body: oldPassword/newPassword，新密码 ≥ 8 位） |
+
+### 7.3 公开回调
 
 | 方法 | 路径 | 返回 |
 |---|---|---|
@@ -450,6 +464,13 @@ const status = await deployApi.status()
 36. **工单类型字段由 Controller 设定**（v0.6.1 单向）：creatorType / target / replierType 三个字段由 Controller 固定设定，前端不传这些字段（防越权提单）。Dev 端固定 target=2管理员 + creatorType=2开发者 + replierType=2开发者。
 37. **工单状态机受控流转**（v0.6.1 单向）：0待处理→1处理中→2已回复→3已关闭。开发者补充回复→状态变「处理中」（提醒管理员有新信息），管理员回复→状态变「已回复」（待管理员 Controller 实现）。任意状态可关闭，已关闭禁回复（抛 TICKET_ALREADY_CLOSED 8003）。
 38. **工单回复表审计不可变**（v0.6.1）：`jicek_ticket_reply` 仅 INSERT + SELECT，禁 UPDATE/DELETE。工单主表 `jicek_ticket` 仅受控 UPDATE（status/handlerId/handlerTime/closeTime/updateTime），其余字段不可变。
+39. **JWT 密钥环境变量注入**（v0.7.0）：`JICEK_JWT_SECRET` 至少 32 字节，通过 `JicekProperties.Auth.jwtSecret` 注入。`JwtService.init()` 检测到密钥 < 32 字节时 warn 但**不抛异常**（允许应用启动），运行期调用鉴权接口才抛 `AUTH_TOKEN_INVALID`(9002)。HMAC-SHA256 签名，禁用弱算法 HS256+短密钥组合。
+40. **ThreadLocal 必须清理**（v0.7.0）：`JwtAuthInterceptor.afterCompletion` **必须**调用 `AuthContext.clear()`，否则线程池复用导致用户身份串号（A 用户请求残留 B 用户身份）。无论业务是否抛异常都需执行，故用 afterCompletion 而非 postHandle。
+41. **渐进式鉴权**（v0.7.0）：未标注 `@AuthRequired` 的接口**放行**（兼容现有裸传 tenantId 参数的接口），新接口可从 `AuthContext.current()` 获取身份。注解查找规则：方法级优先，类级兜底。`@AuthRequired(role=2)` 限制仅管理员可访问（role 默认 0 = 任意已登录用户）。
+42. **登录失败防枚举**（v0.7.0）：用户不存在和密码错误统一返回 `AUTH_PASSWORD_ERROR`(9005)，不区分「用户不存在」与「密码错误」，避免攻击者通过差异响应枚举有效用户名。
+43. **JWT claims 不可信**（v0.7.0）：JWT 仅证明「未被篡改」不证明「用户仍有效」。`/api/auth/me` 与所有 @AuthRequired 接口如需保证用户当前状态，应从数据库查询 `jicek_dev_user`/`jicek_admin_user` 校验 status=1（AuthService.currentUser 已实现，新接口从 AuthContext 取身份后视需要二次查库）。
+44. **密钥未配置的容错**（v0.7.0）：生产环境必须配置 `JICEK_JWT_SECRET`；开发环境若未配置，应用可启动但所有鉴权接口返回 9002，便于本地开发快速发现问题而不阻塞启动。
+45. **前端 token 失效跳转防重复**（v0.7.0）：`clearAuthAndRedirect()` 检查 `window.location.pathname` 是否已为 `/login`，避免在登录页因 401 响应触发死循环跳转。localStorage key：`jicek_token`（token）+ `jicek_user`（JSON 序列化的用户信息）。
 
 ## 12. 验证清单
 

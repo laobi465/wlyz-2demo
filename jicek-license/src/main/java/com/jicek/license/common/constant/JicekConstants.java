@@ -251,4 +251,38 @@ public final class JicekConstants {
     public static final int TICKET_TITLE_MAX_LENGTH = 128;
     /** 工单内容最大长度 */
     public static final int TICKET_CONTENT_MAX_LENGTH = 4096;
+
+    /* ============ 鉴权模块（v0.7.0） ============ */
+    /** 角色：开发者（租户） */
+    public static final int ROLE_DEV = 1;
+    /** 角色：管理员 */
+    public static final int ROLE_ADMIN = 2;
+
+    /** 用户状态：封禁 */
+    public static final int USER_STATUS_BANNED = 0;
+    /** 用户状态：正常 */
+    public static final int USER_STATUS_NORMAL = 1;
+
+    /** 管理员角色：超级管理员 */
+    public static final int ADMIN_ROLE_SUPER = 1;
+    /** 管理员角色：运营 */
+    public static final int ADMIN_ROLE_OPS = 2;
+
+    /** JWT claims key：用户类型（dev/admin） */
+    public static final String JWT_CLAIM_ROLE = "role";
+    /** JWT claims key：租户ID（仅开发者有） */
+    public static final String JWT_CLAIM_TENANT_ID = "tenantId";
+    /** JWT claims key：用户ID */
+    public static final String JWT_CLAIM_USER_ID = "uid";
+    /** JWT claims key：用户名 */
+    public static final String JWT_CLAIM_USERNAME = "username";
+
+    /** JWT 默认有效期（小时），可通过配置覆盖 */
+    public static final int JWT_DEFAULT_EXPIRE_HOURS = 24;
+    /** BCrypt cost */
+    public static final int BCRYPT_COST = 10;
+    /** JWT Authorization 头前缀 */
+    public static final String JWT_HEADER_PREFIX = "Bearer ";
+    /** Authorization 头名 */
+    public static final String AUTH_HEADER = "Authorization";
 }
