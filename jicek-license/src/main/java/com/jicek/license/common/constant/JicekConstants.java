@@ -1,5 +1,7 @@
 package com.jicek.license.common.constant;
 
+import java.math.BigDecimal;
+
 /**
  * 极策k 常量定义
  * 作者: 极策k  日期: 2026-07-21
@@ -81,4 +83,33 @@ public final class JicekConstants {
 
     /* ============ 换机码长度 ============ */
     public static final int BIND_CODE_LENGTH = 16;
+
+    /* ============ 代理状态 ============ */
+    public static final int AGENT_STATUS_BANNED = 0;   // 封禁
+    public static final int AGENT_STATUS_NORMAL = 1;   // 正常
+
+    /* ============ 分润类型 ============ */
+    public static final int COMMISSION_TYPE_DIRECT = 1;     // 直接销售
+    public static final int COMMISSION_TYPE_SUB = 2;        // 下级分润
+    public static final int COMMISSION_TYPE_DIFF = 3;       // 制卡差价
+
+    /* ============ 分润流水状态 ============ */
+    public static final int COMMISSION_STATUS_REVOKED = 0;  // 已撤销（退款连带）
+    public static final int COMMISSION_STATUS_VALID = 1;    // 有效
+
+    /* ============ 提现状态（不可逆状态机） ============ */
+    public static final int WITHDRAW_PENDING = 0;   // 待审核
+    public static final int WITHDRAW_APPROVED = 1;  // 已通过（等待打款）
+    public static final int WITHDRAW_REJECTED = 2;  // 已拒绝（余额退回）
+    public static final int WITHDRAW_PAID = 3;      // 已打款
+    public static final int WITHDRAW_FAILED = 4;    // 打款失败（余额退回）
+
+    /* ============ 提现配置 ============ */
+    public static final BigDecimal WITHDRAW_MIN_AMOUNT = new BigDecimal("10.00");
+    public static final BigDecimal WITHDRAW_FEE_RATE = new BigDecimal("0.00"); // 默认 0%，可由租户配置
+    public static final int AGENT_MAX_LEVEL = 10;   // 代理最大层级数（防深度爆炸）
+
+    /* ============ Redis Key 前缀（代理模块） ============ */
+    public static final String REDIS_KEY_WITHDRAW_LOCK = "jicek:withdraw:lock:";
+    public static final String REDIS_KEY_AGENT_BALANCE_LOCK = "jicek:agent:balance:lock:";
 }
