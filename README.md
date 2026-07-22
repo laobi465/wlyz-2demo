@@ -81,12 +81,16 @@
 
 适用于全新 CentOS/Ubuntu/Debian 服务器，自动完成宝塔面板 + Docker + 项目部署。
 
-```bash
-# 1. 下载项目（仅需部署文件，不需源码）
-git clone https://github.com/laobi465/wlyz-2demo.git
-cd wlyz-2demo
+**SSH 一键安装**（推荐，脚本会自动 clone 项目到 `/opt/jicek`）：
 
-# 2. 执行一键安装
+```bash
+curl -fsSL https://raw.githubusercontent.com/laobi465/wlyz-2demo/trae/agent-iEYsbS/install.sh | bash
+```
+
+**或下载后执行**：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/laobi465/wlyz-2demo/trae/agent-iEYsbS/install.sh -o install.sh
 chmod +x install.sh
 ./install.sh
 ```
