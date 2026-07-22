@@ -112,4 +112,42 @@ public final class JicekConstants {
     /* ============ Redis Key 前缀（代理模块） ============ */
     public static final String REDIS_KEY_WITHDRAW_LOCK = "jicek:withdraw:lock:";
     public static final String REDIS_KEY_AGENT_BALANCE_LOCK = "jicek:agent:balance:lock:";
+
+    /* ============ 云函数配置 ============ */
+    /** 代码长度上限（64KB） */
+    public static final int CF_CODE_MAX_BYTES = 64 * 1024;
+    /** 默认执行超时（3s） */
+    public static final int CF_DEFAULT_TIMEOUT_MS = 3000;
+    /** 最大执行超时（30s） */
+    public static final int CF_MAX_TIMEOUT_MS = 30_000;
+    /** 默认内存上限提示（8MB，实际靠 JVM -Xmx 限制） */
+    public static final int CF_DEFAULT_MEMORY_KB = 8192;
+    /** 默认输入大小上限（32KB） */
+    public static final int CF_DEFAULT_INPUT_KB = 32;
+    /** 默认输出大小上限（32KB） */
+    public static final int CF_DEFAULT_OUTPUT_KB = 32;
+    /** 输入/输出大小绝对上限（256KB，硬截断） */
+    public static final int CF_ABSOLUTE_IO_KB = 256;
+    /** 错误信息截断长度（4KB） */
+    public static final int CF_ERROR_MSG_MAX_BYTES = 4 * 1024;
+
+    /* ============ 云函数执行状态 ============ */
+    public static final int CF_STATUS_SUCCESS = 0;          // 成功
+    public static final int CF_STATUS_COMPILE_FAIL = 1;     // 编译失败（语法错误）
+    public static final int CF_STATUS_RUNTIME_ERROR = 2;    // 运行时错误
+    public static final int CF_STATUS_TIMEOUT = 3;          // 超时
+    public static final int CF_STATUS_MEMORY_LIMIT = 4;     // 内存超限
+    public static final int CF_STATUS_INPUT_LIMIT = 5;      // 输入超限
+    public static final int CF_STATUS_OUTPUT_LIMIT = 6;     // 输出超限
+
+    /* ============ 云函数调用来源 ============ */
+    public static final String CF_SOURCE_DEV = "dev";       // 开发者测试
+    public static final String CF_SOURCE_SDK = "sdk";       // 客户端调用
+
+    /* ============ 云函数运行时 ============ */
+    public static final String CF_RUNTIME_LUA = "lua";
+
+    /* ============ Redis Key 前缀（云函数模块，执行并发限流用） ============ */
+    public static final String REDIS_KEY_CF_INVOKE_LOCK = "jicek:cloud-func:invoke:lock:";
+    public static final String REDIS_KEY_CF_RATE_LIMIT = "jicek:cloud-func:rate:";
 }

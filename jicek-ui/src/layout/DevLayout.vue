@@ -50,6 +50,13 @@
           <el-menu-item index="/agent">代理列表</el-menu-item>
           <el-menu-item index="/withdraw">提现审核</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu index="cloud">
+          <template #title>
+            <el-icon><Cpu /></el-icon>
+            <span>云端数据</span>
+          </template>
+          <el-menu-item index="/cloud-func">云函数</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </aside>
 

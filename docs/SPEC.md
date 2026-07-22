@@ -55,6 +55,8 @@ controller → service → mapper → db
 | 1001-1999 | 极策k 卡密模块 |
 | 2001-2999 | 极策k 支付模块 |
 | 3001-3999 | 极策k 设备/心跳模块 |
+| 4001-4999 | 极策k 代理/分润/提现模块 |
+| 5001-5999 | 极策k 云函数模块 |
 
 #### 极策k 错误码明细
 
@@ -97,6 +99,22 @@ controller → service → mapper → db
 | 3006 | 设备数超限 |
 | 3007 | 频率超限 |
 | 3008 | 防爆破触发 |
+
+**云函数模块 (5001-5999)**
+| 错误码 | 含义 |
+|---|---|
+| 5001 | 云函数不存在 |
+| 5002 | 云函数已禁用 |
+| 5003 | 代码体积超限 |
+| 5004 | 执行超时 |
+| 5005 | 运行时错误 |
+| 5006 | 输入超限 |
+| 5007 | 输出超限 |
+| 5008 | 编译失败 |
+| 5009 | 函数名已存在 |
+| 5010 | 内存超限 |
+| 5011 | 并发锁获取失败 |
+| 5012 | 参数校验失败 |
 
 ### 3.3 SDK 接口签名（HMAC-SHA256 + RSA 混合）
 ```
@@ -204,6 +222,49 @@ docs: 更新PROJECT.md数据库表设计
 - 加密通信（RSA+AES 混合加密）
 - 云变量（核心参数云端化，客户端无敏感配置）
 - 云函数（关键算法服务端执行，客户端只调用）
+
+### 6.8 云函数沙箱安全（重点，v0.4.2）
+
+云函数是抗破解的终极方案——关键算法在服务端 LuaJ 沙箱执行，客户端只调用。沙箱安全是核心难点，采用三层防护：
+
+**第一层：全局表裁剪（禁用危险函数）**
+- 禁用 `os` / `io` / `loadfile` / `dofile` / `require` / `debug` / `package` / `load`，全部设为 `LuaValue.NIL`
+- 仅保留 `BaseLib` / `MathLib` / `StringLib` / `TableLib`
+- 禁用 `load` 禁止动态编译字符串，所有 Lua 代码必须在源码顶层定义
+- `LuaC.install(globals)` 必须在 BaseLib 加载之前，确保 `globals.load()` 能编译用户代码
+
+**第二层：超时强制中断**
+- 独立 `jicek-lua-sandbox` daemon 线程池（4 核心/16 最大/64 队列/CallerRunsPolicy），与业务线程池隔离
+- `Future.get(timeoutMs)` 控制执行时长，超时后 `future.cancel(true)` 强制中断线程
+- 超时上限 `CF_MAX_TIMEOUT_MS`(30000ms)，默认 `CF_DEFAULT_TIMEOUT_MS`(3000ms)，禁固定值（铁律 04）
+- 线程必须为 daemon，防止 JVM 退出受阻
+
+**第三层：输出大小硬截断**
+- 输入大小：DTO `@Size(max=262144)` + Service 层二次校验实际字节数 ≤ `maxInputKb * 1024`
+- 输出大小：`luaValueToJson()` 序列化后超过 `maxOutputKb * 1024` 直接截断
+- 错误信息：`truncateError()` 截断至 `CF_ERROR_MSG_MAX_BYTES`(4KB)
+- 绝对上限 `CF_ABSOLUTE_IO_KB`(256KB)，单函数配置不可超过此值
+
+**审计铁律（不可篡改）**
+- `jicek_cloud_function_log` 表仅允许 INSERT + SELECT，Service 层禁 UPDATE/DELETE
+- 每次执行（成功/失败）必须落审计日志，含 invokeSource/callerIp/inputSize/outputSize/durationMs/status/errorMessage
+- 审计日志写入失败不应阻断主流程（invoke 已返回结果给客户端），但需记录 ERROR 日志
+- 执行状态码：0成功 / 1编译失败 / 2运行时错误 / 3超时 / 4内存超限 / 5输入超限 / 6输出超限
+
+**输入注入契约**
+- 通过 `jicek.input` 全局变量传入字符串（非 JSON 对象，由 Lua 代码自行解析）
+- Lua 代码 `return` 返回值由 `luaValueToJson()` 递归序列化为 JSON
+- table 自动判断数组 vs 对象：key 为 1..n 连续正整数则为数组，否则为对象
+
+**异常映射（错误码 → 审计状态码）**
+| 异常 | ResultCode | 审计 status |
+|---|---|---|
+| LuaError（编译期） | CF_COMPILE_FAIL(5008) | 1 |
+| LuaError（运行期） | CF_RUNTIME_ERROR(5005) | 2 |
+| TimeoutException | CF_TIMEOUT(5004) | 3 |
+| OutOfMemoryError | CF_MEMORY_LIMIT(5010) | 4 |
+| 输入超限 | CF_INPUT_TOO_LARGE(5006) | 5 |
+| 输出超限 | CF_OUTPUT_TOO_LARGE(5007) | 6 |
 
 ## 7. 部署规范
 

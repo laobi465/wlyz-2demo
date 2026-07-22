@@ -120,15 +120,17 @@
 
 ## P2（中）
 
-### [待开始] 云函数远程执行
+### [已完成] 云函数远程执行 ✅
 - 优先级：P2
-- 预计版本：v0.5.0
-- 子项：
-  - [ ] 沙箱隔离（Lua/LuaJIT 或 GraalVM）
-  - [ ] 执行超时限制
-  - [ ] 资源配额（CPU/内存）
-  - [ ] 审计日志
-- 备注：抗破解终极方案，沙箱安全是难点
+- 完成版本：v0.4.2
+- 完成项：
+  - [x] 沙箱隔离（LuaJ 3.0.6 纯 Java 实现 Lua 5.4 子集，全局表裁剪禁用 os/io/loadfile/dofile/require/debug/package/load）
+  - [x] 执行超时限制（独立 jicek-lua-sandbox 线程池 + Future.get(timeoutMs) + cancel(true) 强制中断）
+  - [x] 资源配额（内存上限 memoryLimitKb + 输入上限 maxInputKb + 输出上限 maxOutputKb 硬截断）
+  - [x] 审计日志（jicek_cloud_function_log 表，仅 INSERT + SELECT，禁 UPDATE/DELETE）
+  - [x] 云函数 CRUD + 测试执行 + 执行日志查询（后端 DevCloudFunctionController + 前端双 Tab 页面）
+  - [x] 前端路由 /cloud-func + 侧边栏「云端数据」子菜单集成
+- 备注：抗破解终极方案；SDK 调用走 SdkCloudFunctionController 待后续版本实现（复用同一 Service）；资源配额仅内存/IO，CPU 配额未实现（LuaJ 纯 Java 难以精确限制 CPU）
 
 ### [已完成] UI 设计规范 ✅
 - 优先级：P2

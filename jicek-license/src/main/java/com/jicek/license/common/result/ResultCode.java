@@ -14,6 +14,7 @@ import lombok.Getter;
  *  2001-2999  支付模块
  *  3001-3999  设备/心跳模块
  *  4001-4999  代理/分润/提现模块
+ *  5001-5999  云函数模块
  */
 @Getter
 @AllArgsConstructor
@@ -85,7 +86,21 @@ public enum ResultCode {
     WITHDRAW_AMOUNT_EXCEED(4014, "提现金额超出可用余额"),
     WITHDRAW_LOCK_FAIL(4015, "提现申请处理中，请稍后"),
     WITHDRAW_ACCOUNT_INVALID(4016, "收款账号无效"),
-    AGENT_BALANCE_LOCK_FAIL(4017, "代理余额变动处理中，请稍后");
+    AGENT_BALANCE_LOCK_FAIL(4017, "代理余额变动处理中，请稍后"),
+
+    /* ============ 云函数模块 5001-5999 ============ */
+    CF_NOT_FOUND(5001, "云函数不存在"),
+    CF_DISABLED(5002, "云函数已禁用"),
+    CF_CODE_TOO_LARGE(5003, "代码超过长度限制（64KB）"),
+    CF_TIMEOUT(5004, "云函数执行超时"),
+    CF_RUNTIME_ERROR(5005, "云函数运行时错误"),
+    CF_INPUT_TOO_LARGE(5006, "输入超过大小限制"),
+    CF_OUTPUT_TOO_LARGE(5007, "输出超过大小限制"),
+    CF_COMPILE_FAIL(5008, "代码编译失败（语法错误）"),
+    CF_NAME_EXISTS(5009, "同一软件下函数名已存在"),
+    CF_MEMORY_LIMIT(5010, "云函数内存超限"),
+    CF_LOCK_FAIL(5011, "云函数执行处理中，请稍后"),
+    CF_PARAM_INVALID(5012, "参数非法");
 
     private final Integer code;
     private final String msg;

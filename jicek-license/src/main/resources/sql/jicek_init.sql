@@ -287,6 +287,57 @@ CREATE TABLE jicek_update_audit (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='更新操作审计';
 
 -- ============================================================
+-- 10. 云函数表（远程执行 Lua 代码，抗破解终极方案）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_cloud_function;
+CREATE TABLE jicek_cloud_function (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  software_id     BIGINT       NOT NULL COMMENT '所属软件',
+  name            VARCHAR(64)  NOT NULL COMMENT '函数名（同一软件下唯一）',
+  description     VARCHAR(255) COMMENT '描述',
+  code            MEDIUMTEXT   NOT NULL COMMENT 'Lua 源代码（最长 64KB）',
+  runtime         VARCHAR(16)  DEFAULT 'lua' COMMENT '运行时（当前仅 lua）',
+  timeout_ms      INT          DEFAULT 3000 COMMENT '执行超时（毫秒），上限 30000',
+  memory_limit_kb INT          DEFAULT 8192 COMMENT '内存上限（KB，提示用，实际靠 JVM 限制）',
+  max_input_kb    INT          DEFAULT 32 COMMENT '输入大小上限（KB）',
+  max_output_kb   INT          DEFAULT 32 COMMENT '输出大小上限（KB）',
+  enabled         TINYINT      DEFAULT 1 COMMENT '0禁用 1启用',
+  version         INT          DEFAULT 1 COMMENT '版本号（每次保存自增）',
+  invoke_count    BIGINT       DEFAULT 0 COMMENT '累计调用次数',
+  last_invoke_time DATETIME    COMMENT '最后调用时间',
+  last_invoke_ip  VARCHAR(45),
+  create_by       BIGINT       COMMENT '创建人（开发者用户ID）',
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_sw_name (tenant_id, software_id, name),
+  KEY idx_software (tenant_id, software_id, enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云函数定义';
+
+-- ============================================================
+-- 11. 云函数执行日志表（审计，每次执行一行）
+-- ============================================================
+DROP TABLE IF EXISTS jicek_cloud_function_log;
+CREATE TABLE jicek_cloud_function_log (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  function_id     BIGINT       NOT NULL,
+  function_name   VARCHAR(64)  NOT NULL COMMENT '冗余：函数名（便于审计）',
+  software_id     BIGINT       NOT NULL COMMENT '冗余：所属软件',
+  invoke_source   VARCHAR(16)  NOT NULL COMMENT 'dev（开发者测试）/ sdk（客户端调用）',
+  caller_ip       VARCHAR(45),
+  input_size      INT          NOT NULL COMMENT '输入字节数',
+  output_size     INT          NOT NULL COMMENT '输出字节数',
+  duration_ms     INT          NOT NULL COMMENT '实际执行耗时（毫秒）',
+  status          TINYINT      NOT NULL COMMENT '0成功 1编译失败 2运行时错误 3超时 4内存超限 5输入超限 6输出超限',
+  error_message   TEXT         COMMENT '失败时记录错误信息（截断 4KB）',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_func (tenant_id, function_id, create_time),
+  KEY idx_software (tenant_id, software_id, create_time),
+  KEY idx_status (tenant_id, status, create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云函数执行日志';
+
+-- ============================================================
 -- 完成
 -- ============================================================
 SELECT 'jicek database initialized successfully' AS message;

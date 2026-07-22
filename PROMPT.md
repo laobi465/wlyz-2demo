@@ -24,7 +24,7 @@
 | 项 | 值 |
 |---|---|
 | 项目名 | 极策k网络验证 |
-| 当前版本 | v0.4.1 |
+| 当前版本 | v0.4.2 |
 | 仓库 | https://github.com/laobi465/wlyz-2demo |
 | 技术栈 | Spring Boot 3.4.6 + MyBatis-Plus 3.5.12 + Redisson + Vue3 + TS + Element Plus 2.9.8 |
 | 部署 | Docker（普通 / 宝塔面板） |
@@ -49,6 +49,7 @@
 | 设备模块 | `device/` (entity/mapper/dto/fingerprint/service/controller) | ✅ v0.3.0 |
 | 客户端 SDK | `sdk/` (java/python/nodejs/go/csharp/cpp/lua/shell/epl) | ✅ v0.3.1 |
 | 代理模块 | `agent/` (entity/mapper/dto/service/controller) | ✅ v0.4.0 |
+| 云函数模块 | `cloudfunc/` (entity/mapper/dto/sandbox/service/controller) | ✅ v0.4.2 |
 
 ### 前端（jicek-ui）
 
@@ -69,6 +70,7 @@
 | 资金流水页 | `src/views/dev/pay-order/` | ✅ |
 | 代理管理页 | `src/views/dev/agent/` | ✅ v0.4.0 |
 | 提现审核页 | `src/views/dev/withdraw/` | ✅ v0.4.0 |
+| 云函数管理页 | `src/views/dev/cloud-func/` | ✅ v0.4.2 |
 
 ## 3. 待办任务（按优先级）
 
@@ -109,8 +111,14 @@
   - 数据统计扩展图表：验证量趋势 / 设备在线热力图 / 收入多维 / 防破解事件
   - H5 终端用户页面（购卡/续费/换机/在线设备，待后端 H5 Controller）
 
-### P2（中）
-- 云函数远程执行（沙箱：Lua/LuaJIT 或 GraalVM）
+### P2（中，v0.4.2 已完成 ✅）
+- **云函数远程执行**（抗破解终极方案）：
+  - LuaJ 3.0.6 沙箱引擎（纯 Java 实现 Lua 5.4 子集，全局表裁剪 + 超时中断 + 输出截断三层防护）
+  - 审计日志不可篡改（jicek_cloud_function_log 仅 INSERT + SELECT）
+  - 前端双 Tab 页面（函数列表 + 执行日志）+ 路由/菜单集成
+  - SDK 调用走 SdkCloudFunctionController 待后续版本实现（复用同一 Service）
+
+### P2（中，待开始）
 - 数据统计与可视化（验证量趋势、设备热力图、收入多维统计）
 
 ### P3（低）
@@ -265,6 +273,13 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | 设备 | GET | `/api/dev/device/{tenantId}/{deviceId}` | 设备详情（含完整指纹） |
 | 设备 | POST | `/api/dev/device/ban` | 封禁设备（params: tenantId/deviceId） |
 | 设备 | POST | `/api/dev/device/unban` | 解封设备（params: tenantId/deviceId） |
+| 云函数 | POST | `/api/dev/cloud-func` | 新建/更新云函数 |
+| 云函数 | GET | `/api/dev/cloud-func/page` | 分页（参数：tenantId/softwareId/name/enabled/current/size） |
+| 云函数 | GET | `/api/dev/cloud-func/{tenantId}/{functionId}` | 云函数详情 |
+| 云函数 | DELETE | `/api/dev/cloud-func/{tenantId}/{functionId}` | 删除云函数 |
+| 云函数 | POST | `/api/dev/cloud-func/toggle-enabled` | 启用/禁用（params: tenantId/functionId/enabled） |
+| 云函数 | POST | `/api/dev/cloud-func/invoke` | 测试执行（body: tenantId/softwareId/functionId/input） |
+| 云函数 | GET | `/api/dev/cloud-func/log/page` | 执行日志分页（参数：tenantId/functionId/softwareId/status/invokeSource/current/size） |
 
 ### 7.2 公开回调
 
@@ -286,6 +301,8 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 | `jicek_agent_package` | `agent_id` + `card_type_id` + `agent_price` | 代理可售卡类 + 代理价 |
 | `jicek_commission` | `agent_id` + `order_id` + `commission_rate`(快照) + `type`(1/2) + `status`(0/1) | 分润流水（不可变） |
 | `jicek_withdraw` | `amount` + `fee` + `actual_amount` + `status`(0-4) | 提现申请（5 状态机） |
+| `jicek_cloud_function` | `code`(MEDIUMTEXT) + `timeout_ms` + `enabled` + `version` + `invoke_count` | 云函数（UNIQUE: tenant_id+software_id+name） |
+| `jicek_cloud_function_log` | `status`(0-6) + `invoke_source` + `caller_ip` + `duration_ms` | 云函数执行审计日志（仅 INSERT + SELECT） |
 
 完整 DDL 见 `jicek_init.sql`。
 
@@ -313,14 +330,14 @@ public void processPaymentSuccess(PayOrder order, PayNotifyDTO notify) {
 ```typescript
 import {
   dashboardApi, cardKeyApi, cardTypeApi, payApi,
-  agentApi, withdrawApi, deviceApi
+  agentApi, withdrawApi, deviceApi, cloudFuncApi
 } from '@/api'
 
 // 统一响应：{ code, msg, data }
 // 拦截器自动剥 data，失败自动 ElMessage.error
 const data = await dashboardApi.summary(tenantId)
 
-// 分页参数映射：前端 current/size → 后端 page/size（device 接口用 page/size，card-type 用 current/size，差异在 API 层屏蔽）
+// 分页参数映射：前端 current/size → 后端 page/size（device 接口用 page/size，card-type/cloud-func 用 current/size，差异在 API 层屏蔽）
 const deviceList = await deviceApi.page({ tenantId: 1, current: 1, size: 20 })
 ```
 
@@ -375,6 +392,10 @@ const deviceList = await deviceApi.page({ tenantId: 1, current: 1, size: 20 })
 14. **分页参数命名差异**：DevCardTypeController 使用 `current`/`size`，DevDeviceController 使用 `page`/`size`。前端统一使用 `current`/`size`，在 API 层做映射（如 `page: params.current || 1`），不可让调用方关心差异。
 15. **ECharts 生命周期**：必须 `onBeforeUnmount` 调用 `chart.dispose()` 释放实例；异步数据驱动渲染须用 `watch(data, () => nextTick(() => render()))` 确保 DOM 已就绪；窗口 resize 须监听并调用 `chart.resize()`。
 16. **页面实现范围**（铁律 06）：仅实现后端 Controller 已存在的页面。若 UI-DESIGN.md 列出但后端无 Controller，**禁止虚构接口**，应标注「待后端 XXController 实现后再补」。
+17. **云函数沙箱安全**（v0.4.2）：LuaJ 全局表必须裁剪（禁 os/io/loadfile/dofile/require/debug/package/load，全设为 `LuaValue.NIL`）；`LuaC.install(globals)` 必须在 BaseLib 之前，否则 `globals.load()` 无法编译用户代码；超时控制用 `Future.get(timeoutMs)` + `future.cancel(true)` 强制中断，禁用固定 sleep 轮询。
+18. **云函数审计不可篡改**：`jicek_cloud_function_log` 表仅允许 INSERT + SELECT，Service 层禁 UPDATE/DELETE，确保执行历史完整可追溯。审计日志写入失败不应阻断主流程（invoke 已返回结果）。
+19. **云函数输入注入契约**：通过 `jicek.input` 全局变量传入字符串，Lua 代码 `return` 返回值由 `luaValueToJson()` 递归序列化为 JSON（table 自动判断数组 vs 对象，key 为 1..n 连续正整数则为数组）。输入/输出大小在 Service 层二次校验（DTO 校验 + 实际字节数校验），超限直接截断或拒绝。
+20. **云函数线程池隔离**：独立 `jicek-lua-sandbox` daemon 线程池（4 核心/16 最大/64 队列/CallerRunsPolicy）与业务线程池隔离，避免沙箱执行阻塞主业务。线程名必须为 daemon，防止 JVM 退出受阻。
 
 ## 12. 验证清单
 

@@ -110,3 +110,36 @@ export const withdrawApi = {
   pendingAmount: (tenantId: number, agentId: number) =>
     api.get('/api/dev/withdraw/pending-amount', { tenantId, agentId })
 }
+
+/* ============ 云函数 ============ */
+export const cloudFuncApi = {
+  save: (data: any) => api.post('/api/dev/cloud-func', data),
+  page: (params: any) =>
+    api.get('/api/dev/cloud-func/page', {
+      tenantId: params.tenantId,
+      softwareId: params.softwareId,
+      name: params.name,
+      enabled: params.enabled,
+      current: params.current || 1,
+      size: params.size || 20
+    }),
+  get: (tenantId: number, functionId: number) =>
+    api.get(`/api/dev/cloud-func/${tenantId}/${functionId}`),
+  delete: (tenantId: number, functionId: number) =>
+    api.delete(`/api/dev/cloud-func/${tenantId}/${functionId}`),
+  toggleEnabled: (tenantId: number, functionId: number, enabled: number) =>
+    api.post('/api/dev/cloud-func/toggle-enabled', null, {
+      params: { tenantId, functionId, enabled }
+    }),
+  invoke: (data: any) => api.post('/api/dev/cloud-func/invoke', data),
+  logPage: (params: any) =>
+    api.get('/api/dev/cloud-func/log/page', {
+      tenantId: params.tenantId,
+      functionId: params.functionId,
+      softwareId: params.softwareId,
+      status: params.status,
+      invokeSource: params.invokeSource,
+      current: params.current || 1,
+      size: params.size || 20
+    })
+}

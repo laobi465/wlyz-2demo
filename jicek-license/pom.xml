@@ -27,6 +27,7 @@
         <hutool.version>5.8.34</hutool.version>
         <redisson.version>3.45.1</redisson.version>
         <bc.version>1.79</bc.version>
+        <luaj.version>3.0.6</luaj.version>
     </properties>
 
     <dependencies>
@@ -70,6 +71,13 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
             <version>${bc.version}</version>
+        </dependency>
+
+        <!-- LuaJ (云函数沙箱执行引擎，纯 Java 实现 Lua 5.4 子集) -->
+        <dependency>
+            <groupId>org.luaj</groupId>
+            <artifactId>luaj-jse</artifactId>
+            <version>${luaj.version}</version>
         </dependency>
 
         <!-- Lombok -->

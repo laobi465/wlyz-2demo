@@ -71,12 +71,19 @@
 │       │   └── controller # DevDashboardController
 │       ├── device      # 设备指纹（待实现 v0.3.0）
 │       ├── heartbeat   # 心跳保活（待实现 v0.3.0）
+│       ├── cloudfunc   # ★ 云函数模块（v0.4.2 新增，LuaJ 沙箱远程执行）
+│       │   ├── entity  # CloudFunction / CloudFunctionLog
+│       │   ├── mapper  # CloudFunctionMapper / CloudFunctionLogMapper（审计表禁 UPDATE/DELETE）
+│       │   ├── dto     # CloudFunctionSaveDTO / CloudFunctionInvokeDTO / CloudFunctionInvokeResult
+│       │   ├── sandbox # LuaSandboxService（LuaJ 3.0.6 沙箱引擎，全局表裁剪 + 超时中断 + 输出截断）
+│       │   ├── service # CloudFunctionService
+│       │   └── controller # DevCloudFunctionController
 │       └── sdk-gen     # SDK 代码生成器（待实现 v0.3.0）
-└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表）
-    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi）
+└── jicek-ui            # ★ 前端（v0.2.0 已实现骨架，v0.4.1 补全卡类/设备/Dashboard 图表，v0.4.2 新增云函数）
+    ├── src/api         # API 客户端 + 接口定义（dashboardApi/cardKeyApi/cardTypeApi/payApi/agentApi/withdrawApi/deviceApi/cloudFuncApi）
     ├── src/components/jicek # 公共组件（StatusTag 4 类型/AmountInput/ConfirmDialog）
     ├── src/layout      # DevLayout (220px 侧栏 + 60px 顶栏)
-    ├── src/router      # 路由配置（8 个页面路由）
+    ├── src/router      # 路由配置（9 个页面路由）
     ├── src/styles      # jicek.scss (CSS 变量系统)
     └── src/views/dev   # 开发者页面
         ├── dashboard   # 控制台（v0.4.1 集成 ECharts 饼图 + 柱状图）
@@ -87,7 +94,8 @@
         ├── pay-config  # 支付配置
         ├── pay-order   # 资金流水
         ├── agent       # 代理管理（v0.4.0）
-        └── withdraw    # 提现审核（v0.4.0）
+        ├── withdraw    # 提现审核（v0.4.0）
+        └── cloud-func  # ★ 云函数管理（v0.4.2 新增，双 Tab：函数列表 + 执行日志）
 ```
 
 ### 2.3 数据流
@@ -136,7 +144,7 @@
 
 ### 3.5 云端数据
 - [ ] 云变量（key/value + 签名加密）
-- [ ] 云函数（远程执行，抗破解终极方案）
+- [x] 云函数（远程执行，抗破解终极方案）✅ v0.4.2（LuaJ 3.0.6 沙箱 + 全局表裁剪 + 超时中断 + 输出截断 + 审计日志不可篡改）
 - [ ] 远程公告（按软件/版本下发）
 
 ### 3.6 客户端 SDK
@@ -410,6 +418,54 @@ CREATE TABLE jicek_withdraw (
   KEY idx_agent (tenant_id, agent_id, status),
   KEY idx_status (tenant_id, status, create_time)
 ) COMMENT='提现申请';
+```
+
+### 5.11 云函数表（v0.4.2 新增）
+```sql
+CREATE TABLE jicek_cloud_function (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  software_id     BIGINT       NOT NULL,
+  name            VARCHAR(64)  NOT NULL COMMENT '函数名（字母开头，字母数字下划线，最长64）',
+  description     VARCHAR(255) COMMENT '描述',
+  code            MEDIUMTEXT   NOT NULL COMMENT 'Lua 代码（最大 64KB）',
+  runtime         VARCHAR(20)  DEFAULT 'lua' COMMENT '运行时（当前仅 lua）',
+  timeout_ms      INT          NOT NULL COMMENT '超时毫秒（100-30000）',
+  memory_limit_kb INT          NOT NULL COMMENT '内存上限 KB',
+  max_input_kb    INT          NOT NULL COMMENT '输入上限 KB',
+  max_output_kb   INT          NOT NULL COMMENT '输出上限 KB',
+  enabled         TINYINT      DEFAULT 1 COMMENT '0禁用 1启用',
+  version         INT          DEFAULT 1 COMMENT '版本号（每次更新自增）',
+  invoke_count    BIGINT       DEFAULT 0 COMMENT '累计调用次数',
+  last_invoke_time DATETIME    COMMENT '最后调用时间',
+  last_invoke_ip  VARCHAR(64)  COMMENT '最后调用 IP',
+  create_by       BIGINT,
+  create_time     DATETIME     NOT NULL,
+  update_time     DATETIME     NOT NULL,
+  UNIQUE KEY uk_sw_name (tenant_id, software_id, name)
+) COMMENT='云函数';
+```
+
+### 5.12 云函数执行日志表（v0.4.2 新增，审计表，仅 INSERT + SELECT，禁 UPDATE/DELETE）
+```sql
+CREATE TABLE jicek_cloud_function_log (
+  id              BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  tenant_id       BIGINT       NOT NULL,
+  function_id     BIGINT       NOT NULL,
+  function_name   VARCHAR(64)  NOT NULL COMMENT '函数名快照',
+  software_id     BIGINT       NOT NULL,
+  invoke_source   VARCHAR(10)  NOT NULL COMMENT 'dev(开发者测试) / sdk(客户端调用)',
+  caller_ip       VARCHAR(64),
+  input_size      INT          NOT NULL COMMENT '输入字节数',
+  output_size     INT          NOT NULL COMMENT '输出字节数',
+  duration_ms     INT          NOT NULL COMMENT '执行耗时毫秒',
+  status          TINYINT      NOT NULL COMMENT '0成功 1编译失败 2运行时错误 3超时 4内存超限 5输入超限 6输出超限',
+  error_message   VARCHAR(4096) COMMENT '错误信息（截断至 4KB）',
+  create_time     DATETIME     NOT NULL,
+  KEY idx_func (tenant_id, function_id, create_time),
+  KEY idx_software (tenant_id, software_id, create_time),
+  KEY idx_status (tenant_id, status, create_time)
+) COMMENT='云函数执行日志（审计，禁 UPDATE/DELETE）';
 ```
 
 ## 6. 使用指南（待实现后补全）

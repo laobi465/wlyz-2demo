@@ -65,6 +65,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Withdraw',
         component: () => import('@/views/dev/withdraw/index.vue'),
         meta: { title: '提现审核', icon: 'Wallet' }
+      },
+      {
+        path: 'cloud-func',
+        name: 'CloudFunc',
+        component: () => import('@/views/dev/cloud-func/index.vue'),
+        meta: { title: '云函数', icon: 'Cpu' }
       }
     ]
   }

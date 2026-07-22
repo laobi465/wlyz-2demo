@@ -232,6 +232,70 @@
 - **设备状态组合策略**：Device 实体的 status 和 onlineStatus 字段语义不同（封禁态 vs 在线态），UI 层合并为单一展示态，避免重复标签
 - **指纹脱敏策略**：列表展示脱敏（前 16 字符）+ 详情弹窗展示完整（用于审计），符合「敏感信息最小暴露」原则
 
+## [0.4.2] - 2026-07-22
+
+### [新增] 云函数远程执行模块（抗破解终极方案）
+
+依据 UI-DESIGN.md 6.2 节「云端数据 > 云函数」+ 铁律三件套（04 禁硬编码 / 06 防幻觉 / 13 严格遵循项目文档规范），完整实现云函数全层（DDL + entity + mapper + dto + service + controller + sandbox + 前端页面 + 路由/菜单）。关键算法在服务端 LuaJ 沙箱执行，客户端只调用，实现抗破解。
+
+#### 数据库
+- `jicek_cloud_function` 表：19 字段（id/tenantId/softwareId/name/description/code(MEDIUMTEXT)/runtime/timeoutMs/memoryLimitKb/maxInputKb/maxOutputKb/enabled/version/invokeCount/lastInvokeTime/lastInvokeIp/createBy/createTime/updateTime）+ `UNIQUE KEY uk_sw_name`(tenant_id, software_id, name)
+- `jicek_cloud_function_log` 表：14 字段审计日志（含 invokeSource/callerIp/inputSize/outputSize/durationMs/status/errorMessage）+ 3 索引（func/software/status）
+
+#### 后端 - 实体/Mapper/DTO
+- 2 实体：`CloudFunction` / `CloudFunctionLog`（@TableName 注解对应表名）
+- 2 Mapper：均继承 `BaseMapper<T>`，`CloudFunctionLogMapper` 注释明确「审计表，禁 UPDATE/DELETE，仅 INSERT + SELECT」
+- 3 DTO：`CloudFunctionSaveDTO`（name @Pattern `^[a-zA-Z][a-zA-Z0-9_]{0,63}$` + timeoutMs @Min(100)@Max(30000) + 内存/输入/输出上限校验）/ `CloudFunctionInvokeDTO`（tenantId/softwareId/functionId @NotNull + input @Size(max=262144)）/ `CloudFunctionInvokeResult`（含 success()/fail() 静态工厂方法）
+
+#### 后端 - LuaJ 沙箱引擎（`LuaSandboxService`）
+- 依赖：`org.luaj:luaj-jse:3.0.6`（纯 Java 实现 Lua 5.4 子集，无原生依赖，Spring Boot 兼容）
+- **安全设计三层防护**：
+  1. **全局表裁剪**：禁用 os/io/loadfile/dofile/require/debug/package/load（设为 NIL），仅保留 BaseLib/MathLib/StringLib/TableLib
+  2. **超时强制中断**：独立 `jicek-lua-sandbox` daemon 线程池（4 核心/16 最大/64 队列/CallerRunsPolicy）+ `Future.get(timeoutMs)` + `future.cancel(true)` 中断
+  3. **输出大小硬截断**：结果序列化后超过 `maxOutputKb` 直接截断
+- **输入注入契约**：通过 `jicek.input` 全局变量传入字符串，Lua 代码 `return` 返回值递归序列化为 JSON（table 自动判断数组 vs 对象，key 为 1..n 连续正整数则为数组）
+- **异常映射**：LuaError→CF_COMPILE_FAIL/CF_RUNTIME_ERROR、TimeoutException→CF_TIMEOUT、OutOfMemoryError→CF_MEMORY_LIMIT
+- **编译器安装顺序**：`LuaC.install(globals)` 必须在 BaseLib 之前，确保 globals.load() 能编译用户代码
+- `truncateError()`：错误信息截断至 `CF_ERROR_MSG_MAX_BYTES`（4KB）
+
+#### 后端 - Service（`CloudFunctionService`）
+- `save()`：代码长度校验（≤CF_CODE_MAX_BYTES 64KB）+ 默认值填充（null 时走 JicekConstants 常量）+ name 唯一性校验 + version 自增
+- `page()`/`get()`/`delete()`/`toggleEnabled()`
+- `invoke()`：核心调度方法（校验启用态→输入大小二次校验→沙箱执行→落审计日志→更新统计）
+- `mapExceptionToStatus()`：错误码→审计状态码映射，确保日志一致性
+- `recordSuccessLog()`/`recordFailureLog()`：审计日志写入（仅 INSERT）
+- `updateInvokeStats()`：`@Transactional` 独立方法，失败不影响主流程
+
+#### 后端 - Controller（`DevCloudFunctionController`）
+- 路由前缀：`/api/dev/cloud-func`
+- 接口：POST save / GET page / GET {tenantId}/{functionId} / DELETE / POST toggle-enabled / POST invoke / GET log/page
+- `getClientIp()`：穿透 X-Forwarded-For/X-Real-IP 代理头
+- 调用来源固定为 `CF_SOURCE_DEV`（SDK 调用走后续 SdkCloudFunctionController，复用同一 Service）
+
+#### 后端 - 常量/错误码
+- `JicekConstants` 新增 14 个常量：CF_CODE_MAX_BYTES(64KB) / CF_DEFAULT_TIMEOUT_MS(3000) / CF_MAX_TIMEOUT_MS(30000) / CF_DEFAULT_MEMORY_KB(8192) / CF_DEFAULT_INPUT_KB(32) / CF_DEFAULT_OUTPUT_KB(32) / CF_ABSOLUTE_IO_KB(256) / CF_ERROR_MSG_MAX_BYTES(4KB) / CF_STATUS_*(0-6) / CF_SOURCE_DEV/SDK / CF_RUNTIME_LUA / 2 个 Redis key
+- `ResultCode` 新增 12 个错误码（5001-5012）：CF_NOT_FOUND / CF_DISABLED / CF_CODE_TOO_LARGE / CF_TIMEOUT / CF_RUNTIME_ERROR / CF_INPUT_TOO_LARGE / CF_OUTPUT_TOO_LARGE / CF_COMPILE_FAIL / CF_NAME_EXISTS / CF_MEMORY_LIMIT / CF_LOCK_FAIL / CF_PARAM_INVALID
+
+#### 前端
+- **云函数管理页**（`views/dev/cloud-func/index.vue`）：
+  - 双 Tab 布局：函数列表 + 执行日志
+  - 函数列表：筛选（softwareId/name/enabled）+ 表格 + CRUD 操作
+  - 编辑弹窗：表单含代码 textarea（等宽字体 `var(--jicek-font-mono)`）+ 字节数实时统计（`codeBytesText` computed）+ 超时/内存/输入/输出上限配置
+  - 测试执行弹窗：输入 textarea + 执行结果展示（状态 tag + 耗时 + 输入输出大小 + 格式化 JSON 输出 + 错误信息）
+  - 执行日志 Tab：筛选（functionId/softwareId/status/invokeSource）+ 表格
+  - 删除二次确认（ConfirmDialog 组件）
+  - 状态码映射：0成功/1编译失败/2运行时错误/3超时/4内存超限/5输入超限/6输出超限
+- API 定义：新增 `cloudFuncApi`（7 方法），分页参数使用 `current`/`size`（与 card-type 一致）
+- 路由：新增 `/cloud-func`（name: CloudFunc, icon: Cpu）
+- 侧边栏：新增「云端数据」子菜单（icon: Cpu）+ 「云函数」项
+
+#### 技术决策
+- **沙箱引擎选型**：采用 LuaJ 3.0.6 而非 GraalVM/LuaJIT，理由：纯 Java 实现、无原生依赖、与 Spring Boot 兼容、依赖体积小（约 300KB）
+- **禁用动态加载**：`load` 设为 NIL，所有 Lua 代码必须在源码顶层定义，禁动态编译字符串，进一步缩小攻击面
+- **审计不可篡改**：审计表仅 INSERT + SELECT，Service 层禁 UPDATE/DELETE，确保执行历史完整可追溯
+- **线程池隔离**：独立 `jicek-lua-sandbox` 线程池与业务线程池隔离，避免沙箱执行阻塞主业务
+- **分页参数一致性**：cloud-func/page 使用 `current`/`size`（与 card-type 一致，与 device 的 `page`/`size` 不同，差异在 API 层屏蔽）
+
 ## 待发布版本（开发中）
 
 ### [未发布] v0.5.0
