@@ -25,7 +25,17 @@
 set -euo pipefail
 
 # ==================== 全局变量 ====================
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 兼容管道执行（curl | bash）：BASH_SOURCE[0] 可能是 /dev/stdin 或空，此时无法定位脚本路径
+# 采用 fallback 策略：先尝试 BASH_SOURCE，失败则用 PWD，再失败用 /root
+SCRIPT_DIR=""
+if [[ -n "${BASH_SOURCE[0]:-}" && "${BASH_SOURCE[0]}" != "/dev/stdin" && "${BASH_SOURCE[0]}" != "bash" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+fi
+if [[ -z "$SCRIPT_DIR" || "$SCRIPT_DIR" == "/" ]]; then
+    SCRIPT_DIR="$PWD"
+fi
+# 项目安装目录（clone 目标，管道执行时项目文件存放于此）
+PROJECT_INSTALL_DIR="/opt/jicek"
 REPORT_FILE="/root/jicek-deploy-info.txt"
 LOG_FILE="/var/log/jicek-install.log"
 
@@ -381,12 +391,62 @@ generate_secrets() {
 }
 
 # ==================== 步骤 6：Docker Compose 部署 ====================
+
+# 确保项目文件存在（管道执行时自动 clone，本地执行时直接使用）
+ensure_project_files() {
+    # 如果 SCRIPT_DIR 下已有 docker-compose.yml，说明是本地执行，直接用
+    if [[ -f "$SCRIPT_DIR/docker-compose.yml" ]]; then
+        log_info "项目文件已存在（本地执行）：$SCRIPT_DIR"
+        return 0
+    fi
+
+    # 管道执行场景：需要 clone 项目
+    log_info "未在当前目录找到项目文件（管道执行场景），开始 clone 项目..."
+
+    # 检测 git
+    if ! has_cmd git; then
+        log_info "安装 git..."
+        case "$PKG_MANAGER" in
+            yum) yum install -y git 2>&1 | tee -a "$LOG_FILE" ;;
+            apt-get) apt-get update -qq && apt-get install -y git 2>&1 | tee -a "$LOG_FILE" ;;
+        esac
+    fi
+
+    # clone 项目（如已存在先备份再 clone）
+    if [[ -d "$PROJECT_INSTALL_DIR/.git" ]]; then
+        log_info "项目目录已存在，拉取最新代码：$PROJECT_INSTALL_DIR"
+        cd "$PROJECT_INSTALL_DIR"
+        git fetch --all 2>&1 | tee -a "$LOG_FILE" || true
+        git reset --hard origin/HEAD 2>&1 | tee -a "$LOG_FILE" || true
+    else
+        log_info "克隆项目到：$PROJECT_INSTALL_DIR"
+        if git clone --depth 1 https://github.com/laobi465/wlyz-2demo.git "$PROJECT_INSTALL_DIR" 2>&1 | tee -a "$LOG_FILE"; then
+            log_info "项目克隆完成"
+        else
+            log_error "项目克隆失败，请检查网络或手动 clone 到 $PROJECT_INSTALL_DIR"
+            exit 1
+        fi
+    fi
+
+    # 切换到项目目录
+    SCRIPT_DIR="$PROJECT_INSTALL_DIR"
+    log_info "项目目录：$SCRIPT_DIR"
+
+    # 校验关键文件
+    if [[ ! -f "$SCRIPT_DIR/docker-compose.yml" ]]; then
+        log_error "克隆后仍未找到 docker-compose.yml（路径：$SCRIPT_DIR/docker-compose.yml）"
+        exit 1
+    fi
+}
+
 deploy_with_compose() {
     log_step "步骤 6/7：Docker Compose 部署"
 
+    ensure_project_files
+
     if [[ ! -f "$SCRIPT_DIR/docker-compose.yml" ]]; then
         log_error "未找到 docker-compose.yml（路径：$SCRIPT_DIR/docker-compose.yml）"
-        log_error "请确保在项目根目录执行本脚本"
+        log_error "请确保在项目根目录执行本脚本，或检查网络连接"
         exit 1
     fi
 
